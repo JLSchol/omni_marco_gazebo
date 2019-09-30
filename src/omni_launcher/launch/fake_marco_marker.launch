@@ -1,0 +1,21 @@
+<launch>
+    <!-- omni node publishes joint states on omni1_joint_states -->
+    <node name="omni1" pkg="phantom_omni" type="omni" output="screen" />
+    
+    <!-- Node that publishes a fake marco -->
+    <include file="$(find test_common)/launch/MockEEToTF.launch"> 
+        <!--<arg name="cameraInputTopic" value="$(cameraNamespace)/image_raw" /> 
+        <arg name="imageInputTopic" value="$(cameraNamespace)/camera_info" />-->
+    </include>
+
+    <!-- Node that publishes a marker deviating from marco his end effector -->
+    <include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+        <!--<arg name="cameraInputTopic" value="$(cameraNamespace)/image_raw" /> 
+        <arg name="imageInputTopic" value="$(cameraNamespace)/camera_info" />-->
+    </include>
+
+    <!-- rviz  -->
+    <node name="rviz" pkg="rviz" type="rviz" />
+
+
+</launch>

@@ -1,0 +1,30 @@
+<launch>
+    <!--This will be used as base name in tftree-->
+    <arg name="parent_frame"          default="base_marco"/> 
+    <!--This will be used as child name in tftree-->
+    <arg name="child_frame"          default="end_effector"/>
+
+
+
+    <!-- pose consist of (position(3) + quaternion(4) =) 7 elements seperated by space-->
+    <arg name="EE_pose" default= "1 1 1 -0.5 0.5 0.5 0.5"/>
+    <!--possible orientations that give nice poses (quaternions): --> 
+    <!--[0, 0.7071068, 0, 0.7071068 ]-->
+    <!--[ -0.5, -0.5, 0.5, -0.5 ]-->
+    <!--[ -0.7071068, 0, 0.7071068, 0 ]-->
+    <!--[-0.5 0.5 0.5 0.5]-->
+
+
+
+
+    <node name="mock_End_Effector" pkg="test_common" type="MockEEToTF.py" output="screen">
+
+        <param name="ParentName"     value="$(arg parent_frame)"/>
+        <param name="ChildName"     value="$(arg child_frame)"/>
+
+        <param name="EEPose"     value="$(arg EE_pose)"/>
+
+    </node>
+
+
+</launch>

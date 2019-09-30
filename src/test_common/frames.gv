@@ -1,0 +1,7 @@
+digraph G {
+"map" -> "end_effector"[label="Broadcaster: /mock_End_Effector\nAverage rate: 14914.633 Hz\nMost recent transform: 1569394016.668 ( 0.000 sec old)\nBuffer length: 4.995 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1569394016.668"[ shape=plaintext ] ;
+ }->"map";
+}

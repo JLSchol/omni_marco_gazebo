@@ -1,0 +1,63 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/darshan/marco_ws_test/devel/include",
+                "/opt/ros/kinetic/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_planners/chomp/chomp_motion_planner/include",
+                "/home/darshan/marco_ws_test/src/ros_control/combined_robot_hw/include",
+                "/home/darshan/marco_ws_test/src/ros_control/combined_robot_hw_tests/include",
+                "/home/darshan/marco_ws_test/src/control_toolbox/include",
+                "/home/darshan/marco_ws_test/src/ros_control/controller_interface/include",
+                "/home/darshan/marco_ws_test/src/ros_control/controller_manager/include",
+                "/home/darshan/marco_ws_test/src/ros_control/controller_manager_tests/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/diff_drive_controller/include",
+                "/home/darshan/marco_ws_test/src/marco_dynamixel/DynamixelSDK/include",
+                "/home/darshan/marco_ws_test/src/marco_dynamixel/dynamixel_workbench_ros_control/include",
+                "/home/darshan/marco_ws_test/src/marco_dynamixel/dynamixel_workbench_single_manager/include",
+                "/home/darshan/marco_ws_test/src/marco_dynamixel/dynamixel_workbench_toolbox/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/effort_controllers/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/force_torque_sensor_controller/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/forward_command_controller/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/four_wheel_steering_controller/include",
+                "/home/darshan/marco_ws_test/src/gazebo_ros_pkgs/gazebo_plugins/include",
+                "/home/darshan/marco_ws_test/src/gazebo_ros_pkgs/gazebo_ros/include",
+                "/home/darshan/marco_ws_test/src/gazebo_ros_pkgs/gazebo_ros_control/include",
+                "/home/darshan/marco_ws_test/src/gazebo_tutorials/include",
+                "/home/darshan/marco_ws_test/src/geometric_shapes/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/gripper_action_controller/include",
+                "/home/darshan/marco_ws_test/src/ros_control/hardware_interface/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/imu_sensor_controller/include",
+                "/home/darshan/marco_ws_test/src/ros_control/joint_limits_interface/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/joint_state_controller/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/joint_trajectory_controller/include",
+                "/home/darshan/marco_ws_test/src/telemanip_slave/marco_arm_int/include",
+                "/home/darshan/marco_ws_test/src/marco_wifi/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_planners/chomp/chomp_interface/include",
+                "/home/darshan/marco_ws_test/src/moveit_resources/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_ros/benchmarks/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_plugins/moveit_ros_control_interface/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_ros/move_group/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_ros/robot_interaction/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_setup_assistant/include",
+                "/home/darshan/marco_ws_test/src/moveit/moveit_plugins/moveit_simple_controller_manager/include",
+                "/home/darshan/marco_ws_test/src/moveit_visual_tools/include",
+                "/home/darshan/marco_ws_test/src/marco_navigation/collision_aware_nav/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/position_controllers/include",
+                "/home/darshan/marco_ws_test/src/realtime_tools/include",
+                "/home/darshan/marco_ws_test/src/telemanip_slave/slave_control/include",
+                "/home/darshan/marco_ws_test/src/srdfdom/include",
+                "/home/darshan/marco_ws_test/src/ros_control/transmission_interface/include",
+                "/home/darshan/marco_ws_test/src/ros_controllers/velocity_controllers/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
