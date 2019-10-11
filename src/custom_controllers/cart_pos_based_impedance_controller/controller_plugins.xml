@@ -1,0 +1,21 @@
+<library path="lib/libcart_pos_based_impedance_controller">
+
+  <class name="cart_pos_based_impedance_controller/CartPBImpedanceController"
+         type="cart_pos_based_impedance_controller_ns::CartPBImpedanceController"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      The CartesianPositionBasedImpedanceController allows ..
+    </description>
+  </class>
+
+<!--   <class name="effort_controllers/CartesianController"
+         type="effort_controllers::CartesianController"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      The CartesianPositionController allows individual joints to be jogged at specified velocities,
+      following a trapezoidal trajectory.
+      This variant uses a effort control interface.
+    </description>
+  </class> -->
+
+</library>
