@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This file is adjusted from marco_gazebo.launch-->
+<launch>
+  <arg name="world"  default="empty"/>  <!-- empty, ... (see ../worlds) -->
+  <arg name="robot"  default="titanium"/>          <!-- see marco_description/robots/marco_* -->
+  <arg name="gzpose" default="-x 0.0 -y 0.0 -z 0.001 -R 0.0 -P 0.0 -Y 0.0"/>
+  <arg name="gui"    default="true"/>
+  <arg name="debug"  default="false"/>
+  <arg name="paused" default="true"/>
+  <arg name="full_sim" default="true"/>
+  <arg name="public_sim" default="false"/>
+  <arg name="use_moveit_camera" default="false"/>
+  <arg name="tuck_arm" default="false"/>
+  <arg name="tf_prefix" default=""/>
+
+  <env name="GAZEBO_MODEL_PATH" value="$(find marco_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
+  <env name="LC_NUMERIC" value="C" />
+
+  <!-- start up world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find marco_gazebo)/worlds/$(arg world).world"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="debug" value="$(arg debug)"/>
+    <arg name="paused" value="$(arg paused)"/>
+  </include>
+
+
+  <!-- PID gains -->
+  <rosparam command="load" file="$(find marco_controller_configuration_gazebo)/config/pids_and_impedance.yaml"/>
+  <!-- controllers-->
+  <rosparam command="load" file="$(find marco_controller_configuration_gazebo)/config/marco_titanium_pal_hardware_gazebo.yaml"/>
+  
+  <!-- Joint trajectory and diff drive controllers -->
+  <rosparam command="load" file="$(find marco_controller_configuration_gazebo)/config/joint_trajectory_and_impedance_controllers.yaml"/>
+  <rosparam command="load" file="$(find marco_controller_configuration_gazebo)/config/mobile_base_controller.yaml"/>
+ 
+  <!-- Joystick controller parameters -->
+  <include file="$(find marco_gazebo)/launch/joy_teleop.launch"/>
+ 
+
+  <!-- Robot model urdf xacro-->
+  <include file="$(find marco_description)/robots/upload_marco.launch">
+    <arg name="robot" value="$(arg robot)"/>
+  </include>
+
+  <!-- Spawn robot in Gazebo -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_model"
+    args="-urdf -param robot_description $(arg gzpose) -model marco_$(arg robot)" />
+
+
+  
+  <!-- <rosparam command="load" file="$(find marco_controller_configuration_gazebo)/config/joint_state_controller_extra_joints.yaml" ns="joint_state_controller"/> -->
+  <rosparam command="load" file="$(find joint_state_controller)/joint_state_controller.yaml" />
+  <param name="mobile_base_controller/base_frame_id" value="$(arg tf_prefix)/base_footprint"/>
+  <param name="mobile_base_controller/odom_frame_id" value="$(arg tf_prefix)/odom"/>
+
+  <!-- Controllers that come up started marco_titanium_pal_hardware_gazebo-->
+  <node name="default_controllers_spawner"
+        pkg="controller_manager" type="spawner" output="screen"
+        args="--timeout 120
+              joint_state_controller
+              torso_controller
+              gripper_controller
+              head_controller
+              arm_controller
+              mobile_base_controller" />
+
+  <!-- Point head action -->
+  <group ns="head_controller">
+    <node name="point_head_action" pkg="head_action" type="head_action" output="screen">
+      <rosparam>
+        pan_link:  head_1_link
+        tilt_link: head_2_link
+        success_angle_threshold: 0.01
+      </rosparam>
+    </node>
+  </group>
+
+  <include file="$(find marco_controller_configuration_gazebo)/launch/imu_controller.launch"/>
+  <include file="$(find marco_controller_configuration_gazebo)/launch/force_torque_controller.launch"/>
+
+  <!-- Motion planning -->
+  <!--<include file="$(find marco_moveit_config)/launch/move_group.launch">
+    <arg name="robot" value="$(arg robot)" />
+     <arg name="robot_sufix" value="_titanium" /> 
+    <arg name="camera" value="$(arg use_moveit_camera)"/>
+   </include>-->
+
+  <!-- Robot state publisher -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="50.0"/>
+    <param name="tf_prefix" type="string" value=""/>
+    <!-- <remap from="/joint_states" to="/marco/joint_states"/> -->
+  </node>
+
+  <!-- TF lookup -->
+  <node pkg="tf_lookup" type="tf_lookup" name="tf_lookup" output="screen"/>
+
+  <!-- Twist mux -->
+  <include file="$(find marco_bringup)/launch/twist_mux.launch"/>
+
+  <!--<node name="image_raw_to_rect_color_relay" pkg="topic_tools" type="relay" args="xtion/rgb/image_raw xtion/rgb/image_rect_color" />-->
+
+</launch>
