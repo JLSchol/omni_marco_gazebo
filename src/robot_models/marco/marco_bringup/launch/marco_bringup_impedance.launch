@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--adjusted from marco_bringup_impedance.launch AND titanium_controllers.launch-->
+<launch>
+  <arg name="robot" default="titanium"/>
+  <arg name="full_sim" default="true"/>
+  <arg name="tf_prefix" default=""/>
+  <arg name="use_moveit_camera" default="false"/>
+
+  <!-- Load default controllers -->
+  <include file="$(find marco_controller_configuration_gazebo)/launch/default_controllers_impedance.launch">
+    <arg name="tf_prefix" value="$(arg tf_prefix)"/>
+  </include>
+  <include file="$(find marco_controller_configuration_gazebo)/launch/imu_controller.launch"/>
+  <include file="$(find marco_controller_configuration_gazebo)/launch/force_torque_controller.launch"/>
+
+
+  <!-- Play motion -->
+  <include file="$(find marco_bringup)/launch/play_motion.launch">
+  </include>
+
+  <!-- Motion planning -->
+  <include file="$(find marco_moveit_config)/launch/move_group.launch">
+    <arg name="robot" value="$(arg robot)" />
+     <arg name="robot_sufix" value="_titanium" /> 
+    <arg name="camera" value="$(arg use_moveit_camera)"/>
+   </include>
+
+
+
+
+
+
+
+
+
+
+  <!-- Robot state publisher -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="50.0"/>
+    <param name="tf_prefix" type="string" value=""/>
+    <!-- <remap from="/joint_states" to="/marco/joint_states"/> -->
+  </node>
+
+  <!-- TF lookup -->
+  <node pkg="tf_lookup" type="tf_lookup" name="tf_lookup" output="screen"/>
+
+  <!-- Twist mux -->
+  <include file="$(find marco_bringup)/launch/twist_mux.launch"/>
+
+
+  <!-- Dynamic footprint -->
+  <!-- <include file="$(find marco_bringup)/launch/dynamic_footprint.launch">
+    <arg name="robot" value="$(arg robot)"/>
+  </include> -->
+
+    <!-- Speed limit -->
+    <!-- <include file="$(find speed_limit)/launch/speed_limit.launch">
+      <arg name="config"    value="$(find ant_bringup)/config/speed_limit.yaml"/>
+      <arg name="footprint" value="$(find ant_description)/urdf/base/footprint.yaml"/>
+    </include> -->
+
+  <!-- <group if="$(arg full_sim)"> -->
+    <!-- Launch platform collision avoidance -->
+    <!-- <include file="$(find nav2d_operator)/launch/collision_nav.launch"/> -->
+    
+    <!-- Launch PC to laser converter for 3D nav -->
+    <!-- <include file="$(find marco_laser_sensors)/launch/xtion_laser.launch"/> -->
+  <!-- </group> -->
+
+   <node name="image_raw_to_rect_color_relay" pkg="topic_tools" type="relay" args="xtion/rgb/image_raw xtion/rgb/image_rect_color" />
+
+</launch>
