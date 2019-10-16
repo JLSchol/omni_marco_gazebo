@@ -54,45 +54,99 @@ public:
         assert(n_joints == urdf_joints.size());
 
         // Create kdl tree
-        // KDL::Tree kdl_tree(const std::string "arm_1_joint");
-        // if (!kdl_parser::treeFromUrdfModel(*urdf, kdl_tree))
-        // {
-        //     ROS_INFO_STREAM("IN IF LOOP");
-        //     ROS_ERROR_NAMED(name_, "Could not create KDL Tree from URDF");
-        //     return false;
-        // }
-        // ROS_INFO_STREAM("BEFOR NAMED KDL INFO");
-        // ROS_INFO_NAMED(name_, "KDL tree loaded with %d joints and %d segments",
-        //          kdl_tree.getNrOfJoints(), kdl_tree.getNrOfSegments());
-        // std::string base_frame, ee_frame;
+        KDL::Tree kdl_tree;
+        if (!kdl_parser::treeFromUrdfModel(*urdf, kdl_tree))
+        {
+            ROS_INFO_STREAM("IN IF LOOP");
+            ROS_ERROR_NAMED(name_, "Could not create KDL Tree from URDF");
+            return false;
+        }
+        ROS_INFO_STREAM("BEFOR NAMED KDL INFO");
+        ROS_INFO_NAMED(name_, "KDL tree loaded with %d joints and %d segments",
+                 kdl_tree.getNrOfJoints(), kdl_tree.getNrOfSegments());
+        std::string base_frame, ee_frame;
+        base_frame = "torso_lift_link";
+        ee_frame = "arm_7_link";
         // controller_nh_.getParam("base_frame", base_frame);
         // controller_nh_.getParam("ee_frame", ee_frame);
-        // if (!kdl_tree.getChain(base_frame, ee_frame, kdl_chain_))
-        // {
-        //     ROS_ERROR_NAMED(name_, "Could not create KDL chain from base frame '%s' to "
-        //                         "end effector frame '%s'",
-        //                     base_frame.c_str(), ee_frame.c_str());
-        //     return false;
-        // }
+        if (!kdl_tree.getChain(base_frame, ee_frame, kdl_chain_))
+        {
+            ROS_INFO_STREAM("in if");
+            ROS_ERROR_NAMED(name_, "Could not create KDL chain from base frame '%s' to "
+                                "end effector frame '%s'",
+                            base_frame.c_str(), ee_frame.c_str());
+            return false;
+        }
+        ROS_INFO_STREAM("na if");
+        ROS_INFO_STREAM("JOINT NUMBERS: "<< kdl_chain_.getNrOfJoints());
+        assert(n_joints == kdl_chain_.getNrOfJoints());
 
+        // resize somethings
+        errors_.resize(n_joints);
+        commanded_positions_.resize(n_joints);
+
+
+        // get hardware handles from joint names
+        joints_.resize(n_joints);
+        commands_.resize(n_joints);
+        gains_.resize(n_joints);
+        for (unsigned int i = 0; i < n_joints; ++i)
+        {
+            try
+            {
+                joints_[i] = hw->getHandle(joint_names_[i]); 
+                ROS_INFO_STREAM("In try for");
+            }
+            catch (...) // throws on failure
+            {
+                ROS_ERROR_STREAM_NAMED(name_, "Could not find joint '"
+                                        << joint_names_[i] << "' in '"
+                                        << this->getHardwareInterfaceType()
+                                        << "'.");
+                ROS_INFO_STREAM("In catch");
+                return false;      
+            }
+            ROS_INFO_STREAM("Voor commands_ for");
+            commands_[i] = joints_[i].getPosition(); // set current joint  state to goal state
+
+        // load gains from the parameter server
+        // /gains/arm_1_joint/gain
+            ROS_INFO_STREAM("Voor ostringstrem in for");
+            std::ostringstream param_ns;
+            param_ns << "/gains/" << joint_names_[i] << "/gain";
+            ROS_INFO_STREAM("Voor if2 in for");
+            if(!controller_nh_.getParam(param_ns.str(), gains_[i]))
+            {
+                ROS_ERROR_STREAM_NAMED(name_, "Could not find the gain of'"
+                                        << joint_names_[i] << "' in '"
+                                        << param_ns.str() << "'.");
+                ROS_INFO_STREAM("In if2 in for");
+                return false;
+            }
+            ROS_INFO_STREAM(gains_[i]);
+            // ROS_INFO_STREAM("gains in namespace: "<< param_ns.str() << " is: "<< gains_[i]);
+            
+            // controller_nh_.getParam(param_ns.str(), gains_[i])
+            
+        }
 
 
         // When the controller is loaded, this code get executed
-        std::string my_joint;
-        if(!controller_nh.getParam("joint",my_joint))
-        {
-            ROS_ERROR("Could not find joint name");
-            return false;
-        }
-        joint_ = hw->getHandle(my_joint); // throws on failure
-        command_ = joint_.getPosition();  // set current joint  state to goal state
+        // std::string my_joint;
+        // if(!controller_nh.getParam("joint",my_joint))
+        // {
+        //     ROS_ERROR("Could not find joint name");
+        //     return false;
+        // }
+        // joint_ = hw->getHandle(my_joint); // throws on failure
+        // command_ = joint_.getPosition();  // set current joint  state to goal state
 
         //load gain using gains set on parameter server
-        if(!controller_nh.getParam("gain",gain_))
-        {
-            ROS_ERROR("Could not find the gain parameter value");
-            return false;
-        }
+        // if(!controller_nh.getParam("gain",gain_))
+        // {
+        //     ROS_ERROR("Could not find the gain parameter value");
+        //     return false;
+        // }
 
         //Start subscriber that listents the the topic command
         sub_command_ = controller_nh.subscribe<std_msgs::Float64>("command",1,&CartPBImpedanceController::setCommandCB, this);
@@ -103,9 +157,18 @@ public:
 
     void update(const ros::Time& time, const ros::Duration& period)
     {
-        double error = command_ - joint_.getPosition();
-        double commanded_position = error * gain_;
-        joint_.setCommand(commanded_position);
+
+        for(unsigned int i=0; i < joint_names_.size(); ++i)
+        {
+            double error = commands_[i] - joints_[i].getPosition();
+            // ROS_INFO_STREAM("error is: "<< error << " commmand1: " << commands_[0] << " position1 is: " << joints_[i].getPosition());
+            // ROS_INFO_STREAM("error is : "<< error);
+            // ROS_INFO_STREAM("commmand1 : " << commands_[0]);
+            // ROS_INFO_STREAM("position1 :"<< joints_[0]);
+            double commanded_position = error * gains_[i];
+            joints_[i].setCommand(commanded_position);
+        }
+
     }
 
 
@@ -121,14 +184,19 @@ public:
 
 
 private:
-    hardware_interface::JointHandle joint_; // Joint resource
+    std::vector<hardware_interface::JointHandle> joints_; // Joint resource
     std::string name_;
-    double gain_;                           // loaded from the config file
-    double command_;                        // set point to 
+    std::vector<double> gains_;                             // loaded from the config file
+    double gain_;                           
+    std::vector<double> commands_;                        // set point to 
+    double command_;
     ros::Subscriber sub_command_;
     ros::NodeHandle controller_nh_;
     std::vector<std::string> joint_names_;
-
+    KDL::Chain kdl_chain_;
+    std::vector<double> errors_; 
+    std::vector<double> commanded_positions_;
+    // const unsigned int n_joints;
 
     // get controller name
     std::string getLeafNamespace(const ros::NodeHandle& nh)
