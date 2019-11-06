@@ -8,13 +8,13 @@ gains:
   head_2_joint: {p: 100,  d: 0, i: 10, i_clamp: 1.5}
   xtion_frame_joint: {p: 0.5,  d: 0, i: 0, i_clamp: 1.5}
 
-  arm_1_joint: {gain: 0.1}
-  arm_2_joint: {gain: 0.1}
-  arm_3_joint: {gain: 0.1}
-  arm_4_joint: {gain: 0.1}
-  arm_5_joint: {gain: 0.1}
-  arm_6_joint: {gain: 0.1}
-  arm_7_joint: {gain: 0.1}
+  arm_1_joint: {gain: 30}
+  arm_2_joint: {gain: 30}
+  arm_3_joint: {gain: 30}
+  arm_4_joint: {gain: 30}
+  arm_5_joint: {gain: 30}
+  arm_6_joint: {gain: 30}
+  arm_7_joint: {gain: 30}
 
 
 
