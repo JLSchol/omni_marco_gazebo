@@ -55,3 +55,4 @@ build*
 
 *.vscode*
 *.ycm_extra_conf.py
+src/gazebo_ros_demos
