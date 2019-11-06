@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   visualization_msgs
   phantom_omni
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions

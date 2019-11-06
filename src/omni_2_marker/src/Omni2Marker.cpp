@@ -16,6 +16,7 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("lock_state_topic_name", lock_state_topic_name_, "/omni1_lock_state");
 
     nh_.param<std::string>("marker_topic_name", marker_topic_name_, "/marker_visualization"); 
+    nh_.param<std::string>("marker_trans_topic_name", marker_trans_topic_name_, "/marker_transform"); 
 
     nh_.param<std::string>("base_frame_name", base_frame_name_, "base"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "wrist2"); 
@@ -33,6 +34,7 @@ void Omni2Marker::initializeSubscribers()
 void Omni2Marker::initializePublishers()
 {
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>(marker_topic_name_,1);
+    marker_transform_pub_ = nh_.advertise<geometry_msgs::TransformStamped>(marker_trans_topic_name_,1);
 }
 
 void Omni2Marker::CB_getJointStates(const sensor_msgs::JointState& jointstate_message)
@@ -129,8 +131,22 @@ void Omni2Marker::fillMarkerMsg()
     marker_.lifetime = ros::Duration();
 }
 
-void Omni2Marker::run()
+void Omni2Marker::fillMarkerTransformMsg()
 {
+    const tf::StampedTransform dummy_transform = base_to_marker_;
+    // new_transform = &base_to_marker_;
+
+    tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
+    // base_to_marker_.transformStampedTFToMsg
+
+    marker_transform_.header.stamp = marker_.header.stamp;
+    marker_transform_.header.frame_id = marker_.header.frame_id;
+    marker_transform_.child_frame_id = "virtual_marker";
+    // marker_transform_.transform 
+}
+
+void Omni2Marker::run()
+{  
   getTF();
 
   if ( (button_msg_.grey_button && button_msg_.white_button) == true)
@@ -145,7 +161,9 @@ void Omni2Marker::run()
       findDeviationFromLockPosition(deviation_from_lock);
       addMarkerTransform(deviation_from_lock);
       fillMarkerMsg();
+      fillMarkerTransformMsg();
       marker_pub_.publish(marker_);
+      marker_transform_pub_.publish(marker_transform_);
   }
 }
 
@@ -157,9 +175,11 @@ int main( int argc, char** argv )
 	Omni2Marker node;
     node.publish_on_ = false;
 
-  while (ros::ok())
+  while (ros::ok()) // fix publish rate to 30 hz
   {
+    ros::Rate loop_rate(30); //publish_frequency_
     node.run();
     ros::spinOnce();
+    loop_rate.sleep();
   }
 }

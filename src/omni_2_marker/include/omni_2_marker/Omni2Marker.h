@@ -4,7 +4,9 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
+#include <tf/transform_broadcaster.h> // can weg?
+#include <geometry_msgs/TransformStamped.h>
+#include <tf/tf.h>
 
 // rviz
 #include <visualization_msgs/Marker.h>
@@ -42,9 +44,12 @@ class Omni2Marker
 		std::string joint_state_topic_name_;
 		std::string button_event_topic_name_;
 		std::string lock_state_topic_name_;
+		
 
 		ros::Publisher marker_pub_;
+		ros::Publisher marker_transform_pub_;
 		std::string marker_topic_name_;
+		std::string marker_trans_topic_name_;
 
 		std::string base_frame_name_;
 		std::string ee_frame_name_;	
@@ -56,6 +61,7 @@ class Omni2Marker
 		phantom_omni::PhantomButtonEvent button_msg_; 
 		phantom_omni::LockState lockstate_msg_;
 		visualization_msgs::Marker marker_;
+		geometry_msgs::TransformStamped marker_transform_;
 		tf::TransformListener TF_listener_;
 		
 
@@ -85,6 +91,7 @@ class Omni2Marker
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
 		void fillMarkerMsg();
+		void fillMarkerTransformMsg();
 		// void setOmni2Center(); 	// set omni to center with ff of workspace
 
 };
