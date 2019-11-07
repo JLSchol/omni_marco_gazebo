@@ -9,6 +9,7 @@ project(test_common)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  phantom_omni
 )
 
 ## System dependencies are found with CMake's conventions

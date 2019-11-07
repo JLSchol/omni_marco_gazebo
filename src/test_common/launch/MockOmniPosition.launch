@@ -1,0 +1,17 @@
+<launch>
+    <!--This will be used as base name in tftree-->
+    <arg name="output_topic_position"          default="/omni1_lock_state"/> 
+    <arg name="output_topic_button"          default="/omni1_button"/> 
+
+
+
+
+    <node name="mock_omni_position" pkg="test_common" type="MockOmniPosition.py" output="screen">
+
+        <param name="OutputTopicPosition"     value="$(arg output_topic_position)"/>
+        <param name="OutputTopicButton"     value="$(arg output_topic_button)"/>
+
+    </node>
+
+
+</launch>
