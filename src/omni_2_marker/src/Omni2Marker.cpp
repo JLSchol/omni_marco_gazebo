@@ -18,8 +18,8 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("marker_topic_name", marker_topic_name_, "/marker_visualization"); 
     nh_.param<std::string>("marker_trans_topic_name", marker_trans_topic_name_, "/marker_transform"); 
 
-    nh_.param<std::string>("base_frame_name", base_frame_name_, "base"); 
-    nh_.param<std::string>("ee_frame_name", ee_frame_name_, "wrist2"); 
+    nh_.param<std::string>("base_frame_name", base_frame_name_, "base_marco"); 
+    nh_.param<std::string>("ee_frame_name", ee_frame_name_, "end_effector"); 
 
     nh_.param<double>("scale_marker_deviation", scale_marker_deviation_, 1.0);  
 }
@@ -84,6 +84,8 @@ void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_l
     base_to_marker_.setOrigin( base_to_ee_.getOrigin() + deviation );                                 
     base_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from base
 
+    
+    // The Virtual_marker pose is tranferred via topics rather than using tf
     // no need for broadcasting but if so:
     // tf::TransformBroadcaster br;
     // br.sendTransform(tf::StampedTransform(base_to_marker_, ros::Time::now(), base_frame_name_, "virtual_marker"));
@@ -97,7 +99,7 @@ void Omni2Marker::fillMarkerMsg()
 
     // Set the namespace and id for this marker.  This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
-    marker_.ns = "virtual_marker";
+    marker_.ns = "virtual_marker"; // TODO: make variable
     marker_.id = 0;
 
     // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
@@ -133,16 +135,15 @@ void Omni2Marker::fillMarkerMsg()
 
 void Omni2Marker::fillMarkerTransformMsg()
 {
+    // Assign to base_to_marker_ to a constant transform
     const tf::StampedTransform dummy_transform = base_to_marker_;
-    // new_transform = &base_to_marker_;
 
-    tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
-    // base_to_marker_.transformStampedTFToMsg
-
-    marker_transform_.header.stamp = marker_.header.stamp;
+    // transform
+    marker_transform_.header.stamp = ros::Time::now();
     marker_transform_.header.frame_id = marker_.header.frame_id;
-    marker_transform_.child_frame_id = "virtual_marker";
-    // marker_transform_.transform 
+    marker_transform_.child_frame_id = "virtual_marker"; // TO DO: make variable
+    tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
+
 }
 
 void Omni2Marker::run()
@@ -157,11 +158,16 @@ void Omni2Marker::run()
     //sms
   if (publish_on_) // naar 0900 9292
   {
+      // Find transform 
       std::vector<double> deviation_from_lock;
       findDeviationFromLockPosition(deviation_from_lock);
       addMarkerTransform(deviation_from_lock);
+
+      // fill messages
       fillMarkerMsg();
       fillMarkerTransformMsg();
+
+      // publish messages
       marker_pub_.publish(marker_);
       marker_transform_pub_.publish(marker_transform_);
   }
@@ -171,15 +177,17 @@ void Omni2Marker::run()
 
 int main( int argc, char** argv )
 {
-	ros::init(argc, argv, "omni_2_marker");
+	// initialize ros node and class
+    ros::init(argc, argv, "omni_2_marker");
 	Omni2Marker node;
     node.publish_on_ = false;
 
-  while (ros::ok()) // fix publish rate to 30 hz
-  {
-    ros::Rate loop_rate(30); //publish_frequency_
-    node.run();
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+    // spin
+    while (ros::ok()) 
+    {
+        ros::Rate loop_rate(30); //publish_frequency_
+        node.run();
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
 }
