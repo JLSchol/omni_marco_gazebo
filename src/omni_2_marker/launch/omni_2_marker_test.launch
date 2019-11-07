@@ -1,0 +1,46 @@
+ <launch>
+<!--Input topic arguments-->
+<!--<arg name="joints_topic_name" default="/omni1_joint_states"/> -->
+<arg name="button_topic_name" default="/omni1_button"/> 
+<arg name="lock_state_topic" default="/omni1_lock_state"/> 
+<!--Output topics arguments-->
+<arg name="marker_topic_name" default="/marker_visualization"/> 
+<arg name="marker_trans_topic_name" default="/marker_transform"/> 
+<!--This name needs to be set as the base of the robot-->  
+<arg name="base_frame"          default="base_marco"/> 
+<!--This name needs to be set as the End-effector of the robot-->
+<arg name="end_effector_frame"          default="end_effector"/>
+<!--Scaling coefficient of omni workspace to robot-->
+<arg name="scale_marker_deviation"          default="1"/>
+
+<!-- rviz  -->
+<node name="rviz" pkg="rviz" type="rviz" />
+
+<!--<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+    <arg name="button_topic_name" value="$(arg button_topic_name)"/>
+    <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
+    <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
+    <arg name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>
+    <arg name="base_frame" value="$(arg base_frame)"/>
+    <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
+    <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
+</include>-->
+
+<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+</include>
+
+
+<include file="$(find test_common)/launch/MockEEToTF.launch"> 
+    <arg name="parent_frame" value="$(arg base_frame)"/>
+    <arg name="child_frame" value="$(arg end_effector_frame)"/>
+    <arg name="EE_pose" value= "1 1 1 -0.5 0.5 0.5 0.5"/>
+</include>
+
+<include file="$(find test_common)/launch/MockOmniPosition.launch">
+    <arg name="output_topic_position" value="$(arg lock_state_topic)"/>
+    <arg name="output_topic_button" value="$(arg lock_state_topic)"/>
+</include>
+
+
+
+ </launch>
