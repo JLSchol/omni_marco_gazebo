@@ -16,7 +16,7 @@
 <!-- rviz  -->
 <node name="rviz" pkg="rviz" type="rviz" />
 
-<!--<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
     <arg name="button_topic_name" value="$(arg button_topic_name)"/>
     <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
     <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
@@ -24,10 +24,10 @@
     <arg name="base_frame" value="$(arg base_frame)"/>
     <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
     <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
-</include>-->
-
-<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
 </include>
+
+<!--<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+</include>-->
 
 
 <include file="$(find test_common)/launch/MockEEToTF.launch"> 
@@ -38,7 +38,7 @@
 
 <include file="$(find test_common)/launch/MockOmniPosition.launch">
     <arg name="output_topic_position" value="$(arg lock_state_topic)"/>
-    <arg name="output_topic_button" value="$(arg lock_state_topic)"/>
+    <arg name="output_topic_button" value="$(arg button_topic_name)"/>
 </include>
 
 

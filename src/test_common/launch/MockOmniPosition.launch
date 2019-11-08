@@ -2,14 +2,24 @@
     <!--This will be used as base name in tftree-->
     <arg name="output_topic_position"          default="/omni1_lock_state"/> 
     <arg name="output_topic_button"          default="/omni1_button"/> 
-
-
+    <arg name="amplitudes"            default="[0.05, 0.01, 0.02]" /> <!--Seperate by comma!!-->
+    <arg name="frequencies"            default="[1, 2, 3]" />
+    <arg name="periods"            default="[3, 2, 1]" />
+    <!--<arg name="cycleTime"            default="9" />-->
+    <arg name="angle_xy"            default="90" /> <!-- set to zero to make circles --> <!-- set to 90 to do y-axis -->
 
 
     <node name="mock_omni_position" pkg="test_common" type="MockOmniPosition.py" output="screen">
 
         <param name="OutputTopicPosition"     value="$(arg output_topic_position)"/>
         <param name="OutputTopicButton"     value="$(arg output_topic_button)"/>
+
+        <rosparam param="amplitudes" subst_value="True">$(arg amplitudes)</rosparam>
+        <rosparam param="frequencies" subst_value="True">$(arg frequencies)</rosparam>
+        <rosparam param="periods" subst_value="True">$(arg periods)</rosparam>
+
+        <!--<param name="cycleTime"     value="$(arg cycleTime)"/>-->
+        <param name="angle_xy"     value="$(arg angle_xy)"/>    
 
     </node>
 
