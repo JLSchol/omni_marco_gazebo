@@ -14,7 +14,7 @@
 <arg name="scale_marker_deviation"          default="1"/>
 
 <!-- rviz  -->
-<node name="rviz" pkg="rviz" type="rviz" />
+<!--<node name="rviz" pkg="rviz" type="rviz" />-->
 
 <include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
     <arg name="button_topic_name" value="$(arg button_topic_name)"/>

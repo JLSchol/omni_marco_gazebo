@@ -32,19 +32,15 @@ class sendMockOmniPosition():
         self._frequencies = get_param("~frequencies")
         self._periods = get_param("~periods")
 
-        # self._cycleTime = get_param("~cycleTime")
         self._angle_xy = get_param("~angle_xy")
 
 
     def run(self):
-        rosRate = Rate(30)
+        rosRate = Rate(60)
 
         while not is_shutdown():
             buttonMsg = self._setButton()
             positionMsg = self._setLockState()
-
-            # loginfo(buttonMsg)
-            # loginfo(positionMsg)
 
             self._pubPosition.publish(positionMsg)
             self._pubButton.publish(buttonMsg)
@@ -59,14 +55,17 @@ class sendMockOmniPosition():
 
 
     def _setLockState(self):
+        # get data from sinus_i
         output_point = self._makeCyclingSignal(self._amplitudes, self._frequencies)
+        loginfo(output_point)
 
-        
-        if self._angle_xy != 0:     # make ofdiagonal wiggle in x-y plane
+        # make ofdiagonal wiggle in x-y plane
+        if self._angle_xy != 0:     
             x = output_point*cos(self._angle_xy*(pi/180))
             y = output_point*sin(self._angle_xy*(pi/180))
             z = 0
-        else:                       # make circel in x-y plane
+        # make circel in x-y plane    
+        else:                       
             x = output_point
             y = output_point
             z = 0
@@ -77,31 +76,39 @@ class sendMockOmniPosition():
                             
 
     def _makeCyclingSignal(self, amplitudes, frequencies):
+        # initialize time
         current_time = get_time()
         seconds = current_time - self._startTime.secs
-        cycles = len(amplitudes)
+
+        # get amount of sinusoides
+        n_sinusoids = len(amplitudes)
+        loginfo(amplitudes)
+
+        # get index of sinus_i
+        sinus_i = ((self._cycle_i-1) % n_sinusoids)
 
         # get amplitude, frequency, 
-        index_arr = (self._cycle_i % cycles)-1
-        amplitude = amplitudes[index_arr]
-        frequency = frequencies[index_arr]
+        amplitude = float(amplitudes[sinus_i])
+        frequency = float(frequencies[sinus_i])
 
-        # get time for sinus_i
-        onePeriodTime = 1/frequencies[index_arr]
-        multiplePeriodTime = onePeriodTime*self._periods[index_arr]
+        # get duration of time for sinus_i to run
+        periodTime = 1/frequency
+        runTimeSinus_i = periodTime*float(self._periods[sinus_i]) 
 
         # make signal
         output = self._makeSinus(seconds,amplitude,frequency)
 
-        if seconds>(multiplePeriodTime + self._passedTime):          # update position in array
+        # update to sin_(i+1) when runtime of sin_i has passed
+        if seconds>(runTimeSinus_i + self._passedTime):          
             self._cycle_i = self._cycle_i + 1 
-            self._passedTime = seconds
+            self._passedTime = self._passedTime + runTimeSinus_i
 
         return output
 
 
     def _makeSinus(self,time,amplitude,freq):
-        sinus = amplitude*sin(freq*time)
+        angular_frequency = 2*pi*freq
+        sinus = amplitude*sin( angular_frequency * time )
 
         return sinus
 
