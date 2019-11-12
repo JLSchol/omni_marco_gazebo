@@ -13,9 +13,6 @@
 <!--Scaling coefficient of omni workspace to robot-->
 <arg name="scale_marker_deviation"          default="1"/>
 
-<!-- rviz  -->
-<!--<node name="rviz" pkg="rviz" type="rviz" />-->
-
 <include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
     <arg name="button_topic_name" value="$(arg button_topic_name)"/>
     <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
@@ -25,10 +22,6 @@
     <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
     <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
 </include>
-
-<!--<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
-</include>-->
-
 
 <include file="$(find test_common)/launch/MockEEToTF.launch"> 
     <arg name="parent_frame" value="$(arg base_frame)"/>

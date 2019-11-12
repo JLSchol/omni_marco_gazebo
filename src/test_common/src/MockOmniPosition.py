@@ -57,7 +57,6 @@ class sendMockOmniPosition():
     def _setLockState(self):
         # get data from sinus_i
         output_point = self._makeCyclingSignal(self._amplitudes, self._frequencies)
-        loginfo(output_point)
 
         # make ofdiagonal wiggle in x-y plane
         if self._angle_xy != 0:     
@@ -82,7 +81,6 @@ class sendMockOmniPosition():
 
         # get amount of sinusoides
         n_sinusoids = len(amplitudes)
-        loginfo(amplitudes)
 
         # get index of sinus_i
         sinus_i = ((self._cycle_i-1) % n_sinusoids)
