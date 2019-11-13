@@ -14,7 +14,7 @@
 <arg name="max_robot_stiffness" default="500"/>
 <arg name="lambda_min" default="5"/>
 <arg name="lambda_max" default="25"/>
-<arg name="window_length" default="200"/>
+<arg name="window_length" default="100"/>
 
 
 

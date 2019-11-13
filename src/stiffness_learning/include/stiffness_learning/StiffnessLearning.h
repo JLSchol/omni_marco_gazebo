@@ -2,14 +2,18 @@
 #define STIFFNESS_LEARNING_H
 
 #include <ros/ros.h>
+
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayLayout.h>
 #include <std_msgs/Float32MultiArray.h>
 
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+
 
 
 
@@ -78,8 +82,8 @@ class StiffnessLearning
 			void getTF();
 		void populateDataMatrix(std::vector<float>& error_signal, std::vector< std::vector<float> >& data_matrix_);
 		void getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix_, Eigen::Matrix3f& covariance_matrix);
-		void getEigenValues();
-		void getEigenVector();
+		// void getEigenValues(Eigen::Matrix3f& covariance_matrix,);
+		// void getEigenVectors(Eigen::Matrix3f& covariance_matrix,);
 		void getStiffnessEig();
 		void setStiffnessMatrix();
 

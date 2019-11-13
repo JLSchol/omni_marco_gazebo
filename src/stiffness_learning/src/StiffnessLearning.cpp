@@ -11,9 +11,6 @@ nh_("~")
     initializeSubscribers();
     initializePublishers();
     initializeStiffnessMsg();
-    // data_matrix_.reserve(1);
-    // data_matrix_.[0].reserve(3);
-
 }  
 
 
@@ -22,16 +19,28 @@ void StiffnessLearning::run()
   ROS_INFO_STREAM("shit is aan het runnen");
   
   std::vector<float> error_signal(3);
-  getErrorSignal(error_signal); // werkt
-  
-  populateDataMatrix(error_signal,data_matrix_); // 
+  getErrorSignal(error_signal); 
+
+  populateDataMatrix(error_signal,data_matrix_); 
   
   Eigen::Matrix3f covariance_matrix;
   getCovarianceMatrix(data_matrix_, covariance_matrix);
 
-//   getEigenValues();
+  // get eigenvalues and eigenvectors
+  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true);
+  ROS_INFO_STREAM("EIGENVALUES:");
+  ROS_INFO_STREAM(eigen_solver.eigenvalues());
+  ROS_INFO_STREAM("eigenvectors:");
+  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(0));
+  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(1));
+  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(2));
+  ROS_INFO_STREAM("---------------------------------------------------");
 
-//   getEigenVector();
+//   getEigenValues()
+
+//   covariance_matrix.compu
+
+//   getEigenVectors();
 
 //   getStiffnessEig();
 
@@ -66,19 +75,28 @@ void StiffnessLearning::getErrorSignal(std::vector<float>& error_signal)
 void StiffnessLearning::populateDataMatrix(std::vector<float>& error_signal, std::vector< std::vector<float> >& data_matrix)
 {
     // check size of data matrix
+    if( (std::isinf( error_signal[0]) == true) || (std::isinf(error_signal[2]) == true) || (std::isinf(error_signal[2]) == true)) {
+        // ROS_INFO_STREAM("inif: "<<error_signal[0]<<error_signal[1]<<error_signal[2]);
+        return ;
+    }
+    // ROS_INFO_STREAM("Not in if: "<<error_signal[0]);
+
     int observations = data_matrix.size();
 
     if(observations < window_length_){
         data_matrix.push_back(error_signal); //+1
+        ROS_INFO_STREAM("IF<<<");
     }
     else if(observations == window_length_){
         data_matrix.erase(data_matrix.begin()); //-1
         data_matrix.push_back(error_signal);   //+1
+        ROS_INFO_STREAM("IF======");
     }
     else if(observations > window_length_){
         int to_remove = (observations-window_length_+1); // remove 1 extra (-1) for pushback later 
         data_matrix.erase( data_matrix.begin(), data_matrix.begin()+to_remove); // remove first part of vector
         data_matrix.push_back(error_signal); // +1
+        ROS_INFO_STREAM("IF>>>>>>>>>");
     }
     else{
         ROS_INFO_STREAM("Dit zou niet moeten gebeuren");
@@ -95,22 +113,48 @@ void StiffnessLearning::getTF()
 
 void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, Eigen::Matrix3f& covariance_matrix)
 {
-    
-    int height = data_matrix[0].size();
-    int length = data_matrix.size();
-    // ROS_INFO_STREAM("height: "<< height << " length: "<< length);
-    // convert to data_matrix to eigen format
-    std::vector<float> test_vector(3);
-    test_vector.push_back(1); test_vector.push_back(2); test_vector.push_back(3);
+    if(data_matrix.empty()){
+        ROS_INFO_STREAM("hoihoi");
+        return;
+    }
 
-    Eigen::MatrixXf test = Eigen::Map<Eigen::Matrix<float, 3, 1> >(test_vector.data());
-    
-    ROS_INFO_STREAM("eigen:" << test(0)<< test(1)<< test(2));
+    const int height = data_matrix[0].size(); 
+    const int length = data_matrix.size();
 
-    // do cov calculations
+    Eigen::MatrixXf data_mat_eigen(height,length);
+
+    assert(height==data_mat_eigen.rows());
+    assert(length==data_mat_eigen.cols());
     
+    ROS_INFO_STREAM("LENGTH:"<< length);
+    for(int i=0; i<length;++i){
+        for(int j=0; j<height; ++j){
+            data_mat_eigen(j,i) = data_matrix[i][j];
+        }
+    }
+    
+    Eigen::MatrixXf centered = data_mat_eigen.colwise() - data_mat_eigen.rowwise().mean();
+    ROS_INFO_STREAM("SIZE:"<< centered.rows()<<centered.cols());
+
+    float n = 1;
+    if(length == 1){
+        n = 0;
+    }
+
+    covariance_matrix = centered*centered.transpose() / float(data_mat_eigen.cols() - n); 
+
+    ROS_INFO_STREAM("SIZE" << covariance_matrix.rows()<<covariance_matrix.cols());   
 }
 
+// void StiffnessLearning::getEigenValues(Eigen::Matrix3f& covariance_matrix,)
+// {
+
+// }
+
+// void StiffnessLearning::getEigenVectors(Eigen::Matrix3f& covariance_matrix,)
+// {
+    
+// }
 
 void StiffnessLearning::fillStiffnessMsg()
 {
@@ -160,12 +204,10 @@ void StiffnessLearning::initializeSubscribers()
     marker_sub_ = nh_.subscribe(marker_trans_topic_name_, 1, &StiffnessLearning::CB_getMarkerTransform, this);
 }
 
-
 void StiffnessLearning::initializePublishers()
 {
     stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
 }
-
 
 void StiffnessLearning::initializeStiffnessMsg()
 {
