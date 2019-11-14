@@ -11,6 +11,7 @@ nh_("~")
     initializeSubscribers();
     initializePublishers();
     initializeStiffnessMsg();
+    // clear
 }  
 
 
@@ -19,36 +20,72 @@ void StiffnessLearning::run()
   ROS_INFO_STREAM("shit is aan het runnen");
   
   std::vector<float> error_signal(3);
-  getErrorSignal(error_signal); 
+  getErrorSignal(error_signal); // new signal every loop
 
-  populateDataMatrix(error_signal,data_matrix_); 
+  populateDataMatrix(error_signal,data_matrix_); // data_matrix_ grows by adding the errorsignal until window length
   
   Eigen::Matrix3f covariance_matrix;
-  getCovarianceMatrix(data_matrix_, covariance_matrix);
+  getCovarianceMatrix(data_matrix_, covariance_matrix); // covariance matrix is found from data matrix
 
   // get eigenvalues and eigenvectors
   Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true);
+//   Eigen::Vector3f eigen_values = eigen_solver.eigenvalues();
+//   Eigen::Matrix3f eigen_vectors = eigen_solver.eigenvectors();
+
+
+
+
   ROS_INFO_STREAM("EIGENVALUES:");
   ROS_INFO_STREAM(eigen_solver.eigenvalues());
-  ROS_INFO_STREAM("eigenvectors:");
-  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(0));
-  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(1));
-  ROS_INFO_STREAM(eigen_solver.eigenvectors().col(2));
+//   ROS_INFO_STREAM( "type"<< typeid(eigen_solver.eigenvalues()).name() );
+//   ROS_INFO_STREAM("eigenvectors:");
+//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(0));
+//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(1));
+//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(2));
+//   ROS_INFO_STREAM("---------------------------------------------------");
+
+  Eigen::Vector3f stiffness_diagonal;
+  getStiffnessEig(eigen_solver,stiffness_diagonal);
+//   ROS_INFO_STREAM( "type"<< typeid(eigen_solver.eigenvalues()).name() );
+  ROS_INFO_STREAM( "stiffness_diagonal"<< stiffness_diagonal );
   ROS_INFO_STREAM("---------------------------------------------------");
-
-//   getEigenValues()
-
-//   covariance_matrix.compu
-
-//   getEigenVectors();
-
-//   getStiffnessEig();
-
 //   setStiffnessMatrix();
 
   fillStiffnessMsg();
 
   stiffness_pub_.publish(stiffness_matrix_);
+}
+
+
+void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
+                                         Eigen::Vector3f &stiffness_diagonal)
+{
+    ROS_INFO_STREAM("INFUNCTION GETSTIFFNESS");
+    std::complex<float> E;
+    float k;
+    // need to check if close to zero
+    for(int i=0; i<stiffness_diagonal.size(); ++i)//stiffness_diagonal.size()
+    {
+        E = eigen_solver.eigenvalues().col(0)[i];
+        ROS_INFO_STREAM("E"<<E);
+        float lambda = sqrt(E.real());
+        ROS_INFO_STREAM("lambda"<<lambda);
+
+        if(lambda<=lambda_min_){
+            k = stiffness_max_;
+        }
+        else if(lambda > lambda_min_ && lambda < lambda_max_){
+            k = stiffness_max_ - (stiffness_max_ - stiffness_min_)/(lambda_max_ - lambda_min_) * (lambda - lambda_min_);
+        }
+        else if(lambda>=lambda_max_){
+            k = stiffness_min_;
+        }
+        else{
+            ROS_INFO_STREAM("ELSE !!!O.O!!! kan niet echt IMPOSSIBRUH of toch niet?o.O");
+        }
+        ROS_INFO_STREAM("k"<<k);
+        stiffness_diagonal(i) = k;
+    }
 }
 
 
@@ -111,6 +148,7 @@ void StiffnessLearning::getTF()
     }
 }
 
+// Need to check the covariance matrix on singularities otherwise loose rank not good blabla
 void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, Eigen::Matrix3f& covariance_matrix)
 {
     if(data_matrix.empty()){
@@ -126,16 +164,18 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
     assert(height==data_mat_eigen.rows());
     assert(length==data_mat_eigen.cols());
     
-    ROS_INFO_STREAM("LENGTH:"<< length);
+    ROS_INFO_STREAM("LENGTH:"<< length); // optimize this loop
     for(int i=0; i<length;++i){
         for(int j=0; j<height; ++j){
             data_mat_eigen(j,i) = data_matrix[i][j];
         }
     }
     
+
     Eigen::MatrixXf centered = data_mat_eigen.colwise() - data_mat_eigen.rowwise().mean();
     ROS_INFO_STREAM("SIZE:"<< centered.rows()<<centered.cols());
 
+    // prevent division by zero
     float n = 1;
     if(length == 1){
         n = 0;

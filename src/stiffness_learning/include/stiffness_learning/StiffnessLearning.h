@@ -14,6 +14,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
+#include <typeinfo>
+
 
 
 
@@ -84,7 +86,7 @@ class StiffnessLearning
 		void getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix_, Eigen::Matrix3f& covariance_matrix);
 		// void getEigenValues(Eigen::Matrix3f& covariance_matrix,);
 		// void getEigenVectors(Eigen::Matrix3f& covariance_matrix,);
-		void getStiffnessEig();
+		void getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, Eigen::Vector3f &stiffness_diagonal);
 		void setStiffnessMatrix();
 
 		void fillStiffnessMsg();
