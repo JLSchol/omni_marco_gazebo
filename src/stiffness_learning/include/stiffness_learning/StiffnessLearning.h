@@ -87,7 +87,9 @@ class StiffnessLearning
 		// void getEigenValues(Eigen::Matrix3f& covariance_matrix,);
 		// void getEigenVectors(Eigen::Matrix3f& covariance_matrix,);
 		void getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, Eigen::Vector3f &stiffness_diagonal);
-		void setStiffnessMatrix();
+		void setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
+								Eigen::Vector3f &stiffness_diagonal,
+								Eigen::Matrix3f &K_matrix);
 
 		void fillStiffnessMsg();
 

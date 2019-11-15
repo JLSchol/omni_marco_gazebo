@@ -6,7 +6,6 @@
 StiffnessLearning::StiffnessLearning():
 nh_("~")
 {
-    ROS_INFO_STREAM("----------------------------------");
     getParameters();
     initializeSubscribers();
     initializePublishers();
@@ -21,73 +20,33 @@ void StiffnessLearning::run()
   
   std::vector<float> error_signal(3);
   getErrorSignal(error_signal); // new signal every loop
+  ROS_INFO_STREAM("error_signal: "<< error_signal[0]<< error_signal[1]<< error_signal[2]);
 
   populateDataMatrix(error_signal,data_matrix_); // data_matrix_ grows by adding the errorsignal until window length
-  
+
   Eigen::Matrix3f covariance_matrix;
   getCovarianceMatrix(data_matrix_, covariance_matrix); // covariance matrix is found from data matrix
+  ROS_INFO_STREAM("covariance_matrix: "<< covariance_matrix);
 
   // get eigenvalues and eigenvectors
-  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true);
-//   Eigen::Vector3f eigen_values = eigen_solver.eigenvalues();
-//   Eigen::Matrix3f eigen_vectors = eigen_solver.eigenvectors();
-
-
-
-
-  ROS_INFO_STREAM("EIGENVALUES:");
-  ROS_INFO_STREAM(eigen_solver.eigenvalues());
-//   ROS_INFO_STREAM( "type"<< typeid(eigen_solver.eigenvalues()).name() );
-//   ROS_INFO_STREAM("eigenvectors:");
-//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(0));
-//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(1));
-//   ROS_INFO_STREAM(eigen_solver.eigenvectors().col(2));
-//   ROS_INFO_STREAM("---------------------------------------------------");
+  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); // finds upon initialization
+  ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
+  ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
+  
 
   Eigen::Vector3f stiffness_diagonal;
   getStiffnessEig(eigen_solver,stiffness_diagonal);
-//   ROS_INFO_STREAM( "type"<< typeid(eigen_solver.eigenvalues()).name() );
-  ROS_INFO_STREAM( "stiffness_diagonal"<< stiffness_diagonal );
-  ROS_INFO_STREAM("---------------------------------------------------");
-//   setStiffnessMatrix();
+  ROS_INFO_STREAM("stiffness_diagonal: "<< stiffness_diagonal[0]
+                                        << stiffness_diagonal[1]<< stiffness_diagonal[2]);
+  
+  Eigen::Matrix3f K_matrix;
+  setStiffnessMatrix(eigen_solver,stiffness_diagonal,K_matrix);
 
   fillStiffnessMsg();
 
   stiffness_pub_.publish(stiffness_matrix_);
+  ROS_INFO_STREAM("---------------------------------------------------");
 }
-
-
-void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
-                                         Eigen::Vector3f &stiffness_diagonal)
-{
-    ROS_INFO_STREAM("INFUNCTION GETSTIFFNESS");
-    std::complex<float> E;
-    float k;
-    // need to check if close to zero
-    for(int i=0; i<stiffness_diagonal.size(); ++i)//stiffness_diagonal.size()
-    {
-        E = eigen_solver.eigenvalues().col(0)[i];
-        ROS_INFO_STREAM("E"<<E);
-        float lambda = sqrt(E.real());
-        ROS_INFO_STREAM("lambda"<<lambda);
-
-        if(lambda<=lambda_min_){
-            k = stiffness_max_;
-        }
-        else if(lambda > lambda_min_ && lambda < lambda_max_){
-            k = stiffness_max_ - (stiffness_max_ - stiffness_min_)/(lambda_max_ - lambda_min_) * (lambda - lambda_min_);
-        }
-        else if(lambda>=lambda_max_){
-            k = stiffness_min_;
-        }
-        else{
-            ROS_INFO_STREAM("ELSE !!!O.O!!! kan niet echt IMPOSSIBRUH of toch niet?o.O");
-        }
-        ROS_INFO_STREAM("k"<<k);
-        stiffness_diagonal(i) = k;
-    }
-}
-
 
 void StiffnessLearning::getErrorSignal(std::vector<float>& error_signal)
 {
@@ -108,6 +67,13 @@ void StiffnessLearning::getErrorSignal(std::vector<float>& error_signal)
     }
 }
 
+void StiffnessLearning::getTF()
+{
+    if (TF_listener_.waitForTransform(ee_frame_name_, base_frame_name_, ros::Time(0), ros::Duration(0.25)))
+    {
+        TF_listener_.lookupTransform(base_frame_name_, ee_frame_name_,ros::Time(0), base_to_ee_);
+    }
+}
 
 void StiffnessLearning::populateDataMatrix(std::vector<float>& error_signal, std::vector< std::vector<float> >& data_matrix)
 {
@@ -140,19 +106,10 @@ void StiffnessLearning::populateDataMatrix(std::vector<float>& error_signal, std
     }
 }
 
-void StiffnessLearning::getTF()
-{
-    if (TF_listener_.waitForTransform(ee_frame_name_, base_frame_name_, ros::Time(0), ros::Duration(0.25)))
-    {
-        TF_listener_.lookupTransform(base_frame_name_, ee_frame_name_,ros::Time(0), base_to_ee_);
-    }
-}
-
 // Need to check the covariance matrix on singularities otherwise loose rank not good blabla
 void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, Eigen::Matrix3f& covariance_matrix)
 {
     if(data_matrix.empty()){
-        ROS_INFO_STREAM("hoihoi");
         return;
     }
 
@@ -164,16 +121,15 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
     assert(height==data_mat_eigen.rows());
     assert(length==data_mat_eigen.cols());
     
-    ROS_INFO_STREAM("LENGTH:"<< length); // optimize this loop
+    // optimize this loop
     for(int i=0; i<length;++i){
         for(int j=0; j<height; ++j){
             data_mat_eigen(j,i) = data_matrix[i][j];
         }
     }
     
-
+    ROS_INFO_STREAM("DATAMATRIXEIGEN: "<< data_mat_eigen);  
     Eigen::MatrixXf centered = data_mat_eigen.colwise() - data_mat_eigen.rowwise().mean();
-    ROS_INFO_STREAM("SIZE:"<< centered.rows()<<centered.cols());
 
     // prevent division by zero
     float n = 1;
@@ -181,26 +137,72 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
         n = 0;
     }
 
+    //Find covariance matrix
     covariance_matrix = centered*centered.transpose() / float(data_mat_eigen.cols() - n); 
-
-    ROS_INFO_STREAM("SIZE" << covariance_matrix.rows()<<covariance_matrix.cols());   
 }
 
-// void StiffnessLearning::getEigenValues(Eigen::Matrix3f& covariance_matrix,)
-// {
-
-// }
-
-// void StiffnessLearning::getEigenVectors(Eigen::Matrix3f& covariance_matrix,)
-// {
+void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
+                                         Eigen::Vector3f &stiffness_diagonal)
+{
+    std::complex<float> E;
+    float k;
     
-// }
+    for(int i=0; i<stiffness_diagonal.size(); ++i)//stiffness_diagonal.size()
+    {
+        E = eigen_solver.eigenvalues().col(0)[i];
+
+        // need to check if close to zero
+        if(E.real() < 0 ){
+            E.real() = 0;
+        }
+
+        float lambda = sqrt(E.real());
+
+        if(lambda <= std::pow(10,-6) && lambda>= std::pow(-10,-6)){
+            lambda = 0;
+        }
+
+        if(lambda<=lambda_min_){
+            k = stiffness_max_;
+        }
+        else if(lambda > lambda_min_ && lambda < lambda_max_){
+            k = stiffness_max_ - (stiffness_max_ - stiffness_min_)/(lambda_max_ - lambda_min_) * (lambda - lambda_min_);
+        }
+        else if(lambda>=lambda_max_){
+            k = stiffness_min_;
+        }
+        else{
+            ROS_INFO_STREAM("impossibruh.... denk ik");
+        }
+        stiffness_diagonal(i) = k;
+    }
+}
+
+void StiffnessLearning::setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, 
+                                            Eigen::Vector3f &stiffness_diagonal,
+                                            Eigen::Matrix3f &K_matrix)
+{
+    Eigen::Matrix3f k_diag, V, Vt;
+    k_diag.setIdentity();
+        
+        for(int i=0; i<3;++i){
+            for(int j=0; j<3; ++j){
+                V(i,j) = eigen_solver.eigenvectors()(i,j).real();
+                Vt(i,j) = eigen_solver.eigenvectors().transpose()(i,j).real();
+            }
+            k_diag(i,i) = stiffness_diagonal(i);
+        }
+        
+
+     K_matrix = V * k_diag * Vt;
+     ROS_INFO_STREAM("K_matrix"<< K_matrix);
+}
+
 
 void StiffnessLearning::fillStiffnessMsg()
 {
     int height = stiffness_matrix_.layout.dim[0].size;//no matiching functon
     int width = stiffness_matrix_.layout.dim[1].size;
-    // ROS_INFO_STREAM("HEIGHT:" << height);
     
     //Create eigen matrix 3x3
     Eigen::Matrix3f stiffness;
