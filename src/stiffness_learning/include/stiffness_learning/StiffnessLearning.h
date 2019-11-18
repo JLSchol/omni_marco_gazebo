@@ -3,7 +3,7 @@
 
 #include <ros/ros.h>
 
-#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
 #include <geometry_msgs/TransformStamped.h>
@@ -11,11 +11,8 @@
 #include <std_msgs/MultiArrayLayout.h>
 #include <std_msgs/Float32MultiArray.h>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <Eigen/Eigenvalues>
-
-#include <typeinfo>
-
 
 
 
@@ -24,7 +21,6 @@ class StiffnessLearning
 {
 
 	public:
-		
 		// Public parameters
 
 		// Constructor
@@ -51,7 +47,6 @@ class StiffnessLearning
 		tf::TransformListener TF_listener_;
 		tf::StampedTransform base_to_ee_;
 		tf::StampedTransform base_to_marker_;
-		
 
 		// message type parameters
 		geometry_msgs::TransformStamped marker_transform_;
@@ -67,8 +62,6 @@ class StiffnessLearning
 		float lambda_max_;
 		float window_length_;
 
-        // Private methods
-
         // Initialize inside constructor
         void getParameters();
         void initializeSubscribers();
@@ -78,21 +71,19 @@ class StiffnessLearning
         // callback
         void CB_getMarkerTransform(const geometry_msgs::TransformStamped& marker_transform_message);
 		
-		
-
+		// class methods
 		void getErrorSignal(std::vector<float>& vect);
 			void getTF();
-		void populateDataMatrix(std::vector<float>& error_signal, std::vector< std::vector<float> >& data_matrix_);
-		void getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix_, Eigen::Matrix3f& covariance_matrix);
-		// void getEigenValues(Eigen::Matrix3f& covariance_matrix,);
-		// void getEigenVectors(Eigen::Matrix3f& covariance_matrix,);
-		void getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, Eigen::Vector3f &stiffness_diagonal);
+		void populateDataMatrix(std::vector<float>& error_signal, 
+								std::vector< std::vector<float> >& data_matrix_);
+		void getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix_, 
+									Eigen::Matrix3f& covariance_matrix);
+		void getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, 
+								Eigen::Vector3f &stiffness_diagonal);
 		void setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
 								Eigen::Vector3f &stiffness_diagonal,
 								Eigen::Matrix3f &K_matrix);
-
-		void fillStiffnessMsg();
-
+		void fillStiffnessMsg(Eigen::Matrix3f k_matrix);
 };
 
 #endif

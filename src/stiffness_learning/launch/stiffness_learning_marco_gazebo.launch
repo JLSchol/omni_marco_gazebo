@@ -1,0 +1,7 @@
+ <launch>
+ <include file="$(find omni_marco_launcher)/launch/omni_gazebo_marco.launch">  
+ </include>
+
+ <include file="$(find stiffness_learning)/launch/stiffness_learning.launch">  
+ </include>
+ </launch>
