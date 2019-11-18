@@ -1,0 +1,9 @@
+<launch>
+    <!-- omni node publishes joint states on omni1_joint_states -->
+    <node name="omni1" pkg="phantom_omni" type="omni" output="screen" />
+    
+    <!-- Node that publishes a fake marco -->
+    <include file="$(find test_common)/launch/MockEEToTF.launch"> 
+    </include>
+
+</launch>

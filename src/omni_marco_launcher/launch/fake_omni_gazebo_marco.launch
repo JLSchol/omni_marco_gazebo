@@ -1,0 +1,9 @@
+<launch>
+    <!-- Node that publishes fake omni -->
+    <include file="$(find test_common)/launch/MockOmniPosition.launch">
+    </include>
+    
+    <!-- Node that publishes a gazebo marco -->
+    <include file="$(find marco_gazebo)/launch/marco_gazebo.launch"/>
+
+</launch>
