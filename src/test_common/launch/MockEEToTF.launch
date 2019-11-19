@@ -1,8 +1,8 @@
 <launch>
     <!--This will be used as base name in tftree-->
-    <arg name="parent_frame"          default="base_marco"/> 
+    <arg name="parent_frame"          default="base_footprint"/> 
     <!--This will be used as child name in tftree-->
-    <arg name="child_frame"          default="end_effector"/>
+    <arg name="child_frame"          default="wrist_ft_tool_link"/>
 
 
 

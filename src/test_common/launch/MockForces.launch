@@ -2,7 +2,7 @@
     <!--This will be used as base name in tftree-->
     <arg name="output_topic"          default="/omni1_force_feedback"/> 
     <!--This will be used as child name in tftree-->
-    <!-- <arg name="child_frame"          default="end_effector"/> -->
+    <!-- <arg name="child_frame"          default="wrist_ft_tool_link"/> -->
 
 
 
