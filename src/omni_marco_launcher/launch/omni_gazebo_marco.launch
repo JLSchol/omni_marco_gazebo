@@ -3,7 +3,7 @@
     <node name="omni1" pkg="phantom_omni" type="omni" output="screen" />
     
     <!-- Node that publishes a gazebo marco -->
-    <include file="$(find marco_gazebo)/launch/marco_gazebo.launch"/>
+    <include file="$(find marco_gazebo)/launch/marco_gazebo.launch">
     </include>
     
 </launch>

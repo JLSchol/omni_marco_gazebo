@@ -7,9 +7,9 @@
 <arg name="marker_topic_name" default="/marker_visualization"/> 
 <arg name="marker_trans_topic_name" default="/marker_transform"/> 
 <!--This name needs to be set as the base of the robot-->  
-<arg name="base_frame"          default="base_marco"/> 
+<arg name="base_frame"          default="base_footprint"/> 
 <!--This name needs to be set as the End-effector of the robot-->
-<arg name="end_effector_frame"          default="end_effector"/>
+<arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
 <!--Scaling coefficient of omni workspace to robot-->
 <arg name="scale_marker_deviation"          default="1"/>
 
