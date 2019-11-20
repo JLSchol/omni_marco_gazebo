@@ -9,7 +9,6 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayLayout.h>
-#include <std_msgs/Float32MultiArray.h>
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>

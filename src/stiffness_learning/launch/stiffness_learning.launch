@@ -10,8 +10,8 @@
 <arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
 
 <!--Tune parameters-->
-<arg name="min_robot_stiffness" default="100"/>
-<arg name="max_robot_stiffness" default="500"/>
+<arg name="min_robot_stiffness" default="70"/>
+<arg name="max_robot_stiffness" default="1000"/>
 <arg name="lambda_min" default="0.05"/>
 <arg name="lambda_max" default="0.25"/>
 <arg name="window_length" default="50"/>

@@ -2,9 +2,6 @@
  <include file="$(find omni_2_marker)/launch/omni_2_marker_test.launch">  
  </include>
 
- <include file="$(find omni_2_marker)/launch/omni_2_marker.launch">  
- </include>
-
  <include file="$(find stiffness_learning)/launch/stiffness_learning.launch">  
  </include>
  </launch>
