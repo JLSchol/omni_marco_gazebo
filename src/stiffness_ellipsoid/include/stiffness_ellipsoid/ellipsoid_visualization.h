@@ -5,6 +5,8 @@
 
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float32MultiArray.h>
@@ -64,7 +66,7 @@ class EllipsoidVisualization
         Eigen::Matrix3f getStiffnessMatrix();
         
         std::pair<Eigen::Matrix3f, Eigen::Vector3f> computeEigenValuesAndVectors(Eigen::Matrix3f stiffness_matrix);
-        // void computeRotation();
+        tf2::Quaternion computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
         // void computeScale();
 
         void setMarkerMsg();

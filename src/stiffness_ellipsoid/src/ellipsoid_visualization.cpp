@@ -37,18 +37,23 @@ void EllipsoidVisualization::CB_getStiffnessArray(const std_msgs::Float32MultiAr
 
 Eigen::Matrix3f EllipsoidVisualization::getStiffnessMatrix() 
 {       
+    // ROS_INFO_STREAM(stiffness_MultiArray_);
     float dstride0 = stiffness_MultiArray_.layout.dim[0].stride; //9 just total elements
     float dstride1 = stiffness_MultiArray_.layout.dim[1].stride; //3
     float h = stiffness_MultiArray_.layout.dim[0].size;
     float w = stiffness_MultiArray_.layout.dim[1].size;
+    // ROS_INFO_STREAM("h"<< h);
 
     Eigen::Matrix3f stiffness_matrix   = Eigen::Matrix3f::Zero();
     for(int i=0; i<h; ++i){
-        for(int j; j<w; ++j){
+        for(int j=0; j<w; ++j){
             // multiarray(i,j,k) = data[data_offset + dim[1]stride*i + dim[2]stride*j + k]
             stiffness_matrix(i,j) = stiffness_MultiArray_.data[dstride1*i+j];
+            // ROS_INFO_STREAM("multiarr: "<<stiffness_MultiArray_.data[dstride1*i+j]);
+            // ROS_INFO_STREAM("stiffnessmat: "<<stiffness_matrix(i,j));
         }
     }
+    // ROS_INFO_STREAM(stiffness_matrix);
     return stiffness_matrix;
 }
 
@@ -73,6 +78,23 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f> EllipsoidVisualization::computeEigen
     return std::make_pair(eigen_vectors, eigen_values);
 }
 
+tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
+{
+    tf2::Quaternion my_quaternion;
+    Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
+    tf2::Matrix3x3 matrixcalss;
+    matrixcalss.setValue(eigen_vectors(0,0), eigen_vectors(0,1), eigen_vectors(0,2), 
+                        eigen_vectors(1,0), eigen_vectors(1,1), eigen_vectors(1,2), 
+                        eigen_vectors(2,0), eigen_vectors(2,1), eigen_vectors(2,2));
+    matrixcalss.getRotation(my_quaternion);
+    my_quaternion.normalize();
+    ROS_INFO_STREAM("\n qx:"<<my_quaternion[0] << " qy:"<<my_quaternion[1]
+                    << " qz:"<<my_quaternion[2] << " qw:"<<my_quaternion[3]);
+    ROS_INFO_STREAM(my_quaternion);
+
+    return my_quaternion;
+}
+
 void EllipsoidVisualization::run()
 {
     if(stiffness_MultiArray_.data.empty()){
@@ -81,17 +103,27 @@ void EllipsoidVisualization::run()
     
     getTF();
     Eigen::Matrix3f stiffness_matrix = getStiffnessMatrix();
-    std::pair<Eigen::Matrix3f, Eigen::Vector3f> stiffnessEigenVectorsAndValues = computeEigenValuesAndVectors(stiffness_matrix);
-    // ROS_INFO_STREAM(stiffnessEigenVectorsAndValues.first);
-    // ROS_INFO_STREAM(stiffnessEigenVectorsAndValues.second);
-    // computeRotation(std::pair<Eigen::Matrix3d, Eigen::Vector3d>& pair);
+    // ROS_INFO_STREAM(stiffness_matrix);
+    std::pair<Eigen::Matrix3f, Eigen::Vector3f> stiffness_eigenVectors_and_values = computeEigenValuesAndVectors(stiffness_matrix);
+    // ROS_INFO_STREAM("vector: \n" << stiffness_eigenVectors_and_values.first);
+    // ROS_INFO_STREAM("values: \n" << stiffness_eigenVectors_and_values.second);
+
+    // Eigen::EigenSolver<Eigen::Matrix3f> eigensolver(stiffness_matrix);
+    // Eigen::Vector3f eigen_values  = eigensolver.eigenvalues().real();
+    // Eigen::Matrix3f eigen_vectors = eigensolver.eigenvectors().real();
+    // // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
+    // ROS_INFO_STREAM("vector: \n" << eigen_vectors);
+    // ROS_INFO_STREAM("values: \n" << eigen_values);
+    
+
+    computeRotation(stiffness_eigenVectors_and_values);
     // computeScale();
 
     setMarkerMsg();
 
     marker_pub_.publish(ellipsoid_);
 
-
+    ROS_INFO_STREAM("---------------------------------------------------------------------");
 }
 
 void EllipsoidVisualization::setMarkerMsg()
