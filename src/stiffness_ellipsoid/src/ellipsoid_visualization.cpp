@@ -17,7 +17,41 @@ void EllipsoidVisualization::getParameters()
     // TF frame names
     nh_.param<std::string>("base_frame_name", base_frame_name_, "base_footprint"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "wrist_ft_tool_link"); 
-}
+    // rosparam server from other launch file
+    // std::string stiffness_min_path, stiffness_max_path, lambda_min_path, lambda_max_path, lambda_max_path;
+
+    if (nh_.hasParam("/stiffness_learning/stiffness_min") &&
+        nh_.hasParam("/stiffness_learning/stiffness_max") &&
+        nh_.hasParam("/stiffness_learning/lambda_min") &&
+        nh_.hasParam("/stiffness_learning/lambda_max"))
+    {
+        nh_.getParam("/stiffness_learning/stiffness_min", stiffness_min_);
+        nh_.getParam("/stiffness_learning/stiffness_max", stiffness_max_);
+        nh_.getParam("/stiffness_learning/lambda_min", lambda_min_);
+        nh_.getParam("/stiffness_learning/lambda_max", lambda_max_);
+    }
+    else
+    {
+        ROS_INFO_STREAM("PARAMETERS NOT FOUND");
+    }
+
+    // if (nh_.getParam("relative_name", relative_name))
+    // {
+    
+    // }
+
+    // Default value version
+    // nh_.param<float>("stiffness_min", stiffness_min_, 1); 
+    // nh_.param<float>("stiffness_max", stiffness_max_, 1); 
+    // nh_.param<float>("lambda_min", lambda_min_, 1); 
+    // nh_.param<float>("lambda_max", lambda_max_, 1); 
+    // nh_.param<float>("window_length", window_length_, 1); 
+    
+
+
+
+    // nh_.param<std::string>("default_param", default_param, "default_value");
+    }
 
 void EllipsoidVisualization::initializeSubscribers()
 {
@@ -63,12 +97,12 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f> EllipsoidVisualization::computeEigen
     Eigen::Matrix3f eigen_vectors = Eigen::Matrix3f::Zero();
     
     // Compute eigen values and eigen vectors.
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(stiffness);
+    Eigen::EigenSolver<Eigen::Matrix3f> eigensolver(stiffness);
 
     if (eigensolver.info() == Eigen::Success)
     {
-        eigen_values  = eigensolver.eigenvalues();
-        eigen_vectors = eigensolver.eigenvectors();
+        eigen_values  = eigensolver.eigenvalues().real();
+        eigen_vectors = eigensolver.eigenvectors().real();
     }
     else
     {
@@ -82,17 +116,65 @@ tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3
 {
     tf2::Quaternion my_quaternion;
     Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
-    tf2::Matrix3x3 matrixcalss;
-    matrixcalss.setValue(eigen_vectors(0,0), eigen_vectors(0,1), eigen_vectors(0,2), 
+    // Eigen::Vector3f eigen_values = vector_value_pair.second;
+    // Eigen::Matrix3f k_diag;
+    
+    // k_diag.setIdentity();
+        
+    //     for(int i=0; i<3;++i){
+    //         k_diag(i,i) = eigen_values(i);
+    //     }
+        
+
+    // Eigen::Matrix3f K_matrix = eigen_vectors * k_diag * eigen_vectors.transpose();
+    // ROS_INFO_STREAM("Kmatrix: \n "<< K_matrix);
+
+    tf2::Matrix3x3 matrixclass;
+    matrixclass.setValue(eigen_vectors(0,0), eigen_vectors(0,1), eigen_vectors(0,2), 
                         eigen_vectors(1,0), eigen_vectors(1,1), eigen_vectors(1,2), 
                         eigen_vectors(2,0), eigen_vectors(2,1), eigen_vectors(2,2));
-    matrixcalss.getRotation(my_quaternion);
-    my_quaternion.normalize();
-    ROS_INFO_STREAM("\n qx:"<<my_quaternion[0] << " qy:"<<my_quaternion[1]
-                    << " qz:"<<my_quaternion[2] << " qw:"<<my_quaternion[3]);
-    ROS_INFO_STREAM(my_quaternion);
+    matrixclass.getRotation(my_quaternion);
+    // double yaw,pitch,roll;
+    // matrixclass.getEulerYPR(yaw,pitch,roll);
+    // ROS_INFO_STREAM("\n yaw:"<<yaw << " pitch:"<<pitch
+    //                 << " roll:"<<roll );
+
+    // my_quaternion.normalize();
 
     return my_quaternion;
+}
+
+Eigen::Vector3f EllipsoidVisualization::computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
+{
+    Eigen::Vector3f scalings  = Eigen::Vector3f::Identity();
+
+    // Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
+    Eigen::Vector3f eigen_values = vector_value_pair.second;
+
+    for(int i=0; i<scalings.size(); ++i)
+    {
+        float k = eigen_values(i);
+        float lambda;
+
+        if(k>=stiffness_max_){
+            lambda = lambda_min_;
+        }
+        else if(k > stiffness_min_ && k < stiffness_max_){
+            lambda = lambda_min_ - (lambda_min_ - lambda_max_)/(stiffness_min_ - stiffness_max_) * (k - stiffness_max_);
+        }
+        else if(k<=stiffness_min_){
+            lambda = lambda_max_;
+        }
+        else{
+            ROS_INFO_STREAM("Er is iets mis gegaan");
+        }
+        
+        scalings(i) = lambda;
+    }
+
+    ROS_INFO_STREAM("lambdas "<< scalings);
+
+    return scalings;
 }
 
 void EllipsoidVisualization::run()
@@ -105,8 +187,8 @@ void EllipsoidVisualization::run()
     Eigen::Matrix3f stiffness_matrix = getStiffnessMatrix();
     // ROS_INFO_STREAM(stiffness_matrix);
     std::pair<Eigen::Matrix3f, Eigen::Vector3f> stiffness_eigenVectors_and_values = computeEigenValuesAndVectors(stiffness_matrix);
-    // ROS_INFO_STREAM("vector: \n" << stiffness_eigenVectors_and_values.first);
-    // ROS_INFO_STREAM("values: \n" << stiffness_eigenVectors_and_values.second);
+    ROS_INFO_STREAM("vector: \n" << stiffness_eigenVectors_and_values.first);
+    ROS_INFO_STREAM("values: \n" << stiffness_eigenVectors_and_values.second);
 
     // Eigen::EigenSolver<Eigen::Matrix3f> eigensolver(stiffness_matrix);
     // Eigen::Vector3f eigen_values  = eigensolver.eigenvalues().real();
@@ -116,17 +198,20 @@ void EllipsoidVisualization::run()
     // ROS_INFO_STREAM("values: \n" << eigen_values);
     
 
-    computeRotation(stiffness_eigenVectors_and_values);
-    // computeScale();
+    tf2::Quaternion rotation = computeRotation(stiffness_eigenVectors_and_values);
+    // ROS_INFO_STREAM("\n qx:"<<rotation[0] << " qy:"<<rotation[1]
+    //                 << " qz:"<<rotation[2] << " qw:"<<rotation[3]);
 
-    setMarkerMsg();
+    Eigen::Vector3f scales = computeScale(stiffness_eigenVectors_and_values);
+
+    setMarkerMsg(rotation,scales);
 
     marker_pub_.publish(ellipsoid_);
 
     ROS_INFO_STREAM("---------------------------------------------------------------------");
 }
 
-void EllipsoidVisualization::setMarkerMsg()
+void EllipsoidVisualization::setMarkerMsg(tf2::Quaternion& rotation, Eigen::Vector3f& scales)
 {
   // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     ellipsoid_.header.frame_id = base_frame_name_; // verancer nog

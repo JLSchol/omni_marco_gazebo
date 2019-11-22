@@ -45,7 +45,7 @@ void StiffnessLearning::run()
   
   Eigen::Matrix3f K_matrix;
   setStiffnessMatrix(eigen_solver,stiffness_diagonal,K_matrix);
-//   ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
+  ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
     // Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(K_matrix);
     // Eigen::Vector3f eigen_values  = eigensolver.eigenvalues();
     // Eigen::Matrix3f eigen_vectors = eigensolver.eigenvectors();
@@ -193,7 +193,7 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
         }
         stiffness_diagonal(i) = k;
         // ROS_INFO_STREAM("Ereal"<< E.real());
-        // ROS_INFO_STREAM("Lambda"<< lambda);
+        ROS_INFO_STREAM("Lambda "<< lambda);
         // ROS_INFO_STREAM("--------------------------------------");
     }
 }

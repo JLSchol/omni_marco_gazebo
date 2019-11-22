@@ -55,6 +55,13 @@ class EllipsoidVisualization
 		visualization_msgs::Marker ellipsoid_;
         std_msgs::Float32MultiArray stiffness_MultiArray_;
         // std_msgs::Float32MultiArray stiffness_array_msgs;
+        
+        // tune parameters
+		float stiffness_min_;
+		float stiffness_max_;
+		float lambda_min_;
+		float lambda_max_;
+		float window_length_;
 
 
         // Initialize inside constructor
@@ -67,9 +74,9 @@ class EllipsoidVisualization
         
         std::pair<Eigen::Matrix3f, Eigen::Vector3f> computeEigenValuesAndVectors(Eigen::Matrix3f stiffness_matrix);
         tf2::Quaternion computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
-        // void computeScale();
+        Eigen::Vector3f computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
 
-        void setMarkerMsg();
+        void setMarkerMsg(tf2::Quaternion& rotation,Eigen::Vector3f& scales);
 
 
         // callback
