@@ -33,7 +33,7 @@ class sendMockOmniPosition():
         self._periods = get_param("~periods")
 
         self._angle_xy = get_param("~angle_xy")
-
+        self._angle_xy = float(self._angle_xy)
 
     def run(self):
         rosRate = Rate(60)
@@ -60,9 +60,12 @@ class sendMockOmniPosition():
 
         # make ofdiagonal wiggle in x-y plane
         if self._angle_xy != 0:     
-            x = output_point*cos(self._angle_xy*(pi/180))
-            y = output_point*sin(self._angle_xy*(pi/180))
-            z = 0
+            x = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180)) # output_point*cos(self._angle_xy*(pi/180))
+            y = 0#output_point*sin(self._angle_xy*(pi/180)) #output_point*sin(self._angle_xy*(pi/180)) 
+            z = output_point*sin(self._angle_xy*(pi/180))
+            # loginfo("x =" + str(x))
+            # loginfo("y =" + str(y))
+            # loginfo("z =" + str(z))
         # make circel in x-y plane    
         else:                       
             x = output_point

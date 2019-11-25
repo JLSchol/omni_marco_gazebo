@@ -165,16 +165,23 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
     {
         E = eigen_solver.eigenvalues().col(0)[i];
 
+        if( E.imag() != 0){
+            ROS_INFO_STREAM("IMAGINAIR!!!!!!!");
+        }
+
+
         // need to check if negative and close to zero
-        if( (E.real() < 0) ){ // && (E.real() > std::pow(-10,-6)) << waarom werkt dit niet?
+        float upper = std::pow(10,-6);
+        float lower = -1*upper;
+        if( E.real() > lower && E.real() < upper ){ // && (E.real() > std::pow(-10,-6)) << waarom werkt dit niet?
             E.real() = 0;
-            // ROS_INFO_STREAM("IN Ereal IF ROUNDOF=0 "<< E.real());
+            // ROS_INFO_STREAM("IN Ereal IF ROUNDOF to 0 "<< E.real());
         }
 
         // Check wheter or not I need to take square root? in klas kronander(2012/2014) 
         float lambda = sqrt(E.real());
 
-        if(lambda <= std::pow(10,-5) && lambda>= std::pow(-10,-5)){
+        if(lambda <= std::pow(10,-4) && lambda>= std::pow(-10,-4)){
             lambda = 0;
             // ROS_INFO_STREAM("IN Lambda IF ROUNDOF=0 "<< lambda);
         }
@@ -192,9 +199,9 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
             ROS_INFO_STREAM("Lambda is no real number check eigenvalues covariance matrix");
         }
         stiffness_diagonal(i) = k;
-        // ROS_INFO_STREAM("Ereal"<< E.real());
+        ROS_INFO_STREAM("Ereal"<< E.real());
         ROS_INFO_STREAM("Lambda "<< lambda);
-        // ROS_INFO_STREAM("--------------------------------------");
+        ROS_INFO_STREAM("--------------------------------------");
     }
 }
 

@@ -115,7 +115,8 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f> EllipsoidVisualization::computeEigen
 tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
 {
     tf2::Quaternion my_quaternion;
-    Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
+    Eigen::Matrix3f eigen_vectors = vector_value_pair.first;//.transpose();
+    // ROS_INFO_STREAM("Kmatrix: \n "<< K_matrix);;
     // Eigen::Vector3f eigen_values = vector_value_pair.second;
     // Eigen::Matrix3f k_diag;
     
@@ -134,10 +135,10 @@ tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3
                         eigen_vectors(1,0), eigen_vectors(1,1), eigen_vectors(1,2), 
                         eigen_vectors(2,0), eigen_vectors(2,1), eigen_vectors(2,2));
     matrixclass.getRotation(my_quaternion);
-    // double yaw,pitch,roll;
-    // matrixclass.getEulerYPR(yaw,pitch,roll);
-    // ROS_INFO_STREAM("\n yaw:"<<yaw << " pitch:"<<pitch
-    //                 << " roll:"<<roll );
+    double yaw,pitch,roll;
+    matrixclass.getEulerYPR(yaw,pitch,roll);
+    ROS_INFO_STREAM("\n yaw:"<<yaw << " pitch:"<<pitch
+                    << " roll:"<<roll );
 
     // my_quaternion.normalize();
 
@@ -146,10 +147,8 @@ tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3
 
 Eigen::Vector3f EllipsoidVisualization::computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
 {
-    Eigen::Vector3f scalings  = Eigen::Vector3f::Identity();
-
-    // Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
     Eigen::Vector3f eigen_values = vector_value_pair.second;
+    Eigen::Vector3f scalings  = Eigen::Vector3f::Identity();
 
     for(int i=0; i<scalings.size(); ++i)
     {
@@ -168,11 +167,8 @@ Eigen::Vector3f EllipsoidVisualization::computeScale(std::pair<Eigen::Matrix3f, 
         else{
             ROS_INFO_STREAM("Er is iets mis gegaan");
         }
-        
         scalings(i) = lambda;
     }
-
-    ROS_INFO_STREAM("lambdas "<< scalings);
 
     return scalings;
 }
@@ -203,7 +199,8 @@ void EllipsoidVisualization::run()
     //                 << " qz:"<<rotation[2] << " qw:"<<rotation[3]);
 
     Eigen::Vector3f scales = computeScale(stiffness_eigenVectors_and_values);
-
+    ROS_INFO_STREAM("Scaling: "<< scales);
+    
     setMarkerMsg(rotation,scales);
 
     marker_pub_.publish(ellipsoid_);
@@ -233,16 +230,16 @@ void EllipsoidVisualization::setMarkerMsg(tf2::Quaternion& rotation, Eigen::Vect
     ellipsoid_.pose.position.y = base_to_ee_.getOrigin().y();//1;
     ellipsoid_.pose.position.z = base_to_ee_.getOrigin().z();//1;
     // marker_.pose.position = base_to_marker_.getOrigin();
-    ellipsoid_.pose.orientation.x = 0;//base_to_ee_.getRotation().x();
-    ellipsoid_.pose.orientation.y = 0;//base_to_ee_.getRotation().y();
-    ellipsoid_.pose.orientation.z = 0;//base_to_ee_.getRotation().z();
-    ellipsoid_.pose.orientation.w = 1;//base_to_ee_.getRotation().w();
+    ellipsoid_.pose.orientation.x = rotation.x();//rotation.x();//base_to_ee_.getRotation().x();
+    ellipsoid_.pose.orientation.y = rotation.y();//rotation.y();//base_to_ee_.getRotation().y();
+    ellipsoid_.pose.orientation.z = rotation.z();//rotation.z();//base_to_ee_.getRotation().z();
+    ellipsoid_.pose.orientation.w = rotation.w();//rotation.w();//base_to_ee_.getRotation().w();
     // marker_.pose.orientation = base_to_ee_.getRotation();
     
     // Set the scale of the marker -- 1x1x1 here means 1m on a side
-    ellipsoid_.scale.x = 0.1;
-    ellipsoid_.scale.y = 0.2;
-    ellipsoid_.scale.z = 0.30;
+    ellipsoid_.scale.x = 3*scales(0);
+    ellipsoid_.scale.y = 3*scales(1);
+    ellipsoid_.scale.z = 3*scales(2);
 
     // Set the color -- be sure to set alpha to something non-zero!
     ellipsoid_.color.r = 1.0f;
