@@ -70,6 +70,8 @@ void Omni2Marker::findDeviationFromLockPosition(std::vector<double> &deviation_f
 void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_lock)
 {
     // define (map) the frame of the omni to the reference frame that you want to use to control the marker
+    // TODO : Allow for input rotation matrix that specifies the marco_base wrt the omniframe
+    // fix this part of the code
     double y = -deviation_from_lock[0]; // x_direction_omni = -y_direction_marco_base;
     double z = deviation_from_lock[1];  // y_direction_omni = z_direction_marco_base;
     double x = -deviation_from_lock[2]; // z_direction_omni = -x_direction_marco_base;

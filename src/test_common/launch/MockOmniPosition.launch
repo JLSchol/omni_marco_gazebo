@@ -15,7 +15,7 @@
     <!-- set angle_xy to 90 to wiggle y-axis (omni) -->
     <!-- set angle_xy to zero to make circles WERKT NIET--> 
     <!-- set angle_xy in deg to make of diagonal wiggles --> 
-    <arg name="angle_xy"            default="50" /> 
+    <arg name="angle_xy"            default="10" /> 
 
 
     <node name="mock_omni_position" pkg="test_common" type="MockOmniPosition.py" output="screen">

@@ -7,13 +7,14 @@
 
 
     <!-- pose consist of (position(3) + quaternion(4) =) 7 elements seperated by space-->
-    <arg name="EE_pose" default= "1 1 1 0 0 0 1"/>
+    <arg name="EE_pose" default= "1 1 1 -0.5 0.5 0.5 0.5"/>
     <!--possible orientations that give nice poses (quaternions): --> 
     <!--[0, 0.7071068, 0, 0.7071068 ]-->
     <!--[ -0.5, -0.5, 0.5, -0.5 ]-->
     <!--[ -0.7071068, 0, 0.7071068, 0 ]-->
     <!--[-0.5 0.5 0.5 0.5]-->
     <!--"1 1 1 -0.5 0.5 0.5 0.5"-->
+    <!--1 1 1 0 0 0 1-->
 
 
 

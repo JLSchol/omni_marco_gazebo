@@ -61,6 +61,7 @@ void EllipsoidVisualization::initializeSubscribers()
 void EllipsoidVisualization::initializePublishers()
 {
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>(marker_topic_name_,1);
+    marker_pub_arrow_ = nh_.advertise<visualization_msgs::Marker>("arrow_vizualisation",1);
 }
 
 void EllipsoidVisualization::CB_getStiffnessArray(const std_msgs::Float32MultiArray& stiffness_array_msgs)
@@ -130,6 +131,7 @@ tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3
     // Eigen::Matrix3f K_matrix = eigen_vectors * k_diag * eigen_vectors.transpose();
     // ROS_INFO_STREAM("Kmatrix: \n "<< K_matrix);
 
+
     tf2::Matrix3x3 matrixclass;
     matrixclass.setValue(eigen_vectors(0,0), eigen_vectors(0,1), eigen_vectors(0,2), 
                         eigen_vectors(1,0), eigen_vectors(1,1), eigen_vectors(1,2), 
@@ -137,10 +139,13 @@ tf2::Quaternion EllipsoidVisualization::computeRotation(std::pair<Eigen::Matrix3
     matrixclass.getRotation(my_quaternion);
     double yaw,pitch,roll;
     matrixclass.getEulerYPR(yaw,pitch,roll);
+    yaw = yaw*(180/3.141);
+    pitch = pitch*(180/3.141);
+    roll = roll*(180/3.141);
     ROS_INFO_STREAM("\n yaw:"<<yaw << " pitch:"<<pitch
                     << " roll:"<<roll );
 
-    // my_quaternion.normalize();
+    my_quaternion.normalize();
 
     return my_quaternion;
 }
@@ -195,20 +200,34 @@ void EllipsoidVisualization::run()
     
 
     tf2::Quaternion rotation = computeRotation(stiffness_eigenVectors_and_values);
+
+    // tf2::Quaternion omni_2_base_quat;
+    // tf2::Matrix3x3 omni_2_base_trans;
+    // omni_2_base_trans.setValue( 0, -1, 0, 
+    //                             0, 0, -1, 
+    //                             -1, 0, 0);
+    // omni_2_base_trans.getRotation(omni_2_base_quat);
+    // rotation = omni_2_base_quat*rotation;
     // ROS_INFO_STREAM("\n qx:"<<rotation[0] << " qy:"<<rotation[1]
     //                 << " qz:"<<rotation[2] << " qw:"<<rotation[3]);
 
     Eigen::Vector3f scales = computeScale(stiffness_eigenVectors_and_values);
     ROS_INFO_STREAM("Scaling: "<< scales);
     
-    setMarkerMsg(rotation,scales);
-
+    setEllipsoidMsg(rotation,scales);
+    // Eigen::Matrix3f matrix_of_eigen_vectors= stiffness_eigenVectors_and_values.first
+    for(int i = 0; i<3; ++i){
+        visualization_msgs::Marker arrow_i = setArrowMsg(stiffness_eigenVectors_and_values.first,scales,i);
+        marker_pub_arrow_.publish(arrow_i);
+    }
     marker_pub_.publish(ellipsoid_);
+
+    
 
     ROS_INFO_STREAM("---------------------------------------------------------------------");
 }
 
-void EllipsoidVisualization::setMarkerMsg(tf2::Quaternion& rotation, Eigen::Vector3f& scales)
+void EllipsoidVisualization::setEllipsoidMsg(tf2::Quaternion& rotation, Eigen::Vector3f& scales)
 {
   // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     ellipsoid_.header.frame_id = base_frame_name_; // verancer nog
@@ -216,7 +235,7 @@ void EllipsoidVisualization::setMarkerMsg(tf2::Quaternion& rotation, Eigen::Vect
 
     // Set the namespace and id for this marker.  This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
-    ellipsoid_.ns = "Ellipsoid"; // TODO: make variable
+    ellipsoid_.ns = "ellipsoid"; // TODO: make variable
     ellipsoid_.id = 0;
 
     // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
@@ -249,6 +268,75 @@ void EllipsoidVisualization::setMarkerMsg(tf2::Quaternion& rotation, Eigen::Vect
 
     ellipsoid_.lifetime = ros::Duration();
 }
+
+visualization_msgs::Marker EllipsoidVisualization::setArrowMsg(Eigen::Matrix3f M, Eigen::Vector3f& scales, int vector_i)
+{
+    
+    visualization_msgs::Marker arrow;
+    // get vector wrt base?
+    Eigen::Vector3f V;
+    V(0) = M(0,vector_i);
+    V(1) = M(1,vector_i);
+    V(2) = M(2,vector_i);
+    V = 1.5*V*scales(vector_i); //scale it
+
+  // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    arrow.header.frame_id = base_frame_name_; // verancer nog
+    arrow.header.stamp = ros::Time::now();
+
+    // Set the namespace and id for this marker.  This serves to create a unique ID
+    // Any marker sent with the same namespace and id will overwrite the old one
+    arrow.ns = "arrow"; // TODO: make variable
+    arrow.id = vector_i+1; // std::to_string(vector_i+1)
+
+    // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+    arrow.type = visualization_msgs::Marker::ARROW;
+
+    // Set the marker action.  Options are ADD, DELETE, and DELETEALL
+    arrow.action = visualization_msgs::Marker::ADD;
+
+    // use [start end] vector
+    geometry_msgs::Point start,end;
+    start.x = base_to_ee_.getOrigin().x();
+    start.y = base_to_ee_.getOrigin().y();
+    start.z = base_to_ee_.getOrigin().z();
+    end.x = base_to_ee_.getOrigin().x()+ V(0);
+    end.y = base_to_ee_.getOrigin().y()+ V(1);
+    end.z = base_to_ee_.getOrigin().z()+ V(2);
+    arrow.points.push_back(start);
+    arrow.points.push_back(end);
+
+
+    
+    // Set the scale of the marker -- 1x1x1 here means 1m on a side
+    arrow.scale.x = 0.01; //shaft diameter
+    arrow.scale.y = 0.03; // head diameter
+    arrow.scale.z = 0.01; // head length
+
+    // Set the color -- be sure to set alpha to something non-zero!
+    float color[3] = {0,0,0};
+
+    switch (vector_i)
+    {
+        case 0:
+            color[0] = 255; //red
+            break;
+        case 1:
+            color[1] = 255; //bleu
+            break;
+        case 2:
+            color[2] = 255; //green
+            break;
+    }
+    arrow.color.r = color[0];
+    arrow.color.g = color[1];
+    arrow.color.b = color[2];
+    arrow.color.a = 1;
+
+    arrow.lifetime = ros::Duration();
+    return arrow;
+}
+
 
 void EllipsoidVisualization::getTF()
 {

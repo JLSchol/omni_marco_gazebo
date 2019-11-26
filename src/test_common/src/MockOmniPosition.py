@@ -59,18 +59,18 @@ class sendMockOmniPosition():
         output_point = self._makeCyclingSignal(self._amplitudes, self._frequencies)
 
         # make ofdiagonal wiggle in x-y plane
-        if self._angle_xy != 0:     
-            x = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180)) # output_point*cos(self._angle_xy*(pi/180))
-            y = 0#output_point*sin(self._angle_xy*(pi/180)) #output_point*sin(self._angle_xy*(pi/180)) 
-            z = output_point*sin(self._angle_xy*(pi/180))
+        # if self._angle_xy != 0:     
+        x = 0#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180)) # output_point*cos(self._angle_xy*(pi/180))
+        y = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180)) #output_point*sin(self._angle_xy*(pi/180)) 
+        z = output_point*sin(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))#0 #output_point*sin(self._angle_xy*(pi/180))
             # loginfo("x =" + str(x))
             # loginfo("y =" + str(y))
             # loginfo("z =" + str(z))
         # make circel in x-y plane    
-        else:                       
-            x = output_point
-            y = output_point
-            z = 0
+        # else:                       
+        #     x = output_point
+        #     y = output_point
+        #     z = 0
 
         return LockState(       lock=True,
                                 lock_position=Point(0,0,0), 

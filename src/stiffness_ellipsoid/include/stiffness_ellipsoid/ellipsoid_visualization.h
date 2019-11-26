@@ -9,6 +9,7 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Point.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayLayout.h>
 #include <visualization_msgs/Marker.h>
@@ -39,6 +40,7 @@ class EllipsoidVisualization
         // sub/pubs
 		ros::Subscriber stiffness_sub_;
 		ros::Publisher marker_pub_;
+        ros::Publisher marker_pub_arrow_;
 
 		// TF
 		tf::TransformListener TF_listener_;
@@ -53,6 +55,7 @@ class EllipsoidVisualization
 
 		// message type parameters
 		visualization_msgs::Marker ellipsoid_;
+        visualization_msgs::Marker arrow_;
         std_msgs::Float32MultiArray stiffness_MultiArray_;
         // std_msgs::Float32MultiArray stiffness_array_msgs;
         
@@ -76,8 +79,8 @@ class EllipsoidVisualization
         tf2::Quaternion computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
         Eigen::Vector3f computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
 
-        void setMarkerMsg(tf2::Quaternion& rotation,Eigen::Vector3f& scales);
-
+        void setEllipsoidMsg(tf2::Quaternion& rotation,Eigen::Vector3f& scales);
+        visualization_msgs::Marker setArrowMsg(Eigen::Matrix3f M, Eigen::Vector3f& scales, int vector_i);
 
         // callback
         void CB_getStiffnessArray(const std_msgs::Float32MultiArray& stiffness_array_msgs);
