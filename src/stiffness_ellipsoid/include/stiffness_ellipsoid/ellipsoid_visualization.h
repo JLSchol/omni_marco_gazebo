@@ -76,10 +76,11 @@ class EllipsoidVisualization
         Eigen::Matrix3f getStiffnessMatrix();
         
         std::pair<Eigen::Matrix3f, Eigen::Vector3f> computeEigenValuesAndVectors(Eigen::Matrix3f stiffness_matrix);
-        tf2::Quaternion computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
-        Eigen::Vector3f computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
 
-        void setEllipsoidMsg(tf2::Quaternion& rotation,Eigen::Vector3f& scales);
+        void setEllipsoidMsg(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
+            tf2::Quaternion computeRotation(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
+            Eigen::Vector3f computeScale(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair);
+            
         visualization_msgs::Marker setArrowMsg(Eigen::Matrix3f M, Eigen::Vector3f& scales, int vector_i);
 
         // callback
