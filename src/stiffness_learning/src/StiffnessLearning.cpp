@@ -12,6 +12,7 @@ nh_("~")
     initializeSubscribers();
     initializePublishers();
     initializeStiffnessMsg();
+    initializeCovarianceMsg();
     // clear
 }  
 
@@ -30,7 +31,7 @@ void StiffnessLearning::run()
   // covariance matrix is found from data matrix
   Eigen::Matrix3f covariance_matrix;
   getCovarianceMatrix(data_matrix_, covariance_matrix); 
-//   ROS_INFO_STREAM("covariance_matrix: "<< covariance_matrix);
+  ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
 
   // get eigenvalues and eigenvectors
   Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); // finds upon initialization
@@ -54,9 +55,13 @@ void StiffnessLearning::run()
     // ROS_INFO_STREAM("values: \n" << eigen_values);
 
   fillStiffnessMsg(K_matrix);
+  
+  fillCovarianceMsg(covariance_matrix);
+  
 
   stiffness_pub_.publish(stiffness_matrix_);
-//   ROS_INFO_STREAM("---------------------------------------------------");
+  covariance_pub_.publish(covariance_matrix_);
+  ROS_INFO_STREAM("---------------------------------------------------");
 }
 
 void StiffnessLearning::getErrorSignal(std::vector<float>& error_signal)
@@ -199,9 +204,9 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
             ROS_INFO_STREAM("Lambda is no real number check eigenvalues covariance matrix");
         }
         stiffness_diagonal(i) = k;
-        ROS_INFO_STREAM("Ereal"<< E.real());
-        ROS_INFO_STREAM("Lambda "<< lambda);
-        ROS_INFO_STREAM("--------------------------------------");
+        // ROS_INFO_STREAM("Ereal"<< E.real());
+        // ROS_INFO_STREAM("Lambda "<< lambda);
+        // ROS_INFO_STREAM("--------------------------------------");
     }
 }
 
@@ -238,11 +243,26 @@ void StiffnessLearning::fillStiffnessMsg(Eigen::Matrix3f k_matrix)
     stiffness_matrix_.data = vec;
 }
 
+void StiffnessLearning::fillCovarianceMsg(Eigen::Matrix3f covariance)
+{
+    int height = covariance_matrix_.layout.dim[0].size;//no matiching functon
+    int width = covariance_matrix_.layout.dim[1].size;
+    
+    std::vector<float> vec(width*height, 0);
+    for (int i=0; i<height; i++){
+        for (int j=0; j<width; j++){
+            vec[i*width + j] = covariance(i,j);
+        }
+    }
+    covariance_matrix_.data = vec;
+}
+
 void StiffnessLearning::getParameters()
 {
     // input output topic names
     nh_.param<std::string>("marker_topic_name", marker_trans_topic_name_, "/marker_transform");
     nh_.param<std::string>("stiffness_topic_name", stiffness_command_topic_name_, "/stiffness_command");  
+    nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix");  
     // TF frame names
     nh_.param<std::string>("base_frame_name", base_frame_name_, "base_marco"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "end_effector"); 
@@ -262,6 +282,7 @@ void StiffnessLearning::initializeSubscribers()
 void StiffnessLearning::initializePublishers()
 {
     stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
+    covariance_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(covariance_command_topic_name_,1);
 }
 
 void StiffnessLearning::initializeStiffnessMsg()
@@ -277,6 +298,21 @@ void StiffnessLearning::initializeStiffnessMsg()
     stiffness_matrix_.layout.dim[0].stride = height*width;
     stiffness_matrix_.layout.dim[1].stride = width;
     stiffness_matrix_.layout.data_offset = 0;
+}
+
+void StiffnessLearning::initializeCovarianceMsg()
+{
+    int height = 3;
+    int width = 3;
+    covariance_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // height
+    covariance_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // width
+    covariance_matrix_.layout.dim[0].label = "height";
+    covariance_matrix_.layout.dim[1].label = "width";
+    covariance_matrix_.layout.dim[0].size = height; 
+    covariance_matrix_.layout.dim[1].size = width;
+    covariance_matrix_.layout.dim[0].stride = height*width;
+    covariance_matrix_.layout.dim[1].stride = width;
+    covariance_matrix_.layout.data_offset = 0;
 }
 
 void StiffnessLearning::CB_getMarkerTransform(const geometry_msgs::TransformStamped& 

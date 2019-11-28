@@ -35,9 +35,11 @@ class StiffnessLearning
 
 		ros::Subscriber marker_sub_;
 		ros::Publisher stiffness_pub_;
+		ros::Publisher covariance_pub_;
 
 		std::string marker_trans_topic_name_;
 		std::string stiffness_command_topic_name_;
+		std::string covariance_command_topic_name_;
 
 		std::string base_frame_name_;
 		std::string ee_frame_name_;	
@@ -50,6 +52,7 @@ class StiffnessLearning
 		// message type parameters
 		geometry_msgs::TransformStamped marker_transform_;
 		std_msgs::Float32MultiArray stiffness_matrix_;
+		std_msgs::Float32MultiArray covariance_matrix_;
 
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
@@ -66,6 +69,7 @@ class StiffnessLearning
         void initializeSubscribers();
         void initializePublishers();
 		void initializeStiffnessMsg();
+		void initializeCovarianceMsg();
 
         // callback
         void CB_getMarkerTransform(const geometry_msgs::TransformStamped& marker_transform_message);
@@ -83,6 +87,7 @@ class StiffnessLearning
 								Eigen::Vector3f &stiffness_diagonal,
 								Eigen::Matrix3f &K_matrix);
 		void fillStiffnessMsg(Eigen::Matrix3f k_matrix);
+		void fillCovarianceMsg(Eigen::Matrix3f covariance);
 };
 
 #endif
