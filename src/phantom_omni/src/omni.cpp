@@ -113,15 +113,24 @@ public:
 		// state->force[0] = omnifeed->force.x - 0.001 * state->velocity[0];
 		// state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];
 		// state->force[2] = omnifeed->force.z - 0.001 * state->velocity[2];
-
-		// if (state->lock == true) {
+		ROS_INFO_STREAM("Lock state: "<< state->lock);
+		if (state->lock == true) {
+			ROS_INFO_STREAM("in if lock true");
 			state->force[0] = omnifeed->force.x - 0.001 * state->velocity[0];
 			state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];
 			state->force[2] = omnifeed->force.z - 0.001 * state->velocity[2];
+			// state->lock_pos[0] = omnifeed->position.x;
+			// state->lock_pos[1] = omnifeed->position.y;
+			// state->lock_pos[2] = omnifeed->position.z;
+		}
+		else{
+			state->force[0] = 0;
+			state->force[1] = 0;
+			state->force[2] = 0;
+		}
 			state->lock_pos[0] = omnifeed->position.x;
 			state->lock_pos[1] = omnifeed->position.y;
 			state->lock_pos[2] = omnifeed->position.z;
-		// }
 		// rewrite to stiffnes and damping callback and use omniposition,lockposition to
 		// calculate the force here:
 		// state->force = 0.04 * (state->lock_pos - state->position)- 0.001 * state->velocity;
@@ -209,10 +218,11 @@ HDCallbackCode HDCALLBACK omni_state_callback(void *pUserData) {
 	omni_state->out_vel3 = omni_state->out_vel2;
 	omni_state->out_vel2 = omni_state->out_vel1;
 	omni_state->out_vel1 = omni_state->velocity;
-	if (omni_state->lock == true) {
-		omni_state->force = 0.07 * (omni_state->lock_pos - omni_state->position)
-				- 0.001 * omni_state->velocity;
-	}
+
+	// if (omni_state->lock == true) {
+	// 	omni_state->force = 0.07 * (omni_state->lock_pos - omni_state->position)
+	// 			- 0.001 * omni_state->velocity;
+	// }
 
 	hdSetDoublev(HD_CURRENT_FORCE, omni_state->force);
 
