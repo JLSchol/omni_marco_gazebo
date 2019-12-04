@@ -14,27 +14,41 @@ import numpy as np
 
 
 class CalcHDFeedbackForce(object):
-    def __init__(self,minRobotImpedanceStiffness,maxRobotImpedanceStiffness,
-                    minForceHD, maxForceHD,maxWorkrangeHD):
-        self._minRobotStiffness = minRobotImpedanceStiffness
-        self._maxRobotStiffness = maxRobotImpedanceStiffness
-        self._minForceHD = minForceHD
-        self._maxForceHD = maxForceHD
-        # self._maxWorkrangeHD = minStiffnessHD
-        self._maxWorkrangeHD = maxWorkrangeHD
+    def __init__(self,impedanceStiffnessLimits,maxForceLimitsHD
+                    ,maxWorkrangeHD):
+        # This class assumes max force/workrange to be equal allong the x,y,z axis
+        # only assumes max stiffness allong the diagonal terms
+        self._robotStiffnessLimits = impedanceStiffnessLimits #[min, max]
+        self._maxForceLimitsHD = maxForceLimitsHD #[-N, +N]
+        self._maxWorkRangeHD = maxWorkrangeHD #[-x, +x]
 
-        self._stiffnessRobot = np.zeros(3,3)
-        self._currentPositionHD = np.zeros(3)
-        self._lockPositionHD = np.zeros(3)
-        self._forcesHD = np.zeros(3)
+        self._stiffnessRobot = np.array([])
+        self._currentPositionHD = np.array([])
+        self._lockPositionHD = np.array([])
+        self._forcesHD = np.array([])
 
         # print( "hallo" + str(4))
 
-        # self._robotStiffness = np.zeros(3,3)
+    def _isEmpty(self, numpyArrayList):
+        for numpyArray in numpyArrayList:
+            if numpyArray.size == 0:
+                return True
+            else:
+                pass
+        return False
 
     def calcForce(self):
-        stiffnessHD = self._calcHDStiffness()
-        self._forcesHD = stiffnessHD * self._currentPositionHD
+        if self._isEmpty([self._stiffnessRobot,self._currentPositionHD,
+                                self._lockPositionHD]):
+            return
+
+        stiffnessHD = self._calcHDStiffness(self._stiffnessRobot)
+        self._forcesHD = stiffnessHD.dot(self._currentPositionHD) 
+
+        # limit force when above commanding range
+        # 
+
+        loginfo(self._forcesHD)
 
 
     def setCurrentRobotStiffness(self,stiffnessRobot):
@@ -47,12 +61,21 @@ class CalcHDFeedbackForce(object):
         self._lockPositionHD = np.array(lockPositionHD)
 
     def getHDForces(self):
-        return self._forcesHD
+        return (self._forcesHD[0],self._forcesHD[1],self._forcesHD[2])
 
-    def _calcHDStiffness(self):
-        stiffnessHD = np.zeros(3,3)
-        return stiffnessHD
+    def _calcHDStiffness(self,stiffnessRobot):
+        # stiffnessMaxHD assumes that the lockstate is in the center(0,0,0) position of the HD
+        stiffnessMaxHD = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1] 
+        scaling = stiffnessMaxHD/self._robotStiffnessLimits[1]
+        stiffnessHD = scaling*stiffnessRobot
 
+        return np.array(stiffnessHD)
+
+    # def _calcMaxHDStiffness(self,maxForce,maxDeviation,lockPosition):
+
+        
+
+    #     return maxStiffnessHD
 
         
 
@@ -69,7 +92,7 @@ class OmniFeedbackROS(object):
         self._omniPositionMessage = []
 
     def _getParameters(self):
-        self._stiffnessInput = get_param("~StiffnessInput")
+        self._stiffnessInput = get_param("~RobotStiffness")
         self._omniPositionInput = get_param("~OmniPositionInput")
         self._outputTopic = get_param("~OutputTopic")
 
@@ -85,24 +108,27 @@ class OmniFeedbackROS(object):
         rosRate = Rate(publishRate)
 
         # initialize stiffness feedback class
-        CalcHDFeedbackForce CalcOmniFeedbackForce(100,1000,[0.5, 0.5, 0.5], [5, 5, 5],)
+        CalcOmniFeedbackForce = CalcHDFeedbackForce([0,1000],[-3.3,3.3],[-60,60])
+                                                # [0.5, 0.5, 0.5], [5, 5, 5], 
+                                                # [-3.3,-3.3,-3.3], [3.3,3.3,3.3], 
+                                                # [-60,-60,-60],[60,60,60])
 
         while not is_shutdown():
-            if not self._stiffnessMessage:  
-
+            if not (self._stiffnessMessage and self._omniPositionMessage):  
                 continue
 
             # Get/Set stiffness matrix
+            loginfo(self._omniPositionMessage)
             stiffnessMatrix = self._convertArrayToMatrix(self._stiffnessMessage)
             CalcOmniFeedbackForce.setCurrentRobotStiffness(stiffnessMatrix)
 
             # Get/Set omni current_position
             currentPosition = self._omniPositionMessage.current_position
-            CalcOmniFeedbackForce.setCurrentHDPosition(currentPosition)
+            CalcOmniFeedbackForce.setCurrentHDPosition([currentPosition.x, currentPosition.y, currentPosition.z])
 
             # Get/Set omni lock_position position
             lockPosition = self._omniPositionMessage.lock_position
-            CalcOmniFeedbackForce.setLockPositionHD(lockPosition)
+            CalcOmniFeedbackForce.setLockPositionHD([lockPosition.x, lockPosition.y, lockPosition.z])
 
             # Do the calculations
             CalcOmniFeedbackForce.calcForce()
@@ -130,17 +156,19 @@ class OmniFeedbackROS(object):
         h = multiArray.layout.dim[0].size
         w = multiArray.layout.dim[1].size
         dataVector = multiArray.data
-        loginfo(dataVector)
+        # loginfo(dataVector)
         matrix = []
         matrix = [[dataVector[i*dstride1 + j] for i in range(h)] for j in range(w)]
-        loginfo(matrix)
+        # loginfo(matrix)
         return matrix
     
     def _setOmniFeedbackMessage(self,feedbackForce):
 
-        return OmniFeedback(    force = Vector3(feedbackForce[0],
-                                                feedbackForce[1],
-                                                feedbackForce[2]),
+        
+
+        return OmniFeedback(    force = Vector3(-feedbackForce[0],
+                                                -feedbackForce[1],
+                                                -feedbackForce[2]),
                                 position = Vector3(0,0,0)  )
 
 if __name__ == "__main__":

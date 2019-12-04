@@ -1,11 +1,11 @@
 <launch>
-    <arg name="stiffness_input"          default="/stiffness_command"/> 
+    <arg name="robot_stiffness"          default="/stiffness_command"/> 
     <arg name="omni_position_input"          default="/omni1_lock_state"/> 
     <arg name="output_topic"          default="/omni1_force_feedback"/> 
 
     <node name="omni_feedback_force" pkg="stiffness_feedback_forces" type="stiffness_feedback.py" output="screen">
         
-        <param name="StiffnessInput"     value="$(arg stiffness_input)"/>
+        <param name="RobotStiffness"     value="$(arg robot_stiffness)"/>
         <param name="OmniPositionInput"     value="$(arg omni_position_input)"/>
         <param name="OutputTopic"     value="$(arg output_topic)"/>
 

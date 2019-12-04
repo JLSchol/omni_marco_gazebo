@@ -33,7 +33,7 @@ class sendMockForces():
 
     def _setForces(self):
 
-        return OmniFeedback(    force=Vector3(1,1,1), 
+        return OmniFeedback(    force=Vector3(0,1,0), 
                                 position=Vector3(0,0,0)   )                               
 
 
