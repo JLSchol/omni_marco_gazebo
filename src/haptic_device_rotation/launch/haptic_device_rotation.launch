@@ -1,0 +1,22 @@
+ <launch>
+
+<!-- f-->
+<arg name="HD_frame_name"          default="omni_rotation"/>
+<arg name="robot_base_frame_name"          default="base_footprint"/>
+
+<!--Rotation matrix input from HD_frame_name(Parent) to robot_base_frame_name(child)-->
+<!--        [11,12,13]                                          -->
+<!-- R ===  |21,22,23|  ====    "11 12 13 21 22 23 31 32 33"    -->
+<!--        [31,32,33]                                          -->
+<arg name="rot_matrix_array" default= "0 -1 0 0 0 1 -1 0 0"/>
+
+    <node pkg="haptic_device_rotation" name="haptic_device_rotation" 
+    type="haptic_device_rotation.py" output="screen">
+
+    <param name="HD_frame_name"     value="$(arg HD_frame_name)"/>
+    <param name="robot_base_frame_name"     value="$(arg robot_base_frame_name)"/>
+
+    <param name="rot_matrix_array"        value="$(arg rot_matrix_array)"/>
+
+    </node>
+ </launch>
