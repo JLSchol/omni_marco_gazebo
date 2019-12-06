@@ -64,6 +64,10 @@ void Omni2Marker::getTF()
     {
         TF_listener_.lookupTransform(HD_frame_name_, ee_frame_name_,ros::Time(0), HD_to_ee_);
     }
+    // tf::Quaternion quat;
+    // quat = HD_to_ee_.getRotation();
+    // quat.normalize();
+    // HD_to_ee_.setRotation(quat);
 }
 
 void Omni2Marker::findDeviationFromLockPosition(std::vector<double> &deviation_from_lock)
@@ -95,7 +99,7 @@ void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_l
     // base_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from base
 
     HD_to_marker_.setOrigin( HD_to_ee_.getOrigin() + deviation );                                 
-    // HD_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from base
+    HD_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from base
 
     
     // The Virtual_marker pose is tranferred via topics rather than using tf
@@ -120,6 +124,11 @@ void Omni2Marker::fillMarkerMsg(tf::StampedTransform& trans, std::string referen
 
     // Set the marker action.  Options are ADD, DELETE, and DELETEALL
     marker_.action = visualization_msgs::Marker::ADD;
+
+    // tf::Quaternion quat;
+    // quat = trans.getRotation();
+    // quat.normalize();
+    // trans.setRotation(quat);
 
     // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
     marker_.pose.position.x = trans.getOrigin().x();
@@ -149,21 +158,19 @@ void Omni2Marker::fillMarkerMsg(tf::StampedTransform& trans, std::string referen
 void Omni2Marker::fillMarkerTransformMsg(visualization_msgs::Marker& marker,tf::StampedTransform& trans)
 {
     // Assign to base_to_marker_ to a constant transform
-    tf::Quaternion quat;
-    quat = trans.getRotation();
-    quat.normalize();
-    trans.setRotation(quat);
-    ROS_INFO_STREAM(quat[0]);
-    ROS_INFO_STREAM("quat");
+    // tf::Quaternion quat;
+    // quat = trans.getRotation();
+    // quat.normalize();
+    // trans.setRotation(quat);
+    // ROS_INFO_STREAM("x"<< quat[0]<<"y"<< quat[1]<<"z"<< quat[2]<<"w"<< quat[3]);
+    // ROS_INFO_STREAM("quat");
     const tf::StampedTransform dummy_transform = trans;
-    
 
-
-    // transform
+    tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
+        // transform
     marker_transform_.header.stamp = ros::Time::now();
     marker_transform_.header.frame_id = marker.header.frame_id;
     marker_transform_.child_frame_id = "virtual_marker"; // TO DO: make variable
-    tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
 
 }
 
