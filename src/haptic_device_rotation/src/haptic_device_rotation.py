@@ -5,10 +5,11 @@ from rospy import ROSInterruptException, Time
 #import messages
 from geometry_msgs.msg import TransformStamped
 
-# import numpy as np
-from PyKDL import Rotation 
+from PyKDL import Rotation
+
+# import numpy as np    
 from tf2_ros import StaticTransformBroadcaster
-from tf_conversions import transformations
+
 
 
 
@@ -19,19 +20,25 @@ class hapticDeviceRotation():
         init_node("haptic_device_rotation", anonymous=True)
         self._getParameters()
 
-    
-    def _getParameters(self):
-        self._HDFrame = get_param("~HD_frame_name") #from launchfile
-        self._robotBaseFrame = get_param("~robot_base_frame_name") #from launchfile
-        rotMatrixString = get_param("~rot_matrix_array")
-        self._rotMatrixArray = self._getMatrixList(rotMatrixString)
 
-    def _getMatrixList(self, matrixString):
-        matrixList = matrixString.split(" ")
-        matrixListFloats = [float(char) for char in matrixList]
-        return matrixListFloats
 
-    def _setTransform(self, parentName, childName, rot):
+    def run(self):
+        rosRate = Rate(30)
+        broadcaster = StaticTransformBroadcaster()
+        while not is_shutdown():
+
+            rot = Rotation(self._rotMatrixArray[0],self._rotMatrixArray[1],self._rotMatrixArray[2],
+                            self._rotMatrixArray[3],self._rotMatrixArray[4],self._rotMatrixArray[5],
+                            self._rotMatrixArray[6],self._rotMatrixArray[7],self._rotMatrixArray[8])
+            quat = rot.GetQuaternion()
+
+            staticTransform = self._setTransform(self._robotBaseFrame,self._HDFrame,quat) 
+            broadcaster.sendTransform(staticTransform)
+
+            rosRate.sleep()    
+
+
+    def _setTransform(self, parentName, childName, quat):
         static_transformStamped = TransformStamped()
 
         static_transformStamped.header.stamp = Time.now()
@@ -41,36 +48,27 @@ class hapticDeviceRotation():
         static_transformStamped.transform.translation.x = 0
         static_transformStamped.transform.translation.y = 0
         static_transformStamped.transform.translation.z = 0
-        
-        # these vecotrs are the columns!! of the rotation matrix
-        #rot = Rotation(Vector(0,0,-1),Vector(-1,0,0),Vector(0,1,0)) 
-        # rot = Rotation(0,-1,0,0,0,1,-1,0,0)
-        rot = Rotation(rot[0],rot[1],rot[2],rot[3],rot[4],rot[5],rot[6],rot[7],rot[8])
-        quat = rot.GetQuaternion()
 
-        # quat = Quaternion.setRPY(float(eulerAngles[0]),float(eulerAngles[1]),float(eulerAngles[2]))
-        # quat = transformations.quaternion_from_euler(
-        #            float(eulerAngles[0]),float(eulerAngles[1]),float(eulerAngles[2]))
-        static_transformStamped.transform.rotation.x = quat[0]#-0.5#quat[0]
-        static_transformStamped.transform.rotation.y = quat[1]#0.5#quat[1]
-        static_transformStamped.transform.rotation.z = quat[2]#0.5#quat[2]
-        static_transformStamped.transform.rotation.w = quat[3]#0.5#quat[3]
+        static_transformStamped.transform.rotation.x = quat[0]
+        static_transformStamped.transform.rotation.y = quat[1]
+        static_transformStamped.transform.rotation.z = quat[2]
+        static_transformStamped.transform.rotation.w = quat[3]
 
         return static_transformStamped 
-            
 
-    def run(self):
-        rosRate = Rate(30)
-        broadcaster = StaticTransformBroadcaster()
-        while not is_shutdown():
-            loginfo("hoi")
-            # staticTransform = self._setTransform(self._HDFrame,self._robotBaseFrame,[-1.5707963,0,1.5707963])
-            staticTransform = self._setTransform(self._HDFrame,self._robotBaseFrame,self._rotMatrixArray) 
-            broadcaster.sendTransform(staticTransform)
 
-            rosRate.sleep()    
+    def _getParameters(self):
+        self._robotBaseFrame = get_param("~robot_base_frame_name") 
+        self._HDFrame = get_param("~HD_frame_name") 
+
+        rotMatrixString = get_param("~rot_matrix_array")
+        self._rotMatrixArray = self._getMatrixList(rotMatrixString)
         
-        
+
+    def _getMatrixList(self, matrixString):
+        matrixList = matrixString.split(" ")
+        matrixListFloats = [float(char) for char in matrixList]
+        return matrixListFloats
         
 if __name__ == "__main__":
 	
