@@ -23,7 +23,8 @@ void StiffnessLearning::run()
   
   std::vector<float> error_signal(3);
   getErrorSignal(error_signal); // new signal every loop
-//   ROS_INFO_STREAM("error_signal: "<< error_signal[0]<< error_signal[1]<< error_signal[2]);
+  ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
+  << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
 
 //   data_matrix_ grows by adding the errorsignal until window length
   populateDataMatrix(error_signal,data_matrix_); 
@@ -35,8 +36,8 @@ void StiffnessLearning::run()
 
   // get eigenvalues and eigenvectors
   Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); // finds upon initialization
-//   ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
-//   ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
+  ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
+  ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
   
 
   Eigen::Vector3f stiffness_diagonal;
@@ -171,7 +172,7 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
         E = eigen_solver.eigenvalues().col(0)[i];
 
         if( E.imag() != 0){
-            ROS_INFO_STREAM("IMAGINAIR!!!!!!!");
+            ROS_INFO_STREAM("IMAGINAIR!?!?!?! O.o");
         }
 
 
@@ -186,10 +187,10 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
         // Check wheter or not I need to take square root? in klas kronander(2012/2014) 
         float lambda = sqrt(E.real());
 
-        if(lambda <= std::pow(10,-4) && lambda>= std::pow(-10,-4)){
-            lambda = 0;
-            // ROS_INFO_STREAM("IN Lambda IF ROUNDOF=0 "<< lambda);
-        }
+        // if(lambda <= std::pow(10,-4) && lambda>= std::pow(-10,-4)){
+        //     lambda = 0;
+        //     ROS_INFO_STREAM("IN Lambda IF ROUNDOF=0 "<< lambda);
+        // }
 
         if(lambda<=lambda_min_){
             k = stiffness_max_;

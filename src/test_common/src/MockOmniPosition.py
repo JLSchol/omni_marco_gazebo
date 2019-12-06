@@ -60,9 +60,9 @@ class sendMockOmniPosition():
 
         # make ofdiagonal wiggle in x-y plane
         # if self._angle_xy != 0:     
-        x = 0#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180)) # output_point*cos(self._angle_xy*(pi/180))
-        y = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180)) #output_point*sin(self._angle_xy*(pi/180)) 
-        z = output_point*sin(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))#0 #output_point*sin(self._angle_xy*(pi/180))
+        x = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))
+        y = output_point*sin(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))
+        z = 0
             # loginfo("x =" + str(x))
             # loginfo("y =" + str(y))
             # loginfo("z =" + str(z))

@@ -9,13 +9,13 @@
     <!--oscillation per second of time-->
     <arg name="frequencies"            default="[0.5, 1]" />    <!--"[1, 2, 4]"-->
     <!--amount of oscillations-->  
-    <arg name="periods"            default="[2, 4]" />          <!---"[2, 4, 8]"-->
+    <arg name="periods"            default="[3, 6]" />          <!---"[2, 4, 8]"-->
     <!---time of sinusoid = 1/f * periods-->
     
     <!-- set angle_xy to 90 to wiggle y-axis (omni) -->
     <!-- set angle_xy to zero to make circles WERKT NIET--> 
     <!-- set angle_xy in deg to make of diagonal wiggles --> 
-    <arg name="angle_xy"            default="10" /> 
+    <arg name="angle_xy"            default="20" /> 
 
 
     <node name="mock_omni_position" pkg="test_common" type="MockOmniPosition.py" output="screen">
