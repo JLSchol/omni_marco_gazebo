@@ -1,6 +1,6 @@
  <launch>
 <!--Input topic arguments-->
-<arg name="joints_topic_name" default="/omni1_joint_states"/> 
+<!--<arg name="joints_topic_name" default="/omni1_joint_states"/> -->
 <arg name="button_topic_name" default="/omni1_button"/> 
 <arg name="lock_state_topic" default="/omni1_lock_state"/> 
 <!--Output topics arguments-->
@@ -8,6 +8,8 @@
 <arg name="marker_trans_topic_name" default="/marker_transform"/> 
 <!--This name needs to be set as the base of the robot-->  
 <arg name="base_frame"          default="base_footprint"/> 
+<!--This name needs to be set as the omni frame-->  
+<arg name="HD_frame_name"          default="omni_rotation"/> 
 <!--This name needs to be set as the End-effector of the robot-->
 <arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
 <!--Scaling coefficient of omni workspace to robot-->
@@ -17,7 +19,7 @@
 
   <node pkg="omni_2_marker" name="omni_2_marker" type="omni_2_marker" output="screen">
     <!--Input topic-->
-    <param name="joint_state_topic_name" value="$(arg joints_topic_name)"/>
+    <!--<param name="joint_state_topic_name" value="$(arg joints_topic_name)"/>-->
     <param name="button_event_topic_name" value="$(arg button_topic_name)"/>
     <param name="lock_state_topic_name" value="$(arg lock_state_topic)"/>
 
@@ -26,6 +28,7 @@
     <param name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>
 
     <param name="base_frame_name"     value="$(arg base_frame)"/>
+    <param name="HD_frame_name"     value="$(arg HD_frame_name)"/>
     <param name="ee_frame_name"     value="$(arg end_effector_frame)"/>
 
     <param name="scale_marker_deviation"     value="$(arg scale_marker_deviation)"/>

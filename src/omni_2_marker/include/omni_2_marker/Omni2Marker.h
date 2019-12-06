@@ -38,10 +38,10 @@ class Omni2Marker
 		// ROS Parameters
 		ros::NodeHandle nh_;
 
-		ros::Subscriber joint_State_sub_;
+		// ros::Subscriber joint_State_sub_;
 		ros::Subscriber button_event_sub_;
 		ros::Subscriber lock_state_sub_;
-		std::string joint_state_topic_name_;
+		// std::string joint_state_topic_name_;
 		std::string button_event_topic_name_;
 		std::string lock_state_topic_name_;
 		
@@ -52,6 +52,7 @@ class Omni2Marker
 		std::string marker_trans_topic_name_;
 
 		std::string base_frame_name_;
+		std::string HD_frame_name_;
 		std::string ee_frame_name_;	
 
 		double scale_marker_deviation_;
@@ -67,7 +68,9 @@ class Omni2Marker
 
 		// Private parameters
 		tf::StampedTransform base_to_ee_;
+		tf::StampedTransform HD_to_ee_;
 		tf::StampedTransform base_to_marker_;
+		tf::StampedTransform HD_to_marker_;
 
 		
 		// visualization_msgs::Marker::CUBE cube_shape_;
@@ -90,8 +93,8 @@ class Omni2Marker
         
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
-		void fillMarkerMsg();
-		void fillMarkerTransformMsg();
+		void fillMarkerMsg(tf::StampedTransform& trans, std::string reference_frame_name);
+		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, tf::StampedTransform& trans);
 		// void setOmni2Center(); 	// set omni to center with ff of workspace
 
 };

@@ -8,6 +8,8 @@
 <arg name="marker_trans_topic_name" default="/marker_transform"/> 
 <!--This name needs to be set as the base of the robot-->  
 <arg name="base_frame"          default="base_footprint"/> 
+<!--This name needs to be set as the omni frame-->  
+<arg name="HD_frame_name"          default="omni_rotation"/> 
 <!--This name needs to be set as the End-effector of the robot-->
 <arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
 <!--Scaling coefficient of omni workspace to robot-->
@@ -19,6 +21,7 @@
     <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
     <arg name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>
     <arg name="base_frame" value="$(arg base_frame)"/>
+    <arg name="HD_frame_name"     value="$(arg HD_frame_name)"/>
     <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
     <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
 </include>
