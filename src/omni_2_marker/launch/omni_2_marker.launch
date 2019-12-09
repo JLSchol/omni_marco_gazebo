@@ -13,7 +13,7 @@
 <!--This name needs to be set as the End-effector of the robot-->
 <arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
 <!--Scaling coefficient of omni workspace to robot-->
-<arg name="scale_marker_deviation"          default="1"/>
+<arg name="scale_marker_deviation"          default="0.01"/>
 
 
 

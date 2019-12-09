@@ -2,11 +2,15 @@
 #define OMNI_2_MARKER_H
 
 #include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h> // can weg?
+// #include <sensor_msgs/JointState.h>
+// #include <tf/transform_listener.h>
+// #include <tf/transform_broadcaster.h> // can weg?
 #include <geometry_msgs/TransformStamped.h>
-#include <tf/tf.h>
+// #include <tf/tf.h>
+// #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
 
 // rviz
 #include <visualization_msgs/Marker.h>
@@ -24,7 +28,6 @@ class Omni2Marker
 {
 
 	public:
-		
 		// Public parameters
 		bool publish_on_;
 
@@ -58,19 +61,25 @@ class Omni2Marker
 		double scale_marker_deviation_;
 
 		// message type parameters
-		sensor_msgs::JointState jointstate_msg_;
+		// sensor_msgs::JointState jointstate_msg_;
 		phantom_omni::PhantomButtonEvent button_msg_; 
 		phantom_omni::LockState lockstate_msg_;
 		visualization_msgs::Marker marker_;
 		geometry_msgs::TransformStamped marker_transform_;
-		tf::TransformListener TF_listener_;
+		// tf::TransformListener TF_listener_;
+		// tf2_ros::TransformListener tfListener_;
+		tf2_ros::Buffer tfBuffer_;
+		
 		
 
 		// Private parameters
-		tf::StampedTransform base_to_ee_;
-		tf::StampedTransform HD_to_ee_;
-		tf::StampedTransform base_to_marker_;
-		tf::StampedTransform HD_to_marker_;
+		// tf::StampedTransform base_to_ee_;
+		// tf::StampedTransform HD_to_ee_;
+		// tf::StampedTransform base_to_marker_;
+		// tf::StampedTransform HD_to_marker_;
+
+		geometry_msgs::TransformStamped HD_to_marker_;
+		geometry_msgs::TransformStamped HD_to_ee_;
 
 		
 		// visualization_msgs::Marker::CUBE cube_shape_;
@@ -81,9 +90,10 @@ class Omni2Marker
         void getParameters();
         void initializeSubscribers();
         void initializePublishers();
+		// tf2_ros::TransformListener Tfl_
 
         // callback
-        void CB_getJointStates(const sensor_msgs::JointState& jointstate_message);
+        // void CB_getJointStates(const sensor_msgs::JointState& jointstate_message);
 		void CB_getButtonEvent(const phantom_omni::PhantomButtonEvent& button_message);
 		void CB_getLockState(const phantom_omni::LockState& lockstate_message);
 
@@ -93,8 +103,8 @@ class Omni2Marker
         
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
-		void fillMarkerMsg(tf::StampedTransform& trans, std::string reference_frame_name);
-		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, tf::StampedTransform& trans);
+		void fillMarkerMsg(geometry_msgs::TransformStamped& trans);
+		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, geometry_msgs::TransformStamped& trans);
 		// void setOmni2Center(); 	// set omni to center with ff of workspace
 
 };

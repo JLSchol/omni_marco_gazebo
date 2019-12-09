@@ -10,7 +10,7 @@ project(omni_2_marker)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  tf
+  tf2_ros
   visualization_msgs
   phantom_omni
   geometry_msgs
