@@ -5,7 +5,7 @@
 <arg name="lock_state_topic" default="/omni1_lock_state"/> 
 <!--Output topics arguments-->
 <arg name="marker_topic_name" default="/marker_visualization"/> 
-<arg name="marker_trans_topic_name" default="/marker_transform"/> 
+<!--<arg name="marker_trans_topic_name" default="/marker_transform"/> -->
 <!--This name needs to be set as the base of the robot-->  
 <arg name="base_frame"          default="base_footprint"/> 
 <!--This name needs to be set as the omni frame-->  

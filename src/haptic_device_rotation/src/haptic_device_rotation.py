@@ -11,10 +11,6 @@ from PyKDL import Rotation
 from tf2_ros import StaticTransformBroadcaster
 
 
-
-
-
-
 class hapticDeviceRotation():
     def __init__(self):
         init_node("haptic_device_rotation", anonymous=True)
@@ -32,7 +28,7 @@ class hapticDeviceRotation():
                             self._rotMatrixArray[6],self._rotMatrixArray[7],self._rotMatrixArray[8])
             quat = rot.GetQuaternion()
 
-            staticTransform = self._setTransform(self._robotBaseFrame,self._HDFrame,quat) 
+            staticTransform = self._setTransform(self._referenceFrame,self._HDFrame,quat) 
             broadcaster.sendTransform(staticTransform)
 
             rosRate.sleep()    
@@ -58,7 +54,7 @@ class hapticDeviceRotation():
 
 
     def _getParameters(self):
-        self._robotBaseFrame = get_param("~robot_base_frame_name") 
+        self._referenceFrame = get_param("~reference_frame") 
         self._HDFrame = get_param("~HD_frame_name") 
 
         rotMatrixString = get_param("~rot_matrix_array")

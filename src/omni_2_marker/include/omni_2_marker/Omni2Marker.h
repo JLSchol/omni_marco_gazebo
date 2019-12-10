@@ -2,12 +2,7 @@
 #define OMNI_2_MARKER_H
 
 #include <ros/ros.h>
-// #include <sensor_msgs/JointState.h>
-// #include <tf/transform_listener.h>
-// #include <tf/transform_broadcaster.h> // can weg?
 #include <geometry_msgs/TransformStamped.h>
-// #include <tf/tf.h>
-// #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_listener.h>
@@ -26,7 +21,6 @@
 
 class Omni2Marker
 {
-
 	public:
 		// Public parameters
 		bool publish_on_;
@@ -36,6 +30,8 @@ class Omni2Marker
 
         // Public methods
 		void run();
+		void getTF(tf2_ros::Buffer& buffer);
+		const geometry_msgs::Vector3 vectorRotation(geometry_msgs::Quaternion q, geometry_msgs::Vector3 v);
 
 	private: 
 		// ROS Parameters
@@ -50,7 +46,7 @@ class Omni2Marker
 		
 
 		ros::Publisher marker_pub_;
-		ros::Publisher marker_transform_pub_;
+		// ros::Publisher marker_transform_pub_;
 		std::string marker_topic_name_;
 		std::string marker_trans_topic_name_;
 
@@ -65,48 +61,33 @@ class Omni2Marker
 		phantom_omni::PhantomButtonEvent button_msg_; 
 		phantom_omni::LockState lockstate_msg_;
 		visualization_msgs::Marker marker_;
-		geometry_msgs::TransformStamped marker_transform_;
-		// tf::TransformListener TF_listener_;
-		// tf2_ros::TransformListener tfListener_;
-		tf2_ros::Buffer tfBuffer_;
+		// geometry_msgs::TransformStamped marker_transform_;
+
+
 		
 		
 
 		// Private parameters
-		// tf::StampedTransform base_to_ee_;
-		// tf::StampedTransform HD_to_ee_;
-		// tf::StampedTransform base_to_marker_;
-		// tf::StampedTransform HD_to_marker_;
-
-		geometry_msgs::TransformStamped HD_to_marker_;
-		geometry_msgs::TransformStamped HD_to_ee_;
-
-		
-		// visualization_msgs::Marker::CUBE cube_shape_;
-
-        // Private methods
+		geometry_msgs::TransformStamped ee_in_base_;
+		geometry_msgs::TransformStamped HD_to_base_trans_;
+		geometry_msgs::TransformStamped marker_in_base_;
 
         // Initialize inside constructor
         void getParameters();
         void initializeSubscribers();
         void initializePublishers();
-		// tf2_ros::TransformListener Tfl_
 
-        // callback
+
+        // callbacks
         // void CB_getJointStates(const sensor_msgs::JointState& jointstate_message);
 		void CB_getButtonEvent(const phantom_omni::PhantomButtonEvent& button_message);
 		void CB_getLockState(const phantom_omni::LockState& lockstate_message);
 
-
-        void getTF();
-
-        
+		// private members
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
 		void fillMarkerMsg(geometry_msgs::TransformStamped& trans);
 		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, geometry_msgs::TransformStamped& trans);
-		// void setOmni2Center(); 	// set omni to center with ff of workspace
-
 };
 
 #endif

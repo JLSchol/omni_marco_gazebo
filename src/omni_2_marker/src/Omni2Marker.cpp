@@ -7,9 +7,6 @@ nh_("~")
     getParameters();
     initializeSubscribers();
     initializePublishers();
-
-    tf2_ros::Buffer tfBuffer_;
-    tf2_ros::TransformListener tfListener_(tfBuffer_);
 }  
 
 void Omni2Marker::getParameters()
@@ -19,7 +16,7 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("lock_state_topic_name", lock_state_topic_name_, "/omni1_lock_state");
 
     nh_.param<std::string>("marker_topic_name", marker_topic_name_, "/marker_visualization"); 
-    nh_.param<std::string>("marker_trans_topic_name", marker_trans_topic_name_, "/marker_transform"); 
+    // nh_.param<std::string>("marker_trans_topic_name", marker_trans_topic_name_, "/marker_transform"); 
 
     nh_.param<std::string>("base_frame_name", base_frame_name_, "base_footprint"); // nodig?
     nh_.param<std::string>("HD_frame_name", HD_frame_name_, "omni_rotation"); 
@@ -33,16 +30,12 @@ void Omni2Marker::initializeSubscribers()
     // joint_State_sub_ = nh_.subscribe(joint_state_topic_name_, 1, &Omni2Marker::CB_getJointStates, this);
     button_event_sub_ = nh_.subscribe(button_event_topic_name_, 1, &Omni2Marker::CB_getButtonEvent, this);
     lock_state_sub_ = nh_.subscribe(lock_state_topic_name_, 1, &Omni2Marker::CB_getLockState, this);
-    // tf2_ros::TransformListener tfListener_;
-    tf2_ros::TransformListener tfListener_(tfBuffer_);
-    // tf2_ros::Buffer tfBuffer_;
-    // tfListener_(tfBuffer_);
 }
 
 void Omni2Marker::initializePublishers()
 {
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>(marker_topic_name_,1);
-    marker_transform_pub_ = nh_.advertise<geometry_msgs::TransformStamped>(marker_trans_topic_name_,1);
+    // marker_transform_pub_ = nh_.advertise<geometry_msgs::TransformStamped>(marker_trans_topic_name_,1);
 }
 
 // void Omni2Marker::CB_getJointStates(const sensor_msgs::JointState& jointstate_message)
@@ -60,38 +53,56 @@ void Omni2Marker::CB_getLockState(const phantom_omni::LockState& lockstate_messa
     lockstate_msg_ = lockstate_message;
 }
 
-void Omni2Marker::getTF()
+void Omni2Marker::getTF(tf2_ros::Buffer& buffer)
 {
-    // if (TF_listener_.waitForTransform(ee_frame_name_, base_frame_name_, ros::Time(0), ros::Duration(0.25)))
-    // {
-    //     TF_listener_.lookupTransform(base_frame_name_, ee_frame_name_,ros::Time(0), base_to_ee_);
-    // }
-
-    // if (TF_listener_.waitForTransform(ee_frame_name_, HD_frame_name_, ros::Time(0), ros::Duration(0.25)))
-    // {
-    //     TF_listener_.lookupTransform(HD_frame_name_, ee_frame_name_,ros::Time(0), HD_to_ee_);
-    // }
-    // tf::Quaternion quat;
-    // quat = HD_to_ee_.getRotation();
-    // quat.normalize();
-    // HD_to_ee_.setRotation(quat);
-    // geometry_msgs::TransformStamped HD_to_ee_;
-    // tf2_ros::Buffer tfBuffer_;
-    // tf2_ros::TransformListener tfListener_(tfBuffer_);
+    // Read as buffer.lookupTransform(target_frame, source_frame, when?, wait ..sec untill available):
+    // Where the transform can mean two things: 
+    //1) find a transform that maps a pose(point/rot) defined in source frame to the target frame
+    // OR:
+    //2) find the pose(point/rot) of the source_frame as seen from the target frame
     try{
-        HD_to_ee_ = tfBuffer_.lookupTransform(ee_frame_name_, HD_frame_name_,
-                                ros::Time(0)) //,ros::Duration(0.25) );
+        ee_in_base_ = buffer.lookupTransform(base_frame_name_,ee_frame_name_ ,  
+                                ros::Time(0),ros::Duration(0.25) ); 
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_WARN("%s",ex.what());;
+        } 
+    try{
+        HD_to_base_trans_ = buffer.lookupTransform(base_frame_name_,HD_frame_name_ ,
+                                ros::Time(0), ros::Duration(0.25) );
         }
         catch (tf2::TransformException &ex) {
             ROS_WARN("%s",ex.what());
-            // ros::Duration(1.0).sleep();
-        // continue;
         } 
+}
+
+void Omni2Marker::run()
+{  
+    if ( (button_msg_.grey_button && button_msg_.white_button) == true)
+    {
+        this->publish_on_ = true;  // set boolean to true if both buttons are pressed
+    }
+
+    //sms
+    if (publish_on_) // naar 0900 9292
+    {
+        // Find transform 
+        std::vector<double> deviation_from_lock;
+        findDeviationFromLockPosition(deviation_from_lock);
+        addMarkerTransform(deviation_from_lock);
+
+        // fill messages for visualizatoin
+        fillMarkerMsg(marker_in_base_);
+
+        // publish messages
+        marker_pub_.publish(marker_);
+        // marker_transform_pub_.publish(marker_in_base_);
+    }
 }
 
 void Omni2Marker::findDeviationFromLockPosition(std::vector<double> &deviation_from_lock)
 {
-    // This is in the omni frame!!
+    // This is in the omni frame!! (y up, x right, z  towards)
     deviation_from_lock.push_back(lockstate_msg_.current_position.x - lockstate_msg_.lock_position.x);
     deviation_from_lock.push_back(lockstate_msg_.current_position.y - lockstate_msg_.lock_position.y);
     deviation_from_lock.push_back(lockstate_msg_.current_position.z - lockstate_msg_.lock_position.z);
@@ -99,79 +110,41 @@ void Omni2Marker::findDeviationFromLockPosition(std::vector<double> &deviation_f
 
 void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_lock)
 {
-    // define (map) the frame of the omni to the reference frame that you want to use to control the marker
-    // TODO : Allow for input rotation matrix that specifies the marco_base wrt the omniframe
-    // fix this part of the code
-    // double y = -deviation_from_lock[0]; // x_direction_omni = -y_direction_marco_base;
-    // double z = deviation_from_lock[1];  // y_direction_omni = z_direction_marco_base;
-    // double x = -deviation_from_lock[2]; // z_direction_omni = -x_direction_marco_base;
+    geometry_msgs::Vector3 deviation, rotated_deviation;
 
-    // get omni frame
-
-    // This is in the omni_frame!!, therfore we can add it to the HD_to_ee_
-    // tf::Vector3 deviation; 
-    // deviation.setX(scale_marker_deviation_ * deviation_from_lock[0]);
-    // deviation.setY(scale_marker_deviation_ * deviation_from_lock[1]);
-    // deviation.setZ(scale_marker_deviation_ * deviation_from_lock[2]);
-
-
-    // add the tranformation to the base frame by adding the deviation + the endeffector
-    // endeffector (wrt2base) + the deviation (wrt2base)
-    // base_to_marker_.setOrigin( base_to_ee_.getOrigin() + deviation );                                 
-    // base_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from base
-    geometry_msgs::Vector3 deviation;
+    // scale the deviations of the omni
     deviation.x = scale_marker_deviation_ * deviation_from_lock[0];
     deviation.y = scale_marker_deviation_ * deviation_from_lock[1];
     deviation.z = scale_marker_deviation_ * deviation_from_lock[2];
 
+    // The vector that is defined in the omni frame is mapped (rotated) to the base frame
+    rotated_deviation = vectorRotation(HD_to_base_trans_.transform.rotation,deviation);
 
-    HD_to_marker_.header.stamp = ros::Time::now();
-    HD_to_marker_.header.frame_id = HD_frame_name_;
-    HD_to_marker_.child_frame_id = "virtual_marker_transform";
-    HD_to_marker_.transform.translation.x = HD_to_ee_.transform.translation.x + deviation.x;
-    HD_to_marker_.transform.translation.y = HD_to_ee_.transform.translation.y + deviation.y;
-    HD_to_marker_.transform.translation.z = HD_to_ee_.transform.translation.z + deviation.z;
+    marker_in_base_.header.stamp = ros::Time::now();
+    marker_in_base_.header.frame_id = base_frame_name_;
+    marker_in_base_.child_frame_id = "virtual_marker_transform";
+    marker_in_base_.transform.translation.x = ee_in_base_.transform.translation.x + rotated_deviation.x;
+    marker_in_base_.transform.translation.y = ee_in_base_.transform.translation.y + rotated_deviation.y;
+    marker_in_base_.transform.translation.z = ee_in_base_.transform.translation.z + rotated_deviation.z;
     tf2::Quaternion quat;
-    quat.setRPY(0, 0, 0);
-    // geometry_msgs::Quaternion quat;
-    HD_to_marker_.transform.rotation.x = quat.x(); // no rotation wrt the omni_frame
-    HD_to_marker_.transform.rotation.y = quat.y(); // no rotation wrt the omni_frame
-    HD_to_marker_.transform.rotation.z = quat.z(); // no rotation wrt the omni_frame
-    HD_to_marker_.transform.rotation.w = quat.w(); // no rotation wrt the omni_frame
-
-    // HD_to_marker_.setOrigin( HD_to_ee_.getOrigin() + deviation );                                 
-    // HD_to_marker_.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from HD
+    quat.setRPY(0, 0, 0); // no rotation wrt the base_frame_name_!
+    marker_in_base_.transform.rotation.x = quat.x(); 
+    marker_in_base_.transform.rotation.y = quat.y(); // no rotation wrt the omni_frame
+    marker_in_base_.transform.rotation.z = quat.z(); // no rotation wrt the omni_frame
+    marker_in_base_.transform.rotation.w = quat.w(); // no rotation wrt the omni_frame
 
     static tf2_ros::TransformBroadcaster br;
-    br.sendTransform(HD_to_marker_);
-
-
-    // tf::StampedTransform EE_to_marker;
-    // EE_to_marker.setOrigin(deviation );                                 
-    // EE_to_marker.setRotation( tf::Quaternion(0, 0, 0, 1) ); // no frame rotation as seen from HD
-    // When incorporating rotation, this should be set to the rotation of the omni
-
-    
-    // The Virtual_marker pose is tranferred via topics rather than using tf
-    // no need for broadcasting but if so:
-    // tf::TransformBroadcaster br;
-    // ROS_INFO_STREAM(HD_to_marker_.getOrigin().x());
-    // ROS_INFO_STREAM(HD_to_marker_.getOrigin().y());
-    // ROS_INFO_STREAM(EE_to_marker.getOrigin().z());
-    // ROS_INFO_STREAM("---------------------------------------------");
-    // br.sendTransform(tf::StampedTransform(HD_to_marker_, ros::Time::now(), HD_frame_name_, "virtual_marker_transform"));
+    br.sendTransform(marker_in_base_);
 }
 
 void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans)
 {
-  // Set the frame ID and timestamp.  See the TF tutorials for information on these.
-    // marker_.header.frame_id = reference_frame_name; // verancer nog
-    // marker_.header.stamp = ros::Time::now();
+    // Set the frame ID and timestamp. Also parent frame
     marker_.header = trans.header;
 
     // Set the namespace and id for this marker.  This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
-    marker_.ns = trans.child_frame_id; // TODO: make variable
+    marker_.ns = trans.child_frame_id; 
     marker_.id = 0;
 
     // Set the marker type.  
@@ -188,7 +161,7 @@ void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans)
     marker_.pose.orientation.y = trans.transform.rotation.y;
     marker_.pose.orientation.z = trans.transform.rotation.z;
     marker_.pose.orientation.w = trans.transform.rotation.w;
-    
+
     // Set the scale of the marker -- 1x1x1 here means 1m on a side
     marker_.scale.x = 0.05;
     marker_.scale.y = 0.05;
@@ -203,60 +176,34 @@ void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans)
     marker_.lifetime = ros::Duration();
 }
 
-// void Omni2Marker::fillMarkerTransformMsg(visualization_msgs::Marker& marker,tf::StampedTransform& trans)
-// {
-//     // const tf::StampedTransform dummy_transform = trans;
-
-//     // transform
-//     // tf::transformStampedTFToMsg(dummy_transform,marker_transform_);
-        
-//     marker_transform_.header.stamp = ros::Time::now();
-//     marker_transform_.header.frame_id = marker.header.frame_id;
-//     marker_transform_.child_frame_id = "virtual_marker"; // TO DO: make variable
-// }
-
-void Omni2Marker::run()
-{  
-  getTF();
-
-  if ( (button_msg_.grey_button && button_msg_.white_button) == true)
-  {
-    this->publish_on_ = true;  // set boolean to true if both buttons are pressed
-  }
-  
-    //sms
-  if (publish_on_) // naar 0900 9292
-  {
-      // Find transform 
-      std::vector<double> deviation_from_lock;
-      findDeviationFromLockPosition(deviation_from_lock);
-      addMarkerTransform(deviation_from_lock);
-
-      // fill messages
-      fillMarkerMsg(HD_to_marker_);
-    //   fillMarkerTransformMsg(marker_,HD_to_marker_);
-
-      // publish messages
-      marker_pub_.publish(marker_);
-      marker_transform_pub_.publish(HD_to_marker_);
-  }
+const geometry_msgs::Vector3 Omni2Marker::vectorRotation(geometry_msgs::Quaternion q, geometry_msgs::Vector3 v)
+{
+    geometry_msgs::Vector3 vr;
+    vr.x =  v.x*q.w*q.w + 2*v.z*q.w*q.y - 2*v.y*q.w*q.z + v.x*q.x*q.x + 
+            2*v.y*q.x*q.y + 2*v.z*q.x*q.z - v.x*q.y*q.y - v.x*q.z*q.z;
+    vr.y =  v.y*q.w*q.w - 2*v.z*q.w*q.x + 2*v.x*q.w*q.z - v.y*q.x*q.x + 
+            2*v.x*q.x*q.y + v.y*q.y*q.y + 2*v.z*q.y*q.z - v.y*q.z*q.z;
+    vr.z =  v.z*q.w*q.w + 2*v.y*q.w*q.x - 2*v.x*q.w*q.y - v.z*q.x*q.x + 
+            2*v.x*q.x*q.z - v.z*q.y*q.y + 2*v.y*q.y*q.z + v.z*q.z*q.z;
+    return vr;   
 }
 
 
 
 int main( int argc, char** argv )
 {
-	// initialize ros node and class
+    // initialize ros node and class
     ros::init(argc, argv, "omni_2_marker");
-	Omni2Marker node;
-    // tfListener_(tfBuffer_);
+    Omni2Marker node;
+
     node.publish_on_ = false;
-// test_class amf = test_class();
-// est_class amf;
-    // spin
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener TF_listener(tfBuffer);
+
     while (ros::ok()) 
     {
         ros::Rate loop_rate(30); //publish_frequency_
+        node.getTF(tfBuffer);
         node.run();
         ros::spinOnce();
         loop_rate.sleep();
