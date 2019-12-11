@@ -9,116 +9,125 @@ StiffnessLearning::StiffnessLearning():
 nh_("~")
 {
     getParameters();
-    initializeSubscribers();
     initializePublishers();
-    initializeStiffnessMsg();
-    initializeCovarianceMsg();
-    // clear
+    covariance_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
+    stiffness_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
+    // clear certain vectors?
 }  
 
+void StiffnessLearning::getTF(tf2_ros::Buffer& buffer)
+{
+    // Read as buffer.lookupTransform(target_frame, source_frame, when?, wait x amount of sec untill available):
+    // Where the transform can mean two things: 
+    //1) find a transform that maps a pose(point/rot) defined in source frame to the target frame
+    // OR:
+    //2) find the pose(point/rot) of the source_frame as seen from the target frame
+    try{
+        marker_in_ee_frame_ = buffer.lookupTransform(ee_frame_name_,virtual_marker_name_ ,  
+                                ros::Time(0),ros::Duration(0.25) ); 
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_WARN("%s",ex.what());
+        } 
+}
 
 void StiffnessLearning::run()
 {
-//   ROS_INFO_STREAM("shit is aan het runnen");
-  
-  std::vector<float> error_signal(3);
-  getErrorSignal(error_signal); // new signal every loop
-  ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
-  << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
+    // get error signal from tf_tree
+    std::vector<float> error_signal(3);
+    error_signal = getErrorSignal(); // x,y,z,qx,qy,qz,qw
+    ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
+    << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
 
-//   data_matrix_ grows by adding the errorsignal until window length
-  populateDataMatrix(error_signal,data_matrix_); 
+    // data_matrix_ grows by adding the errorsignal until window length
+    // in the function only the first three x,y,z translations are used
+    populateDataMatrix(error_signal,data_matrix_); 
 
-  // covariance matrix is found from data matrix
-  Eigen::Matrix3f covariance_matrix;
-  getCovarianceMatrix(data_matrix_, covariance_matrix); 
-  ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
+    // covariance matrix is found from data matrix
+    Eigen::Matrix3f covariance_matrix;
+    getCovarianceMatrix(data_matrix_, covariance_matrix); 
+    ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
 
-  // get eigenvalues and eigenvectors
-  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); // finds upon initialization
-  ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
-  ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
-  
+    // get eigenvalues and eigenvectors via eigen_solver(finds upon initialization)
+    // USE Eigen::SelfAdjointEigenSolver 
+    // because we are dealing with real symmetric matrix(A=A^T) matrix==selfadjointmatrix
+    Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); 
+    ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
+    ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
 
-  Eigen::Vector3f stiffness_diagonal;
-  getStiffnessEig(eigen_solver,stiffness_diagonal);
-//   ROS_INFO_STREAM("stiffness_diagonal: "<< stiffness_diagonal[0]
-//                                         << stiffness_diagonal[1]<< stiffness_diagonal[2]);
-  
-  Eigen::Matrix3f K_matrix;
-  setStiffnessMatrix(eigen_solver,stiffness_diagonal,K_matrix);
-  ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
-    // Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(K_matrix);
-    // Eigen::Vector3f eigen_values  = eigensolver.eigenvalues();
-    // Eigen::Matrix3f eigen_vectors = eigensolver.eigenvectors();
+
+    Eigen::Vector3f stiffness_diagonal;
+    getStiffnessEig(eigen_solver,stiffness_diagonal);
+    // ROS_INFO_STREAM("stiffness_diagonal: "<< stiffness_diagonal[0]
+    //                                     << stiffness_diagonal[1]<< stiffness_diagonal[2]);
+
+    Eigen::Matrix3f K_matrix;
+    setStiffnessMatrix(eigen_solver,stiffness_diagonal,K_matrix);
+    ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
     // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
-    // ROS_INFO_STREAM("vector: \n" << eigen_vectors);
-    // ROS_INFO_STREAM("values: \n" << eigen_values);
 
-  fillStiffnessMsg(K_matrix);
-  
-  fillCovarianceMsg(covariance_matrix);
-  
+    fill2DMultiArray(covariance_matrix,covariance_matrix_MA_);
+    fill2DMultiArray(K_matrix,stiffness_matrix_MA_);
 
-  stiffness_pub_.publish(stiffness_matrix_);
-  covariance_pub_.publish(covariance_matrix_);
-  ROS_INFO_STREAM("---------------------------------------------------");
+    covariance_pub_.publish(covariance_matrix_MA_);
+    stiffness_pub_.publish(stiffness_matrix_MA_);
+    
+    ROS_INFO_STREAM("---------------------------------------------------");
 }
 
-void StiffnessLearning::getErrorSignal(std::vector<float>& error_signal)
+std::vector<float> StiffnessLearning::getErrorSignal()
 {
-    getTF();
-    std::vector<float> X_actual;
-    X_actual.push_back(base_to_ee_.getOrigin().x());
-    X_actual.push_back(base_to_ee_.getOrigin().y());
-    X_actual.push_back(base_to_ee_.getOrigin().z());
-
-    std::vector<float> X_marker; 
-    X_marker.push_back(marker_transform_.transform.translation.x);
-    X_marker.push_back(marker_transform_.transform.translation.y);
-    X_marker.push_back(marker_transform_.transform.translation.z);
-
-    int size = error_signal.size();
-    for(int i=0; i<size; ++i){
-        error_signal[i] = X_marker[i] - X_actual[i];
-    }
-}
-
-void StiffnessLearning::getTF()
-{
-    if (TF_listener_.waitForTransform(ee_frame_name_, base_frame_name_, ros::Time(0), ros::Duration(0.25)))
-    {
-        TF_listener_.lookupTransform(base_frame_name_, ee_frame_name_,ros::Time(0), base_to_ee_);
-    }
+    std::vector<float> error_signal;
+    error_signal.push_back(marker_in_ee_frame_.transform.translation.x);
+    error_signal.push_back(marker_in_ee_frame_.transform.translation.y);
+    error_signal.push_back(marker_in_ee_frame_.transform.translation.z);
+    error_signal.push_back(marker_in_ee_frame_.transform.rotation.x);
+    error_signal.push_back(marker_in_ee_frame_.transform.rotation.y);
+    error_signal.push_back(marker_in_ee_frame_.transform.rotation.z);
+    error_signal.push_back(marker_in_ee_frame_.transform.rotation.w);   
+    return error_signal;
 }
 
 // Test this function for observations > window length
-void StiffnessLearning::populateDataMatrix(std::vector<float>& error_signal, 
+void StiffnessLearning::populateDataMatrix(std::vector<float>& complete_error_signal, 
                                             std::vector< std::vector<float> >& data_matrix)
 {
-    // check size of data matrix
-    if( (std::isinf( error_signal[0]) == true) || (std::isinf(error_signal[2]) == true) || (std::isinf(error_signal[2]) == true)) {
-        // ROS_INFO_STREAM("inif: "<<error_signal[0]<<error_signal[1]<<error_signal[2]);
+    // only consider the first 3, x,y,z translations AND NOT THE XYZW QUATERNIONS
+    int length_error = 3;
+    std::vector<float> error_signal;
+    for(int i=0; i<length_error; ++i){
+        error_signal.push_back(complete_error_signal[i]);
+    }
+    
+    // check size error_signal
+    assert(error_signal.size() == length_error);
+
+    // check size of previous error signal (skip first loop)
+    if(data_matrix.empty() == false)//data_matrix != NULL)
+    {
+        std::vector<float> last_vector = data_matrix.back();
+        assert(last_vector.size()== length_error);
+    }
+
+    // check if infinite in signal
+    if( (std::isinf( error_signal[0]) == true) || (std::isinf(error_signal[1]) == true) 
+                                            || (std::isinf(error_signal[2]) == true)) {
         return ;
     }
-    // ROS_INFO_STREAM("Not in if: "<<error_signal[0]);
 
     int observations = data_matrix.size();
 
     if(observations < window_length_){
         data_matrix.push_back(error_signal); //+1
-        // ROS_INFO_STREAM("IF<<<");
     }
     else if(observations == window_length_){
         data_matrix.erase(data_matrix.begin()); //-1
         data_matrix.push_back(error_signal);   //+1
-        // ROS_INFO_STREAM("IF======");
     }
     else if(observations > window_length_){
         int to_remove = (observations-window_length_+1); // remove 1 extra (-1) for pushback later 
         data_matrix.erase( data_matrix.begin(), data_matrix.begin()+to_remove); // remove first part of vector
         data_matrix.push_back(error_signal); // +1
-        // ROS_INFO_STREAM("IF>>>>>>>>>");
     }
     else{
         ROS_INFO_STREAM("Dit zou niet moeten gebeuren");
@@ -148,8 +157,7 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
         }
     }
     
-    // find covariance matrix
-    // ROS_INFO_STREAM("DATAMATRIXEIGEN: "<< data_mat_eigen);  
+    // find covariance matrix 
     Eigen::MatrixXf centered = data_mat_eigen.colwise() - data_mat_eigen.rowwise().mean();
     // prevent division by zero! by setting n = 0 for observations = 1
     float n = 1;
@@ -175,22 +183,15 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
             ROS_INFO_STREAM("IMAGINAIR!?!?!?! O.o");
         }
 
-
         // need to check if negative and close to zero
         float upper = std::pow(10,-6);
         float lower = -1*upper;
-        if( E.real() > lower && E.real() < upper ){ // && (E.real() > std::pow(-10,-6)) << waarom werkt dit niet?
+        if( E.real() > lower && E.real() < upper ){ 
             E.real() = 0;
-            // ROS_INFO_STREAM("IN Ereal IF ROUNDOF to 0 "<< E.real());
         }
 
-        // Check wheter or not I need to take square root? in klas kronander(2012/2014) 
+        // Check wheter or not I need to take square root? in klas kronander(2012/2014) does
         float lambda = sqrt(E.real());
-
-        // if(lambda <= std::pow(10,-4) && lambda>= std::pow(-10,-4)){
-        //     lambda = 0;
-        //     ROS_INFO_STREAM("IN Lambda IF ROUNDOF=0 "<< lambda);
-        // }
 
         if(lambda<=lambda_min_){
             k = stiffness_max_;
@@ -205,9 +206,6 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
             ROS_INFO_STREAM("Lambda is no real number check eigenvalues covariance matrix");
         }
         stiffness_diagonal(i) = k;
-        // ROS_INFO_STREAM("Ereal"<< E.real());
-        // ROS_INFO_STREAM("Lambda "<< lambda);
-        // ROS_INFO_STREAM("--------------------------------------");
     }
 }
 
@@ -229,119 +227,78 @@ void StiffnessLearning::setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &
 
      K_matrix = V * k_diag * Vt;
 }
-
-void StiffnessLearning::fillStiffnessMsg(Eigen::Matrix3f k_matrix)
+void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
+                                                            std_msgs::Float32MultiArray& multi_array)
 {
-    int height = stiffness_matrix_.layout.dim[0].size;//no matiching functon
-    int width = stiffness_matrix_.layout.dim[1].size;
-    
+    int height = multi_array.layout.dim[0].size;
+    int width = multi_array.layout.dim[1].size;
+
     std::vector<float> vec(width*height, 0);
     for (int i=0; i<height; i++){
         for (int j=0; j<width; j++){
-            vec[i*width + j] = k_matrix(i,j);
+            vec[i*width + j] = matrix(i,j);
+            }
         }
-    }
-    stiffness_matrix_.data = vec;
+    multi_array.data = vec;
 }
 
-void StiffnessLearning::fillCovarianceMsg(Eigen::Matrix3f covariance)
-{
-    int height = covariance_matrix_.layout.dim[0].size;//no matiching functon
-    int width = covariance_matrix_.layout.dim[1].size;
-    
-    std::vector<float> vec(width*height, 0);
-    for (int i=0; i<height; i++){
-        for (int j=0; j<width; j++){
-            vec[i*width + j] = covariance(i,j);
-        }
-    }
-    covariance_matrix_.data = vec;
-}
 
 void StiffnessLearning::getParameters()
 {
     // input output topic names
-    nh_.param<std::string>("marker_topic_name", marker_trans_topic_name_, "/marker_transform");
+    nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix"); 
     nh_.param<std::string>("stiffness_topic_name", stiffness_command_topic_name_, "/stiffness_command");  
-    nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix");  
     // TF frame names
-    nh_.param<std::string>("base_frame_name", base_frame_name_, "base_marco"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "end_effector"); 
+    nh_.param<std::string>("virtual_marker_name", virtual_marker_name_, "virtual_marker_transform");
     // Tune parameters
-    nh_.param<float>("stiffness_min", stiffness_min_, 100); 
-    nh_.param<float>("stiffness_max", stiffness_max_, 500); 
-    nh_.param<float>("lambda_min", lambda_min_, 5); 
-    nh_.param<float>("lambda_max", lambda_max_, 25); 
-    nh_.param<float>("window_length", window_length_, 200); 
-}
-
-void StiffnessLearning::initializeSubscribers()
-{
-    marker_sub_ = nh_.subscribe(marker_trans_topic_name_, 1, &StiffnessLearning::CB_getMarkerTransform, this);
+    nh_.param<float>("stiffness_min", stiffness_min_, 0); 
+    nh_.param<float>("stiffness_max", stiffness_max_, 1000); 
+    nh_.param<float>("lambda_min", lambda_min_, 0.01); 
+    nh_.param<float>("lambda_max", lambda_max_, 0.45); 
+    nh_.param<float>("window_length", window_length_, 100); 
 }
 
 void StiffnessLearning::initializePublishers()
 {
-    stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
     covariance_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(covariance_command_topic_name_,1);
+    stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
 }
 
-void StiffnessLearning::initializeStiffnessMsg()
+
+std_msgs::Float32MultiArray StiffnessLearning::initialize2DMultiArray(int height, int width, int offset)
 {
-    int height = 3;
-    int width = 3;
-    stiffness_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // height
-    stiffness_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // width
-    stiffness_matrix_.layout.dim[0].label = "height";
-    stiffness_matrix_.layout.dim[1].label = "width";
-    stiffness_matrix_.layout.dim[0].size = height; 
-    stiffness_matrix_.layout.dim[1].size = width;
-    stiffness_matrix_.layout.dim[0].stride = height*width;
-    stiffness_matrix_.layout.dim[1].stride = width;
-    stiffness_matrix_.layout.data_offset = 0;
+    std_msgs::Float32MultiArray multi_array;
+    multi_array.layout.dim.push_back(std_msgs::MultiArrayDimension()); // height
+    multi_array.layout.dim.push_back(std_msgs::MultiArrayDimension()); // width
+    multi_array.layout.dim[0].label = "height";
+    multi_array.layout.dim[1].label = "width";
+    multi_array.layout.dim[0].size = height; 
+    multi_array.layout.dim[1].size = width;
+    multi_array.layout.dim[0].stride = height*width;
+    multi_array.layout.dim[1].stride = width;
+    multi_array.layout.data_offset = 0;
+    return multi_array;
 }
-
-void StiffnessLearning::initializeCovarianceMsg()
-{
-    int height = 3;
-    int width = 3;
-    covariance_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // height
-    covariance_matrix_.layout.dim.push_back(std_msgs::MultiArrayDimension()); // width
-    covariance_matrix_.layout.dim[0].label = "height";
-    covariance_matrix_.layout.dim[1].label = "width";
-    covariance_matrix_.layout.dim[0].size = height; 
-    covariance_matrix_.layout.dim[1].size = width;
-    covariance_matrix_.layout.dim[0].stride = height*width;
-    covariance_matrix_.layout.dim[1].stride = width;
-    covariance_matrix_.layout.data_offset = 0;
-}
-
-void StiffnessLearning::CB_getMarkerTransform(const geometry_msgs::TransformStamped& 
-                                                        marker_transform_message)
-{
-    marker_transform_ = marker_transform_message;
-}
-
 
 
 
 int main( int argc, char** argv )
 {
-
 	ros::init(argc, argv, "stiffness_learning");
 
 	StiffnessLearning node;
 
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener TF_listener(tfBuffer);
   
-  while (ros::ok())
-  {
+    while (ros::ok())
+    {
+        ros::Rate loop_rate(30);
+        node.getTF(tfBuffer);
+        node.run();
 
-    ros::Rate loop_rate(30);
-
-    node.run();
-    
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
-
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
 }

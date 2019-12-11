@@ -3,8 +3,7 @@
 
 #include <ros/ros.h>
 
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float32MultiArray.h>
@@ -15,48 +14,39 @@
 
 
 
-
 class StiffnessLearning
 {
 
 	public:
-		// Public parameters
-
-		// Constructor
+		// CLASS CONSTRUCTOR
         StiffnessLearning();
 
-        // Public methods
+		// CLASS PUBLIC METHODS
 		void run();
+		void getTF(tf2_ros::Buffer& buffer);
 
 
 	private: 
+		// CLASS PRIVATE ATTRIBUTES
 		// ROS Parameters
 		ros::NodeHandle nh_;
-
-		ros::Subscriber marker_sub_;
 		ros::Publisher stiffness_pub_;
 		ros::Publisher covariance_pub_;
-
-		std::string marker_trans_topic_name_;
+		// topic names
 		std::string stiffness_command_topic_name_;
 		std::string covariance_command_topic_name_;
-
-		std::string base_frame_name_;
+		// tf frame names
 		std::string ee_frame_name_;	
-
-		// TF
-		tf::TransformListener TF_listener_;
-		tf::StampedTransform base_to_ee_;
-		tf::StampedTransform base_to_marker_;
-
-		// message type parameters
-		geometry_msgs::TransformStamped marker_transform_;
-		std_msgs::Float32MultiArray stiffness_matrix_;
-		std_msgs::Float32MultiArray covariance_matrix_;
-
+		std::string virtual_marker_name_;
+		// tf2_ros messages from geometry
+		geometry_msgs::TransformStamped ee_in_base_;
+		geometry_msgs::TransformStamped base_to_ee_;
+		geometry_msgs::TransformStamped marker_in_ee_frame_;
+		// other message type parameters
+		std_msgs::Float32MultiArray covariance_matrix_MA_;
+		std_msgs::Float32MultiArray stiffness_matrix_MA_;
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
-
 		// tune parameters
 		float stiffness_min_;
 		float stiffness_max_;
@@ -64,19 +54,14 @@ class StiffnessLearning
 		float lambda_max_;
 		float window_length_;
 
+		// CLASS PRIVATE METHODS
         // Initialize inside constructor
         void getParameters();
-        void initializeSubscribers();
         void initializePublishers();
-		void initializeStiffnessMsg();
-		void initializeCovarianceMsg();
+		std_msgs::Float32MultiArray initialize2DMultiArray(
+											int height, int width, int offset);
+		std::vector<float> getErrorSignal();
 
-        // callback
-        void CB_getMarkerTransform(const geometry_msgs::TransformStamped& marker_transform_message);
-		
-		// class methods
-		void getErrorSignal(std::vector<float>& vect);
-			void getTF();
 		void populateDataMatrix(std::vector<float>& error_signal, 
 								std::vector< std::vector<float> >& data_matrix_);
 		void getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix_, 
@@ -86,8 +71,8 @@ class StiffnessLearning
 		void setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
 								Eigen::Vector3f &stiffness_diagonal,
 								Eigen::Matrix3f &K_matrix);
-		void fillStiffnessMsg(Eigen::Matrix3f k_matrix);
-		void fillCovarianceMsg(Eigen::Matrix3f covariance);
+		void fill2DMultiArray(Eigen::Matrix3f matrix, 
+										std_msgs::Float32MultiArray& multi_array);
 };
 
 #endif
