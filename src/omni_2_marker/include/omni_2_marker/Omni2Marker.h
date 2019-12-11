@@ -50,7 +50,7 @@ class Omni2Marker
 		std::string marker_topic_name_;
 		std::string marker_trans_topic_name_;
 
-		std::string base_frame_name_;
+		std::string robot_reference_frame_name_;
 		std::string HD_frame_name_;
 		std::string ee_frame_name_;	
 

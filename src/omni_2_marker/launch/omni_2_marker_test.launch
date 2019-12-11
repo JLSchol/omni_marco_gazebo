@@ -7,7 +7,7 @@
 <arg name="marker_topic_name" default="/marker_visualization"/> 
 <!--<arg name="marker_trans_topic_name" default="/marker_transform"/> -->
 <!--This name needs to be set as the base of the robot-->  
-<arg name="base_frame"          default="base_footprint"/> 
+<arg name="robot_reference_frame"          default="base_footprint"/> 
 <!--This name needs to be set as the omni frame-->  
 <arg name="HD_frame_name"          default="omni_rotation"/> 
 <!--This name needs to be set as the End-effector of the robot-->
@@ -15,19 +15,8 @@
 <!--Scaling coefficient of omni workspace to robot-->
 <arg name="scale_marker_deviation"          default="1"/>
 
-<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
-    <arg name="button_topic_name" value="$(arg button_topic_name)"/>
-    <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
-    <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
-    <arg name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>
-    <arg name="base_frame" value="$(arg base_frame)"/>
-    <arg name="HD_frame_name"     value="$(arg HD_frame_name)"/>
-    <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
-    <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
-</include>
-
 <include file="$(find test_common)/launch/MockEEToTF.launch"> 
-    <arg name="parent_frame" value="$(arg base_frame)"/>
+    <arg name="parent_frame" value="$(arg robot_reference_frame)"/>
     <arg name="child_frame" value="$(arg end_effector_frame)"/>
     <!--<arg name="EE_pose" value= "1 1 1 -0.5 0.5 0.5 0.5"/>-->
 </include>
@@ -36,6 +25,25 @@
     <arg name="output_topic_position" value="$(arg lock_state_topic)"/>
     <arg name="output_topic_button" value="$(arg button_topic_name)"/>
 </include>
+
+<include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">
+    <arg name="child_HD_frame_name" value="$(arg HD_frame_name)"/>
+
+ </include>
+
+<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+    <arg name="button_topic_name" value="$(arg button_topic_name)"/>
+    <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
+    <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
+    <!--<arg name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>-->
+    <arg name="robot_reference_frame" value="$(arg robot_reference_frame)"/>
+    <arg name="HD_frame_name"     value="$(arg HD_frame_name)"/>
+    <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
+    <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
+</include>
+
+
+
 
 
 

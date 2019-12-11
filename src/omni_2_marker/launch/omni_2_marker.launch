@@ -6,9 +6,9 @@
 <!--Output topics arguments-->
 <arg name="marker_topic_name" default="/marker_visualization"/> 
 <!--<arg name="marker_trans_topic_name" default="/marker_transform"/> -->
-<!--This name needs to be set as the reference frame used that is tied to the omni -->  
-<!--<arg name="base_frame"          default="base_footprint"/> -->
-<arg name="base_frame"          default="wrist_ft_tool_link"/> 
+<!--This robot frame needs to be set as the reference frame that is tied to the omni -->  
+<!--<arg name="robot_reference_frame"          default="wrist_ft_tool_link"/> -->
+<arg name="robot_reference_frame"          default="base_footprint"/> 
 <!--This name needs to be set as the omni frame-->  
 <arg name="HD_frame_name"          default="omni_rotation"/> 
 <!--This name needs to be set as the End-effector of the robot-->
@@ -28,7 +28,7 @@
     <param name="marker_topic_name" value="$(arg marker_topic_name)"/>
     <!--<param name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>-->
 
-    <param name="base_frame_name"     value="$(arg base_frame)"/>
+    <param name="robot_reference_frame"     value="$(arg robot_reference_frame)"/>
     <param name="HD_frame_name"     value="$(arg HD_frame_name)"/>
     <param name="ee_frame_name"     value="$(arg end_effector_frame)"/>
 

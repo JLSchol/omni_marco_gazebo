@@ -18,7 +18,7 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("marker_topic_name", marker_topic_name_, "/marker_visualization"); 
     // nh_.param<std::string>("marker_trans_topic_name", marker_trans_topic_name_, "/marker_transform"); 
 
-    nh_.param<std::string>("base_frame_name", base_frame_name_, "base_footprint"); // nodig?
+    nh_.param<std::string>("robot_reference_frame", robot_reference_frame_name_, "base_footprint"); // nodig?
     nh_.param<std::string>("HD_frame_name", HD_frame_name_, "omni_rotation"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "wrist_ft_tool_link"); 
 
@@ -61,14 +61,14 @@ void Omni2Marker::getTF(tf2_ros::Buffer& buffer)
     // OR:
     //2) find the pose(point/rot) of the source_frame as seen from the target frame
     try{
-        ee_in_base_ = buffer.lookupTransform(base_frame_name_,ee_frame_name_ ,  
+        ee_in_base_ = buffer.lookupTransform(robot_reference_frame_name_,ee_frame_name_ ,  
                                 ros::Time(0),ros::Duration(0.25) ); 
         }
         catch (tf2::TransformException &ex) {
             ROS_WARN("%s",ex.what());;
         } 
     try{
-        HD_to_base_trans_ = buffer.lookupTransform(base_frame_name_,HD_frame_name_ ,
+        HD_to_base_trans_ = buffer.lookupTransform(robot_reference_frame_name_,HD_frame_name_ ,
                                 ros::Time(0), ros::Duration(0.25) );
         }
         catch (tf2::TransformException &ex) {
@@ -121,13 +121,13 @@ void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_l
     rotated_deviation = vectorRotation(HD_to_base_trans_.transform.rotation,deviation);
 
     marker_in_base_.header.stamp = ros::Time::now();
-    marker_in_base_.header.frame_id = base_frame_name_;
+    marker_in_base_.header.frame_id = robot_reference_frame_name_;
     marker_in_base_.child_frame_id = "virtual_marker_transform";
     marker_in_base_.transform.translation.x = ee_in_base_.transform.translation.x + rotated_deviation.x;
     marker_in_base_.transform.translation.y = ee_in_base_.transform.translation.y + rotated_deviation.y;
     marker_in_base_.transform.translation.z = ee_in_base_.transform.translation.z + rotated_deviation.z;
     tf2::Quaternion quat;
-    quat.setRPY(0, 0, 0); // no rotation wrt the base_frame_name_!
+    quat.setRPY(0, 0, 0); // no rotation wrt the robot_reference_frame_name_!
     marker_in_base_.transform.rotation.x = quat.x(); 
     marker_in_base_.transform.rotation.y = quat.y(); // no rotation wrt the omni_frame
     marker_in_base_.transform.rotation.z = quat.z(); // no rotation wrt the omni_frame
