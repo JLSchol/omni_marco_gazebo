@@ -2,6 +2,9 @@
  <include file="$(find omni_marco_launcher)/launch/omni_gazebo_marco.launch">  
  </include>
 
+  <include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">  
+ </include>
+
  <include file="$(find omni_2_marker)/launch/omni_2_marker.launch">  
  </include>
 

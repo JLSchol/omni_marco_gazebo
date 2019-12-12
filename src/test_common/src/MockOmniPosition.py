@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 # rospy
 from rospy import init_node, is_shutdown, get_param, Rate, sleep, ROSInterruptException, Publisher, loginfo, get_time, get_rostime
 # standard messages

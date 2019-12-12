@@ -27,8 +27,11 @@
 </include>
 
 <include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">
+    <arg name="parent_reference_frame" value="$(arg robot_reference_frame)"/>
     <arg name="child_HD_frame_name" value="$(arg HD_frame_name)"/>
-
+    <arg name="rot_matrix_array" value="0 0 -1 -1 0 0 0 1 0"/>
+    <!--<arg name="rot_matrix_array" default= "0 0 -1 -1 0 0 0 1 0"/>--> <!--test common base_footprint-->
+    <!--<arg name="rot_matrix_array" default= "0 -1 0 0 0 1 -1 0 0"/>--> <!--test common wrist_ft_tool_link-->
  </include>
 
 <include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
