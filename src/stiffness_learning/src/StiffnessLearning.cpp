@@ -52,8 +52,8 @@ void StiffnessLearning::run()
     // USE Eigen::SelfAdjointEigenSolver 
     // because we are dealing with real symmetric matrix(A=A^T) matrix==selfadjointmatrix
     Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); 
-    ROS_INFO_STREAM("EIGENVALUES:"<< eigen_solver.eigenvalues());
-    ROS_INFO_STREAM("eigenvectors:"<< eigen_solver.eigenvectors());
+    ROS_INFO_STREAM("EIGENVALUES: \n"<< eigen_solver.eigenvalues());
+    ROS_INFO_STREAM("eigenvectors: \n"<< eigen_solver.eigenvectors());
 
 
     Eigen::Vector3f stiffness_diagonal;
