@@ -3,6 +3,7 @@
 
 from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, sleep
 from rospy import ROSInterruptException, Time
+from tf2_ros import TransformBroadcaster
 
 #import messages
 from geometry_msgs.msg import TransformStamped
@@ -50,7 +51,12 @@ class DrawEllipsoid(object):
             loginfo("eigVectors:")
             loginfo("\n" + str(eigVectors))
 
+            rightHanded = self._checkRightHandedNessMatrix(eigVectors)
+            if rightHanded == False:
+                (eigValues,eigVectors) = self._shuffleEig(rightHanded,eigValues,eigVectors)
+
             quaternion = self._getRotation(eigVectors)
+            self._broadcastEllipsoidAxis(quaternion)
             # loginfo(quaternion)
 
             scaledEigenValues = self._getScaledEigenvalues(eigValues,0.05,0.25)
@@ -58,11 +64,33 @@ class DrawEllipsoid(object):
             ellipsoid = self._createEllipsoidMsg([0,0,0],quaternion,scaledEigenValues)
 
             self._publisher.publish(ellipsoid)
-            loginfo(ellipsoid)
+            # loginfo(ellipsoid)
 
             loginfo(10*"---")
             rosRate.sleep()
 
+    def _shuffleEig(self,flag,eigenValues,eigenVectors):
+
+        # only neeed to shuffel 2 will always result in right-handed matrix
+        shuffleSequence = [0,2,1] # in stead of [0,1,2]
+        i = np.argsort(shuffleSequence)
+        eigenValues = eigenValues[i]
+        eigenVectors = eigenVectors[:,i]
+
+        return eigenValues, eigenVectors
+
+    def _checkRightHandedNessMatrix(self,matrix):
+
+        v1 = np.array(matrix[:,0])
+        v2 = np.array(matrix[:,1])
+        v3 = np.array(matrix[:,2])
+
+        rightHanded = False
+        if np.dot(np.cross(v1,v2),v3)>0: #1>0
+            rightHanded = True
+
+        loginfo(rightHanded)
+        return rightHanded
 
     def _convertToMatrix(self,multiArray):
         if not multiArray:  
@@ -96,23 +124,34 @@ class DrawEllipsoid(object):
         # eigy_n=PyKDL.Vector(eigVectors[0,1],eigVectors[1,1],eigVectors[2,1])
         # eigz_n=PyKDL.Vector(eigVectors[0,2],eigVectors[1,2],eigVectors[2,2])
 
+        # NIET TRANSPONEREN!!
         rot = PyKDL.Rotation (eigVectors[0,0],eigVectors[0,1],eigVectors[0,2],
                             eigVectors[1,0],eigVectors[1,1],eigVectors[1,2],
                             eigVectors[2,0],eigVectors[2,1],eigVectors[2,2] )
         # rot = PyKDL.Rotation (eigVectors[0,0],eigVectors[0,2],eigVectors[0,1],
         #                     eigVectors[1,0],eigVectors[1,2],eigVectors[1,1],
         #                     eigVectors[2,0],eigVectors[2,2],eigVectors[2,1] )
-        # rot = PyKDL.Rotation (eigVectors[0,0],eigVectors[1,0],eigVectors[2,0],
-        #             eigVectors[0,1],eigVectors[1,1],eigVectors[2,1],
-        #             eigVectors[0,2],eigVectors[1,2],eigVectors[2,2] )
-
+        # rot = PyKDL.Rotation (eigVectors[0,1],eigVectors[0,2],eigVectors[0,0],
+        #                     eigVectors[1,1],eigVectors[1,2],eigVectors[1,0],
+        #                     eigVectors[2,1],eigVectors[2,2],eigVectors[2,0] )
+        # rot = PyKDL.Rotation (eigVectors[0,2],eigVectors[0,1],eigVectors[0,0],
+        #                     eigVectors[1,2],eigVectors[1,1],eigVectors[1,0],
+        #                     eigVectors[2,2],eigVectors[2,1],eigVectors[2,0] )
+        # rot = PyKDL.Rotation (eigVectors[0,1],eigVectors[0,0],eigVectors[0,2],
+        #                     eigVectors[1,1],eigVectors[1,0],eigVectors[1,2],
+        #                     eigVectors[2,1],eigVectors[2,0],eigVectors[2,2] )
+        
+      
 
         
         quat = rot.GetQuaternion()
-        # loginfo("quaternion; \n"+ str(quat))
-        # loginfo(eigVectors[0,1])
 
-        return quat
+        # normalize
+        length = np.sqrt(quat[0]**2 + quat[1]**2 + quat[2]**2 + quat[3]**2)
+        quaternions = [np.array(q)/length for q in quat]
+        # loginfo(quaternions)
+
+        return quaternions
 
     def _getScaledEigenvalues(self,eigenValues,lambdaMin,lambdaMax):
 
@@ -132,6 +171,24 @@ class DrawEllipsoid(object):
             lambdaVec[i] = lambda_
 
         return lambdaVec
+
+    def _broadcastEllipsoidAxis(self,q):
+        br = TransformBroadcaster()
+        t = TransformStamped()
+
+        t.header.stamp = Time.now()
+        t.header.frame_id = "/wrist_ft_tool_link"
+        t.child_frame_id = "ellipsoidAxis"
+        t.transform.translation.x = 0
+        t.transform.translation.y = 0
+        t.transform.translation.z = 0.0
+
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        br.sendTransform(t)
     
     def _createEllipsoidMsg(self,positions,quaternions,scales):
 
@@ -160,6 +217,22 @@ class DrawEllipsoid(object):
         marker.scale.x = 2*np.sqrt(2)*scales[0] #2times radius and sqrt(2) from the eigdecomposition
         marker.scale.y = 2*np.sqrt(2)*scales[1]
         marker.scale.z = 2*np.sqrt(2)*scales[2]
+
+        # marker.scale.x = 2*np.sqrt(2)*scales[0] #CORRECT! O.o
+        # marker.scale.y = 2*np.sqrt(2)*scales[2]
+        # marker.scale.z = 2*np.sqrt(2)*scales[1]
+
+        # marker.scale.x = 2*np.sqrt(2)*scales[1] #2times radius and sqrt(2) from the eigdecomposition
+        # marker.scale.y = 2*np.sqrt(2)*scales[2]
+        # marker.scale.z = 2*np.sqrt(2)*scales[0]
+
+        # marker.scale.x = 2*np.sqrt(2)*scales[2] #CORRECT! O.o
+        # marker.scale.y = 2*np.sqrt(2)*scales[1]
+        # marker.scale.z = 2*np.sqrt(2)*scales[0]
+
+        # marker.scale.x = 2*np.sqrt(2)*scales[1] #CORRECT! O.o
+        # marker.scale.y = 2*np.sqrt(2)*scales[0]
+        # marker.scale.z = 2*np.sqrt(2)*scales[2]            
 
         marker.color.a = 0.3
         marker.color.r = 1
