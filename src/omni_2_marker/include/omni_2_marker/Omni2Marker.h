@@ -31,7 +31,8 @@ class Omni2Marker
         // Public methods
 		void run();
 		void getTF(tf2_ros::Buffer& buffer);
-		const geometry_msgs::Vector3 vectorRotation(geometry_msgs::Quaternion q, geometry_msgs::Vector3 v);
+		const geometry_msgs::Vector3 vectorRotation(
+							geometry_msgs::Quaternion q, geometry_msgs::Vector3 v);
 
 	private: 
 		// ROS Parameters
@@ -87,7 +88,8 @@ class Omni2Marker
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
 		void fillMarkerMsg(geometry_msgs::TransformStamped& trans);
-		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, geometry_msgs::TransformStamped& trans);
+		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, 
+												geometry_msgs::TransformStamped& trans);
 };
 
 #endif
