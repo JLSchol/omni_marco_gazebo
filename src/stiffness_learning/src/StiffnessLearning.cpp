@@ -12,8 +12,8 @@ nh_("~")
     initializePublishers();
     covariance_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
     stiffness_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
-    // clear certain vectors?
 }  
+
 
 void StiffnessLearning::getTF(tf2_ros::Buffer& buffer)
 {
@@ -31,13 +31,14 @@ void StiffnessLearning::getTF(tf2_ros::Buffer& buffer)
         } 
 }
 
+
 void StiffnessLearning::run()
 {
     // get error signal from tf_tree
     std::vector<float> error_signal(3);
     error_signal = getErrorSignal(); // x,y,z,qx,qy,qz,qw
-    ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
-    << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
+    // ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
+    // << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
 
     // data_matrix_ grows by adding the errorsignal until window length
     // in the function only the first three x,y,z translations are used
@@ -46,34 +47,32 @@ void StiffnessLearning::run()
     // covariance matrix is found from data matrix
     Eigen::Matrix3f covariance_matrix;
     getCovarianceMatrix(data_matrix_, covariance_matrix); 
-    ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
+    // ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
 
-    // get eigenvalues and eigenvectors via eigen_solver(finds upon initialization)
-    // USE Eigen::SelfAdjointEigenSolver 
-    // because we are dealing with real symmetric matrix(A=A^T) matrix==selfadjointmatrix
-    Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance_matrix,true); 
-    ROS_INFO_STREAM("EIGENVALUES: \n"<< eigen_solver.eigenvalues());
-    ROS_INFO_STREAM("eigenvectors: \n"<< eigen_solver.eigenvectors());
+    std::pair<Eigen::Matrix3f, Eigen::Vector3f> eigen_vector_and_values =
+                                        computeEigenVectorsAndValues(covariance_matrix);
+    // ROS_INFO_STREAM("eigenvectors: \n"<< eigen_vector_and_values.first);
+    // ROS_INFO_STREAM("EIGENVALUES: \n"<< eigen_vector_and_values.second);
 
-
-    Eigen::Vector3f stiffness_diagonal;
-    getStiffnessEig(eigen_solver,stiffness_diagonal);
+    Eigen::Vector3f stiffness_diagonal = getStiffnessEig(eigen_vector_and_values);
     // ROS_INFO_STREAM("stiffness_diagonal: "<< stiffness_diagonal[0]
     //                                     << stiffness_diagonal[1]<< stiffness_diagonal[2]);
 
-    Eigen::Matrix3f K_matrix;
-    setStiffnessMatrix(eigen_solver,stiffness_diagonal,K_matrix);
-    ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
+    Eigen::Matrix3f K_matrix = getStiffnessMatrix(eigen_vector_and_values,stiffness_diagonal);
     // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
 
     fill2DMultiArray(covariance_matrix,covariance_matrix_MA_);
+    stiffness_learning::EigenPairs eigen_message = setEigenPairMessage(eigen_vector_and_values);
     fill2DMultiArray(K_matrix,stiffness_matrix_MA_);
 
     covariance_pub_.publish(covariance_matrix_MA_);
+    eigen_pair_pub_.publish(eigen_message);
     stiffness_pub_.publish(stiffness_matrix_MA_);
     
-    ROS_INFO_STREAM("---------------------------------------------------");
+    // ROS_INFO_STREAM("---------------------------------------------------");
 }
+
+
 
 std::vector<float> StiffnessLearning::getErrorSignal()
 {
@@ -87,6 +86,7 @@ std::vector<float> StiffnessLearning::getErrorSignal()
     error_signal.push_back(marker_in_ee_frame_.transform.rotation.w);   
     return error_signal;
 }
+
 
 // Test this function for observations > window length
 void StiffnessLearning::populateDataMatrix(std::vector<float>& complete_error_signal, 
@@ -134,6 +134,7 @@ void StiffnessLearning::populateDataMatrix(std::vector<float>& complete_error_si
     }
 }
 
+
 // Need to check the covariance matrix on singularities otherwise loose rank not good blabla
 void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, 
                                                 Eigen::Matrix3f& covariance_matrix)
@@ -168,30 +169,111 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
     covariance_matrix = centered*centered.transpose() / float(data_mat_eigen.cols() - n); 
 }
 
-void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver,
-                                         Eigen::Vector3f &stiffness_diagonal)
+
+std::pair<Eigen::Matrix3f, Eigen::Vector3f> 
+                StiffnessLearning::computeEigenVectorsAndValues(Eigen::Matrix3f &matrix)
 {
-    std::complex<float> E;
-    float k;
+    // get eigenvalues and eigenvectors via eigen_solver(finds upon initialization)
+    // because we are dealing with real symmetric matrix(A=A^T) matrix==selfadjointmatrix
+    Eigen::Matrix3f eigen_vectors = Eigen::Matrix3f::Zero();
+    Eigen::Vector3f eigen_values  = Eigen::Vector3f::Identity();
+    
+    // Compute eigen values and eigen vectors.
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigensolver(matrix);
+    if (eigensolver.info() == Eigen::Success)
+    {
+        eigen_vectors = eigensolver.eigenvectors();
+        eigen_values  = eigensolver.eigenvalues();
+        // ROS_INFO_STREAM("Before shuffle eigenvectors: \n"<< eigen_vectors);
+        // ROS_INFO_STREAM("Before shuffle EIGENVALUES: \n"<< eigen_values);
+    }
+    else
+    {
+        ROS_WARN_THROTTLE(1, "Failed to compute eigen vectors/values. Is the stiffness matrix correct?");
+    }
+
+    /* The eigensolver returns random order of vector value pairs
+    Assuming that the eigenvectors represent a 3x3 rotation matrix, 
+    a total of six orders exist (e.g. 1 (of 6) = [V1,V3,V2][E1,E3,E2])
+    The rotation matrix is either a reflection (determinant is -1) which reverses "handedness" 
+    or a rotation (determinant is 1) which preserves "handedness".
+    Therefore, only 3 are correct and associated with a rotation.*/
+    bool right_handed = checkRightHandednessMatrix(eigen_vectors);
+    if(right_handed == false)  { // then Shuffle
+        std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
+        return pair;
+    }
+    else // do nothing
+    {
+        return std::make_pair(eigen_vectors, eigen_values);
+    }    
+}
+
+
+bool StiffnessLearning::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vectors)
+{
+    bool right_handed;
+    float determinant = eigen_vectors.determinant();
+    // ROS_INFO_STREAM("determinant= "<<determinant);
+
+    if(round(determinant) == -1){
+        right_handed == false;
+    }
+    else if(round(determinant) == 1){
+        right_handed == true;
+    }
+    else{
+        ROS_WARN_THROTTLE(1, "determinant of eigen_vector matrix is not -1 or 1. Is the matrix correct?");
+    }
+    // Only use this method if matrix is smaller than 4x4! otherwise, 
+    // use dot(cros(V1,V2),V3) to determine if right or left handed!
+    // Eigen::Vector3f V1 = eigen_vectors.col(0);
+    // Eigen::Vector3f V2 = eigen_vectors.col(1);
+    // Eigen::Vector3f V3 = eigen_vectors.col(2);
+    // Eigen::Vector3f V12_cross = V1.cross(V2);
+    // float hand = V12_cross.dot(V3); == -1 or 1
+    // if(round(hand) == -1) right_handed == false;
+
+    return right_handed;
+}
+
+
+std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessLearning::shuffelEigenPairs(
+                                                            Eigen::Matrix3f &eigen_vectors, 
+                                                            Eigen::Vector3f &eigen_values)
+{   
+    Eigen::Matrix3f shuffled_vectors;
+    Eigen::Vector3f shuffled_values;
+    // Shuffle sequence [0=0,1=2,2=1]
+    shuffled_vectors.col(0) = eigen_vectors.col(0);
+    shuffled_vectors.col(1) = eigen_vectors.col(2);
+    shuffled_vectors.col(2) = eigen_vectors.col(1);
+    shuffled_values << eigen_values(0),eigen_values(2),eigen_values(1);
+
+    return std::make_pair(shuffled_vectors,shuffled_values);
+}
+
+
+Eigen::Vector3f StiffnessLearning::getStiffnessEig(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
+{
+    Eigen::Vector3f eigen_values = vector_value_pair.second;
+
+    Eigen::Vector3f stiffness_diagonal  = Eigen::Vector3f::Zero();
     
     // Set eignevalues of covariance matrix inversely proportional to stiffness
-    for(int i=0; i<stiffness_diagonal.size(); ++i)
+    for(int i=0; i<eigen_values.size(); ++i)
     {
-        E = eigen_solver.eigenvalues().col(0)[i];
-
-        if( E.imag() != 0){
-            ROS_INFO_STREAM("IMAGINAIR!?!?!?! O.o");
-        }
-
+        float E = eigen_values(i);
         // need to check if negative and close to zero
         float upper = std::pow(10,-6);
         float lower = -1*upper;
-        if( E.real() > lower && E.real() < upper ){ 
-            E.real() = 0;
+        if( E > lower && E < upper ){ 
+            E = 0;
         }
 
-        // Check wheter or not I need to take square root? in klas kronander(2012/2014) does
-        float lambda = sqrt(E.real());
+        // square root for standard deviation
+        float lambda = sqrt(E);
+        float k;
 
         if(lambda<=lambda_min_){
             k = stiffness_max_;
@@ -203,30 +285,30 @@ void StiffnessLearning::getStiffnessEig(Eigen::EigenSolver<Eigen::Matrix3f> &eig
             k = stiffness_min_;
         }
         else{
-            ROS_INFO_STREAM("Lambda is no real number check eigenvalues covariance matrix");
+            ROS_INFO_STREAM("Something went wrong, no idea what");
         }
         stiffness_diagonal(i) = k;
     }
+    return stiffness_diagonal;
 }
 
-void StiffnessLearning::setStiffnessMatrix(Eigen::EigenSolver<Eigen::Matrix3f> &eigen_solver, 
-                                            Eigen::Vector3f &stiffness_diagonal,
-                                            Eigen::Matrix3f &K_matrix)
+
+Eigen::Matrix3f StiffnessLearning::getStiffnessMatrix(
+                    std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair, 
+                                            Eigen::Vector3f &stiffness_diagonal)
 {
-    Eigen::Matrix3f k_diag, V, Vt;
-    k_diag.setIdentity();
-        
-        for(int i=0; i<3;++i){
-            for(int j=0; j<3; ++j){
-                V(i,j) = eigen_solver.eigenvectors()(i,j).real();
-                Vt(i,j) = eigen_solver.eigenvectors().transpose()(i,j).real();
-            }
-            k_diag(i,i) = stiffness_diagonal(i);
-        }
-        
+    Eigen::Matrix3f K_matrix, k_diag, V, Vt;
 
-     K_matrix = V * k_diag * Vt;
+    k_diag = Eigen::Matrix3f(stiffness_diagonal.asDiagonal());
+    V = vector_value_pair.first;
+    Vt = V.transpose();
+
+    K_matrix = V * k_diag * Vt;
+
+    return K_matrix;
 }
+
+
 void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
                                                             std_msgs::Float32MultiArray& multi_array)
 {
@@ -243,10 +325,41 @@ void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
 }
 
 
+stiffness_learning::EigenPairs StiffnessLearning::setEigenPairMessage(std::pair<Eigen::Matrix3f, 
+													        Eigen::Vector3f>& vector_value_pair)
+{
+    Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
+    Eigen::Vector3f eigen_values = vector_value_pair.second;
+    
+    stiffness_learning::EigenPairs message;
+    message.header.stamp = ros::Time::now();
+    message.header.frame_id = ee_frame_name_; // is this necessary and correct?
+
+    for (int i=0; i<3; i++)
+    {
+        stiffness_learning::VectorValue single_pair;
+
+        std::vector<float> Vi;
+        Eigen::Vector3f eigen_vector_i = eigen_vectors.col(i);
+
+        Vi.resize(eigen_vector_i.size());
+        Eigen::Vector3f::Map(&Vi[0], eigen_vector_i.size()) = eigen_vector_i;
+
+        single_pair.eigen_value = eigen_values(i);
+        single_pair.eigen_vector = Vi;
+
+        message.pairs.push_back(single_pair);
+    }
+
+    return message;
+}
+
+
 void StiffnessLearning::getParameters()
 {
     // input output topic names
     nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix"); 
+    nh_.param<std::string>("eigen_pair_topic_name", eigen_pair_topic_name_, "/eigen_pair"); 
     nh_.param<std::string>("stiffness_topic_name", stiffness_command_topic_name_, "/stiffness_command");  
     // TF frame names
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "end_effector"); 
@@ -259,9 +372,11 @@ void StiffnessLearning::getParameters()
     nh_.param<float>("window_length", window_length_, 100); 
 }
 
+
 void StiffnessLearning::initializePublishers()
 {
     covariance_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(covariance_command_topic_name_,1);
+    eigen_pair_pub_ = nh_.advertise<stiffness_learning::EigenPairs>(eigen_pair_topic_name_,1);
     stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
 }
 

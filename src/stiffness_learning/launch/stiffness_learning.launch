@@ -5,6 +5,7 @@
 <!--Output topics arguments-->
 <arg name="stiffness_topic_name" default="/stiffness_command"/> 
 <arg name="covariance_topic_name" default="/covariance_matrix"/> 
+<arg name="eigen_pair_topic_name" default="/eigen_pair"/> 
 
 <!--Tf arguments-->  
 <!--<arg name="base_frame"          default="base_footprint"/>-->
@@ -27,6 +28,7 @@
     <!--Output topics-->
     <param name="stiffness_topic_name" value="$(arg stiffness_topic_name)"/>
     <param name="covariance_topic_name" value="$(arg covariance_topic_name)"/>
+    <param name="eigen_pair_topic_name" value="$(arg eigen_pair_topic_name)"/>
 
     <!--Tf arguments--> 
     <!--<param name="base_frame_name"     value="$(arg base_frame)"/>-->
