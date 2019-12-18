@@ -69,7 +69,7 @@ void StiffnessLearning::run()
     eigen_pair_pub_.publish(eigen_message);
     stiffness_pub_.publish(stiffness_matrix_MA_);
     
-    // ROS_INFO_STREAM("---------------------------------------------------");
+    ROS_INFO_STREAM("---------------------------------------------------");
 }
 
 
@@ -199,13 +199,20 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f>
     or a rotation (determinant is 1) which preserves "handedness".
     Therefore, only 3 are correct and associated with a rotation.*/
     bool right_handed = checkRightHandednessMatrix(eigen_vectors);
+
     if(right_handed == false)  { // then Shuffle
         std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
-        return pair;
+
+        bool check = checkRightHandednessMatrix(pair.first);
+        if(check == false){ // shuffle succeeded?
+            ROS_INFO_STREAM("shuffle of vectors did not succeed");
+        }
+
+        return pair; // return shuffled pair
     }
     else // do nothing
     {
-        return std::make_pair(eigen_vectors, eigen_values);
+        return std::make_pair(eigen_vectors, eigen_values); // return old pair
     }    
 }
 
@@ -213,27 +220,42 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f>
 bool StiffnessLearning::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vectors)
 {
     bool right_handed;
+
     float determinant = eigen_vectors.determinant();
     // ROS_INFO_STREAM("determinant= "<<determinant);
 
     if(round(determinant) == -1){
-        right_handed == false;
+        right_handed = false;
     }
     else if(round(determinant) == 1){
-        right_handed == true;
+        right_handed = true;
     }
     else{
         ROS_WARN_THROTTLE(1, "determinant of eigen_vector matrix is not -1 or 1. Is the matrix correct?");
     }
+
+
+    // alternative method:
     // Only use this method if matrix is smaller than 4x4! otherwise, 
     // use dot(cros(V1,V2),V3) to determine if right or left handed!
     // Eigen::Vector3f V1 = eigen_vectors.col(0);
     // Eigen::Vector3f V2 = eigen_vectors.col(1);
     // Eigen::Vector3f V3 = eigen_vectors.col(2);
     // Eigen::Vector3f V12_cross = V1.cross(V2);
-    // float hand = V12_cross.dot(V3); == -1 or 1
-    // if(round(hand) == -1) right_handed == false;
+    // float hand = V12_cross.dot(V3); 
+    // if(round(hand) == -1) {
+    //     right_handed = false;
+    //     ROS_INFO_STREAM("DIRECTION: -1"<<right_handed);
+    // }
+    // else if(round(hand) == 1){
+    //     right_handed = true;
+    //     ROS_INFO_STREAM("DIRECTION: 1"<<right_handed);
+    // }
+    // else{
+    //     ROS_WARN_THROTTLE(1, "not 1 or -1 one normalize vector?, should not happen");
+    // }
 
+    // ROS_INFO_STREAM("BEFORE RETURN: \n"<<right_handed);
     return right_handed;
 }
 
@@ -244,6 +266,7 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessLearning::shuffelEigenPairs
 {   
     Eigen::Matrix3f shuffled_vectors;
     Eigen::Vector3f shuffled_values;
+
     // Shuffle sequence [0=0,1=2,2=1]
     shuffled_vectors.col(0) = eigen_vectors.col(0);
     shuffled_vectors.col(1) = eigen_vectors.col(2);
