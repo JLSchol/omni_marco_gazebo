@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from rospy import Time
+
 #import messages
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout
@@ -16,17 +18,48 @@ class EllipsoidMessage(object):
     def __init__(self):
         pass
 
+    def checkRightHandedNessMatrix(self,matrix):
+        v1 = np.array(matrix[:,0])
+        v2 = np.array(matrix[:,1])
+        v3 = np.array(matrix[:,2])
+        # loginfo(np.dot(np.cross(v1,v2),v3))
+        rightHanded = False
+        if np.dot(np.cross(v1,v2),v3)>0: #1>0
+            rightHanded = True
+            
+        # loginfo(rightHanded)
+        return rightHanded
 
-    def _convertEigenPairsMsgToMatrix(self,eigenPairMsg):
 
-        matrix = [pair.eigen_vector for pair in eigenPairMsg.pairs]
-        matrix = array(matrix)
-        matrix = transpose(matrix)
+    def shuffleEig(self,flag,eigenValues,eigenVectors):
+        # Shuffel 2 arbritary vectors will always result in a rotation instead of an reflection
+        shuffleSequence = [0,2,1] # in stead of [0,1,2]
+        i = np.argsort(shuffleSequence)
+        eigenValues = eigenValues[i]
+        eigenVectors = eigenVectors[:,i]
 
-        return matrix
+        return eigenValues, eigenVectors
 
 
-    def _convert2DMultiArrayMsgToMatrix(self,multiArray):
+    def eigDecompositionToMatrix(self, eigVectorMatrix, eigValueVector):
+        originalMatrix = eigVectorMatrix* np.diag(eigValueVector) * np.transpose(eigVectorMatrix)
+        return originalMatrix
+
+
+    def EigenPairMsgsToMatrixVector(self,eigenPairMsg): 
+        matrix = []
+        vector = []
+        for pair in eigenPairMsg.pairs:
+            matrix.append(pair.eigen_vector)
+            vector.append(pair.eigen_value)
+            
+        matrix = transpose(array(matrix))
+        vector = array(vector)
+
+        return matrix, vector
+
+
+    def MultiArrayMsgToMatrix(self,multiArray): # checked
         if not multiArray:  
             return
         # multiArray.layout.dim[0].stride =9
@@ -43,7 +76,7 @@ class EllipsoidMessage(object):
         return matrix
 
 
-    def _getQuaternionFromMatrix(self,matrix):
+    def getQuatFromMatrix(self,matrix):
         rot = Rotation(matrix[0,0],matrix[0,1],matrix[0,2],
                         matrix[1,0],matrix[1,1],matrix[1,2],
                         matrix[2,0],matrix[2,1],matrix[2,2] )
@@ -56,9 +89,10 @@ class EllipsoidMessage(object):
         return quaternions
 
 
-    def _getEllipsoidScalesFromCovarianceEigenValues(self,eigenValues,lambdaMin,lambdaMax):
+    def getEllipsoidScales(self,eigenValues,lambdaMin,lambdaMax): #works
 
         lambdaVec = zeros(3)
+        ellipsoid_axis_scale=[]
 
         for i,eigenValue in enumerate(eigenValues):
 
@@ -78,12 +112,12 @@ class EllipsoidMessage(object):
             # scale the axis of the ellipsoid
             #2 = diameter is two time the radius
             #sqrt(2) = is term from the eigendecomposition
-            ellipsoid_axis_scale[i] = 2*sqrt(2)*lambda_
+            ellipsoid_axis_scale.append(2*sqrt(2)*lambda_)
 
         return ellipsoid_axis_scale
         
     
-    def _getEllipsoidMsg(self,frame_id,marker_ns,marker_id,positions,quaternions,scales,rgba):
+    def getEllipsoidMsg(self,frame_id,marker_ns,marker_id,positions,quaternions,scales,rgba):
         marker = Marker()
         marker.header.frame_id = frame_id
         marker.header.stamp = Time.now()
@@ -111,6 +145,5 @@ class EllipsoidMessage(object):
         marker.color.a = rgba[3]
 
         return marker
-
 
 
