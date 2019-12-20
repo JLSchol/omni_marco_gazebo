@@ -19,16 +19,23 @@ from std_msgs.msg import Float32MultiArray
 class DrawEllipsoid(object):
     def __init__(self):
         init_node("draw_ellipsoid", anonymous=False)
-        self._publisher = Publisher("/ellipsoid_visualization", Marker, queue_size=50)
-        self._subscriber = Subscriber("/eigen_pair", EigenPairs, self._callback)
+
         self._getParameters()
+
+        self._publisher = Publisher(self._outputTopicName, Marker, queue_size=50)
+        self._subscriber = Subscriber(self._inputTopicName, EigenPairs, self._callback)
+        
         self._eigenPair = []
 
 
     def _getParameters(self):
+        # input output topic
+        self._inputTopicName = get_param("~input_topic_name")
+        self._outputTopicName = get_param("~output_topic_name")
         # get wiggle max and min from parameter server
         self._lambda_min = get_param("/stiffness_learning/lambda_min")
         self._lambda_max = get_param("/stiffness_learning/lambda_max")
+
 
 
     def _callback(self, message):
@@ -61,7 +68,7 @@ class DrawEllipsoid(object):
 
             self._publisher.publish(ellipsoid)
             # publish ellipsoid orientation
-            # self._broadcastEllipsoidAxis(quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
+            # self._broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
             loginfo(10*"---")
 
 

@@ -1,0 +1,29 @@
+ <launch>
+
+
+<!--Input topic arguments-->
+<arg name="input_topic_name" default="/eigen_pair"/> 
+<!--Output topics arguments-->
+<arg name="output_topic_name" default="/ellipsoid_visualization"/> 
+
+<!--Tf arguments-->  
+<!--was used for ellipsoid_visualization.cpp-->
+<!--<arg name="base_frame"          default="base_footprint"/>
+<arg name="end_effector_frame"          default="wrist_ft_tool_link"/>-->
+
+
+  <node pkg="stiffness_ellipsoid" name="draw_ellipsoid" type="draw_ellipsoid.py" output="screen">
+
+    <!--Input topic-->
+    <param name="input_topic_name" value="$(arg input_topic_name)"/>
+    <!--Output topics-->
+    <param name="output_topic_name" value="$(arg output_topic_name)"/>
+    <!--Tf arguments--> 
+    <!--<param name="base_frame_name"     value="$(arg base_frame)"/>
+    <param name="ee_frame_name"     value="$(arg end_effector_frame)"/>-->
+
+
+  </node>
+
+
+ </launch>
