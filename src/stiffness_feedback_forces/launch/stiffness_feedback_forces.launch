@@ -3,12 +3,18 @@
     <arg name="omni_position_input"          default="/omni1_lock_state"/> 
     <arg name="output_topic"          default="/omni1_force_feedback"/> 
 
+    <arg name="HD_frame_name"          default="omni_rotation"/> 
+    <arg name="end_effector_frame"          default="wrist_ft_tool_link"/> 
+    <arg name="virtual_marker_frame"          default="virtual_marker_transform"/>
+
     <node name="omni_feedback_force" pkg="stiffness_feedback_forces" type="stiffness_feedback.py" output="screen">
         
         <param name="RobotStiffness"     value="$(arg robot_stiffness)"/>
         <param name="OmniPositionInput"     value="$(arg omni_position_input)"/>
         <param name="OutputTopic"     value="$(arg output_topic)"/>
-
+        <param name="HDFrameName"     value="$(arg HD_frame_name)"/>
+        <param name="EEFrameName"     value="$(arg end_effector_frame)"/>
+        <param name="virtualMarkerFrame"     value="$(arg virtual_marker_frame)"/>
     </node>
 
 
