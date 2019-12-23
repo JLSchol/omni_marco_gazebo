@@ -21,6 +21,7 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("robot_reference_frame", robot_reference_frame_name_, "base_footprint"); // nodig?
     nh_.param<std::string>("HD_frame_name", HD_frame_name_, "omni_rotation"); 
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "wrist_ft_tool_link"); 
+    nh_.param<std::string>("virtual_marker_name", virtual_marker_, "virtual_marker"); 
 
     nh_.param<double>("scale_marker_deviation", scale_marker_deviation_, 1.0);  
 }
@@ -122,7 +123,7 @@ void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_l
 
     marker_in_base_.header.stamp = ros::Time::now();
     marker_in_base_.header.frame_id = robot_reference_frame_name_;
-    marker_in_base_.child_frame_id = "virtual_marker_transform";
+    marker_in_base_.child_frame_id = virtual_marker_;
     marker_in_base_.transform.translation.x = ee_in_base_.transform.translation.x + rotated_deviation.x;
     marker_in_base_.transform.translation.y = ee_in_base_.transform.translation.y + rotated_deviation.y;
     marker_in_base_.transform.translation.z = ee_in_base_.transform.translation.z + rotated_deviation.z;

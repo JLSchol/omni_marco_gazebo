@@ -1,6 +1,6 @@
  <launch>
 <!--parent frame-->
-<arg name="parent_reference_frame"          default="wrist_ft_tool_link"/>
+<arg name="parent_reference_frame"          default="base_footprint"/>
 <!--This parent will be chosen by the user-->
 <!--This frame can be chosen as any frame of the real robot. -->
 <!--The user will be controlling the omni through this reference_frame-->

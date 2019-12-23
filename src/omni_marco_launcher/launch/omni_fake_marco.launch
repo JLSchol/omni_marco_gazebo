@@ -8,8 +8,8 @@
     
     <!-- Node that publishes a fake marco -->
     <include file="$(find test_common)/launch/MockEEToTF.launch"> 
-        <param name="parent_frame"     default="$(arg robot_base_frame)"/>
-        <param name="child_frame"     default="$(arg end_effector_frame)"/> 
+        <arg name="parent_frame"     default="$(arg robot_base_frame)"/>
+        <arg name="child_frame"     default="$(arg end_effector_frame)"/> 
     </include>
 
 </launch>

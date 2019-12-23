@@ -53,7 +53,8 @@ class Omni2Marker
 
 		std::string robot_reference_frame_name_;
 		std::string HD_frame_name_;
-		std::string ee_frame_name_;	
+		std::string ee_frame_name_;
+		std::string virtual_marker_;	
 
 		double scale_marker_deviation_;
 
