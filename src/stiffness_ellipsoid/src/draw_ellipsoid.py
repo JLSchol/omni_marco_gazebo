@@ -69,7 +69,7 @@ class DrawEllipsoid(object):
             self._publisher.publish(ellipsoid)
             # publish ellipsoid orientation
             # self._broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
-            loginfo(10*"---")
+            # loginfo(10*"---")
 
 
     def _broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):

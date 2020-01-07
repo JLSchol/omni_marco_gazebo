@@ -69,7 +69,7 @@ void StiffnessLearning::run()
     eigen_pair_pub_.publish(eigen_message);
     stiffness_pub_.publish(stiffness_matrix_MA_);
     
-    ROS_INFO_STREAM("---------------------------------------------------");
+    // ROS_INFO_STREAM("---------------------------------------------------");
 }
 
 

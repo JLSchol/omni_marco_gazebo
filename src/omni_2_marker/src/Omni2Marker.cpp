@@ -3,7 +3,7 @@
 Omni2Marker::Omni2Marker():
 nh_("~")
 {
-    ROS_INFO_STREAM("----------------------------------");
+    // ROS_INFO_STREAM("----------------------------------");
     getParameters();
     initializeSubscribers();
     initializePublishers();
