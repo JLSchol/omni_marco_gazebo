@@ -5,16 +5,25 @@
 
     <arg name="HD_frame_name"          default="omni_rotation"/> 
     <arg name="end_effector_frame"          default="wrist_ft_tool_link"/> 
-    <arg name="virtual_marker_frame"          default="virtual_marker_transform"/>
+    <arg name="virtual_marker_frame"          default="virtual_marker_transform"/> 
 
+    <!--Tune parameters and specific to the haptic device (HD)-->
+    <arg name="HD_work_range"          default="60"/> <!--[mm]-->
+    <arg name="HD_max_force"          default="3.3"/> <!--[N]-->
+
+    
     <node name="omni_feedback_force" pkg="stiffness_feedback_forces" type="stiffness_feedback.py" output="screen">
         
         <param name="RobotStiffness"     value="$(arg robot_stiffness)"/>
         <param name="OmniPositionInput"     value="$(arg omni_position_input)"/>
         <param name="OutputTopic"     value="$(arg output_topic)"/>
+
         <param name="HDFrameName"     value="$(arg HD_frame_name)"/>
         <param name="EEFrameName"     value="$(arg end_effector_frame)"/>
         <param name="virtualMarkerFrame"     value="$(arg virtual_marker_frame)"/>
+
+        <param name="HDWorkRange"     value="$(arg HD_work_range)"/>
+        <param name="HDMaxForce"     value="$(arg HD_max_force)"/>
     </node>
 
 

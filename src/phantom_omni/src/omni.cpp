@@ -113,9 +113,9 @@ public:
 		// state->force[0] = omnifeed->force.x - 0.001 * state->velocity[0];
 		// state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];
 		// state->force[2] = omnifeed->force.z - 0.001 * state->velocity[2];
-		ROS_INFO_STREAM("Lock state: "<< state->lock);
+		// ROS_INFO_STREAM("Lock state: "<< state->lock);
 		if (state->lock == true) {
-			ROS_INFO_STREAM("in if lock true");
+			// ROS_INFO_STREAM("in if lock true");
 			state->force[0] = omnifeed->force.x - 0.001 * state->velocity[0];
 			state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];
 			state->force[2] = omnifeed->force.z - 0.001 * state->velocity[2];
@@ -166,6 +166,7 @@ public:
 				state->lock = !(state->lock);
 			}
 			phantom_omni::PhantomButtonEvent button_event;
+			button_event.header.stamp = ros::Time::now();
 			button_event.grey_button = state->buttons[0];
 			button_event.white_button = state->buttons[1];
 			state->buttons_prev[0] = state->buttons[0];
@@ -175,6 +176,8 @@ public:
 
 		// publish LockState, current position and locked position
 		phantom_omni::LockState lock_state_msg;
+		lock_state_msg.header.stamp = ros::Time::now();
+		lock_state_msg.header.frame_id = "omni";
 		lock_state_msg.lock = state->lock;
 			
 		// lock_state_msg.lock_position = state->lock_pos;

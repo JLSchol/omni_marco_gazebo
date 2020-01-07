@@ -2,6 +2,7 @@
 # The position of the locked Point
 # The position of the current point 
 
+std_msgs/Header header
 bool lock
 geometry_msgs/Point lock_position
 geometry_msgs/Point current_position

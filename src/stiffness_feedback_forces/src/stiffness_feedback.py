@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, sleep, get_param
-from rospy import ROSInterruptException, Time, Duration
+from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, sleep, get_param, Header
+from rospy import ROSInterruptException, Time, Duration 
 from tf2_ros import TransformListener, Buffer, LookupException, ConnectivityException, ExtrapolationException
 
 #import messages
@@ -51,7 +51,7 @@ class CalcHDFeedbackForce(object):
         #  self._forcesHD = transformForces(self._forcesHD)
         # limit force when above commanding range
 
-        loginfo(self._forcesHD)
+        # loginfo(self._forcesHD)
 
 
     def setCurrentRobotStiffness(self,stiffnessRobot):
@@ -98,6 +98,10 @@ class OmniFeedbackROS(object):
         self._HDFrame = get_param("~HDFrameName")
         self._EEFrame = get_param("~EEFrameName")
         self._virtualMarkerFrame = get_param("~virtualMarkerFrame")
+        self._HDWorkRange = get_param("~HDWorkRange")
+        self._HDMaxForce = get_param("~HDMaxForce")
+        self._stiffnessMin = get_param("/stiffness_learning/stiffness_min")
+        self._stiffnessMax = get_param("/stiffness_learning/stiffness_max")
 
     def _stiffnessCallback(self, message):
         self._stiffnessMessage = message
@@ -111,7 +115,9 @@ class OmniFeedbackROS(object):
         rosRate = Rate(publishRate)
 
         # initialize stiffness feedback class 
-        CalcOmniFeedbackForce = CalcHDFeedbackForce([0,1000],[-3.3,3.3],[-60,60]) # [stiffness][force][workrange]
+        CalcOmniFeedbackForce = CalcHDFeedbackForce([self._stiffnessMin,self._stiffnessMax],
+                                                        [-self._HDMaxForce,self._HDMaxForce],
+                                                        [-self._HDWorkRange,self._HDWorkRange]) # [stiffness][force][workrange]
                                                 # [0.5, 0.5, 0.5], [5, 5, 5], 
                                                 # [-3.3,-3.3,-3.3], [3.3,3.3,3.3], 
                                                 # [-60,-60,-60],[60,60,60])
@@ -126,7 +132,7 @@ class OmniFeedbackROS(object):
             if not (self._stiffnessMessage and self._omniPositionMessage):  
                 continue
             # Get/Set stiffness matrix
-            loginfo(self._omniPositionMessage)
+            # loginfo(self._omniPositionMessage)
             stiffnessMatrix = self._convertArrayToMatrix(self._stiffnessMessage)
             CalcOmniFeedbackForce.setCurrentRobotStiffness(stiffnessMatrix)
             # find transform (rotation) from wrist to omni and transform the forces (msg: TransformStamped)
@@ -161,7 +167,7 @@ class OmniFeedbackROS(object):
             message = self._setOmniFeedbackMessage(forceInOmniFrame,self._omniPositionMessage.lock_position)
             self._publisher.publish(message)
 
-            loginfo(10*"---")
+            # loginfo(10*"---")
             rosRate.sleep()
     
     def rotateVector(self, q, v):
@@ -209,13 +215,19 @@ class OmniFeedbackROS(object):
     def _setOmniFeedbackMessage(self,feedbackForce, lockPosition):
 
         # why the minus??
+        head = Header()
+        head.stamp = Time.now()
+        head.frame_id = self._HDFrame
+
         f = Vector3()
         f.x = -feedbackForce.x
         f.y = -feedbackForce.y
         f.z = -feedbackForce.z
+
         p = lockPosition
 
-        return OmniFeedback(    force = f,
+        return OmniFeedback(    header = head,
+                                force = f,
                                 position = p )
 
 if __name__ == "__main__":
