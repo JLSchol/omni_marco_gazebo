@@ -21,7 +21,7 @@
     <arg name="force_feedback"          value="/omni1_force_feedback"/> 
 
     <!--Tune parameters-->
-    <arg name="scale_marker_deviation" value="0.01"/>
+    <arg name="scale_marker_deviation" value="10"/>
     <arg name="min_robot_stiffness" value="100"/>
     <arg name="max_robot_stiffness" value="1000"/>
     <arg name="lambda_min" value="0.01"/>

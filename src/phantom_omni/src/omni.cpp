@@ -181,13 +181,13 @@ public:
 		lock_state_msg.lock = state->lock;
 			
 		// lock_state_msg.lock_position = state->lock_pos;
-		lock_state_msg.lock_position.x = state->lock_pos[0];
-		lock_state_msg.lock_position.y = state->lock_pos[1];
-		lock_state_msg.lock_position.z = state->lock_pos[2];
+		lock_state_msg.lock_position.x = state->lock_pos[0]/1000; // from [mm] to [m]
+		lock_state_msg.lock_position.y = state->lock_pos[1]/1000;
+		lock_state_msg.lock_position.z = state->lock_pos[2]/1000;
 		// lock_state_msg.current_position = state->position;
-		lock_state_msg.current_position.x = state->position[0];
-		lock_state_msg.current_position.y = state->position[1];
-		lock_state_msg.current_position.z = state->position[2];
+		lock_state_msg.current_position.x = state->position[0]/1000;
+		lock_state_msg.current_position.y = state->position[1]/1000;
+		lock_state_msg.current_position.z = state->position[2]/1000;
 
 		lock_state_pub.publish(lock_state_msg);
 

@@ -8,7 +8,7 @@
     <arg name="virtual_marker_frame"          default="virtual_marker_transform"/> 
 
     <!--Tune parameters and specific to the haptic device (HD)-->
-    <arg name="HD_work_range"          default="60"/> <!--[mm]-->
+    <arg name="HD_work_range"          default="0.06"/> <!--[mm]-->
     <arg name="HD_max_force"          default="3.3"/> <!--[N]-->
 
     
