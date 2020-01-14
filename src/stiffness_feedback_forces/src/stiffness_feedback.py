@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, wait_for_message
-from rospy import ROSInterruptException, Time, Duration, sleep, get_param, Header
+from rospy import ROSInterruptException, Time, Duration, sleep, get_param, Header, has_param, logfatal
 from tf2_ros import TransformListener, Buffer, LookupException
 from tf2_ros import ConnectivityException, ExtrapolationException
 #import messages
@@ -98,8 +98,8 @@ class OmniFeedbackROS(object):
         self._stiffnessHDPub = Publisher("omni_stiffness", Float32MultiArray , queue_size=100)
         self._forceHDPub = Publisher(self._outputTopic, OmniFeedback , queue_size=100)
         #sub
-        wait_for_message(self._stiffnessInput, Float32MultiArray, timeout=5)
-        wait_for_message(self._omniPositionInput, LockState, timeout=5)
+        # wait_for_message(self._stiffnessInput, Float32MultiArray, timeout=5)
+        # wait_for_message(self._omniPositionInput, LockState, timeout=5)
         self._stiffnessSub = Subscriber(self._stiffnessInput, Float32MultiArray, self._stiffnessCallback)
         self._positionSub = Subscriber(self._omniPositionInput, LockState, self._omniPositionCallback)
         self._stiffnessMessage = [] 
@@ -117,7 +117,14 @@ class OmniFeedbackROS(object):
         self._virtualMarkerFrame = get_param("~virtualMarkerFrame")
         self._HDWorkRange = get_param("~HDWorkRange")
         self._HDMaxForce = get_param("~HDMaxForce")
-        #Need to check if parameter available on parameter server!!
+
+        lambdaminPar = 'stiffness_learning/lambda_min'
+        lambdamaxPar = 'stiffness_learning/lambda_max'
+        if not has_param(lambdaminPar):
+            logfatal("Could not retrive %s from the parameter server", lambdaminPar)
+        if not has_param(lambdamaxPar):
+            logfatal("Could not retrive %s from the parameter server", lambdamaxPar)
+
         self._stiffnessMin = get_param("/stiffness_learning/stiffness_min") 
         self._stiffnessMax = get_param("/stiffness_learning/stiffness_max")
 
@@ -271,14 +278,14 @@ class OmniFeedbackROS(object):
 
     def _setRobotForceMessage(self,force):
         message = Vector3Stamped()
-        loginfo(message)
-        loginfo(type(message))
+        # loginfo(message)
+        # loginfo(type(message))
         message.header.stamp = Time.now()
         message.header.frame_id = "virtual_marker" # form some reason given in this frame and not correct!
         message.vector.x = force[0]
         message.vector.y = force[1]
         message.vector.z = force[2]
-        loginfo(message)
+        # loginfo(message)
 
         return message
 

@@ -2,7 +2,7 @@
 
 # ros classes
 from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, sleep
-from rospy import ROSInterruptException, Time, get_param
+from rospy import ROSInterruptException, Time, get_param, has_param, logwarn, logfatal
 from tf2_ros import TransformBroadcaster
 # custom class
 from ellipsoid_message import EllipsoidMessage
@@ -33,8 +33,19 @@ class DrawEllipsoid(object):
         self._inputTopicName = get_param("~input_topic_name")
         self._outputTopicName = get_param("~output_topic_name")
         # get wiggle max and min from parameter server
+        # Check if available from parameter server!
+        lambdaminPar = 'stiffness_learning/lambda_min'
+        lambdamaxPar = 'stiffness_learning/lambda_max'
+        if not has_param(lambdaminPar):
+            logfatal("Could not retrive %s from the parameter server", lambdaminPar)
+        if not has_param(lambdamaxPar):
+            logfatal("Could not retrive %s from the parameter server", lambdamaxPar)
+        
         self._lambda_min = get_param("/stiffness_learning/lambda_min")
         self._lambda_max = get_param("/stiffness_learning/lambda_max")
+            
+     
+
 
 
 

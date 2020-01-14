@@ -4,6 +4,8 @@
 
 # use in the directory where rosbag2csvs.sh is located:
 # ./rosbag2csvs.sh relative_directory bagDuration Topic1 Topic2 etc...
+# topics:
+
 
 # This script extracts multiple csv files accourding to the topic that 
 # are found from a single rosbag 

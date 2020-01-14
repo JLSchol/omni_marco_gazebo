@@ -5,7 +5,9 @@ import pandas as pd
 
 # paths
 # path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001101040_D10_W100_L0.01_0.45_S100_1000"
-path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001131800_D30_W100_L0.01_0.45_S100_1000"
+# path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001131800_D30_W100_L0.01_0.45_S100_1000"
+# path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001140841_D30_W100_L0.01_0.45_S100_1000"
+path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001140849_D30_W100_L0.01_0.45_S100_1000"
 
 stiffnessFile = "stiffness_command.csv"
 covarianceFile = "covariance_matrix.csv"
