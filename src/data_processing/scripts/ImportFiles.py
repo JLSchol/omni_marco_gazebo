@@ -5,26 +5,65 @@ from os import listdir
 
 
 class ImportFiles(object):
-	def __init__(self,basePath):
+	def __init__(self,basePath,bagName="empty"):
 		self.basePath = basePath #/home/jasper/omni_marco_gazebo/src/data_processing/data
-		self.allBagNames = listdir(basePath)
-		self.allBagDirs = [self.basePath +"/"+ str(bagName) for bagName in self.allBagNames]
-		self.bagNames = []
-		self.bagDirs = [] 
-		
 
-	def setBags(self,bagNameList):
-		self.bagNames = bagNameList
-		if isinstance(bagNameList, str):
-			self.bagNames = [bagNameList]
-		self.bagDirs = [self.basePath +"/"+ str(bagName) for bagName in self.bagNames]
+		allBagNames = listdir(basePath)
+		allBagDirs = [self.basePath +"/"+ str(Name) for Name in allBagNames]
+
+		# these parameters are tuples of (nameList,completePathList) pairs
+		# indexing: bag[0=name or 1=path] [0 till end of list]
+		self.allBags = (allBagNames,allBagDirs)
+		self.bag = []
+		self.allFiles = []
+		self.csvFiles = []
+		self.yamlFiles = []
+		self.rosBagFiles = []
+
+		self.topics = []
 
 
-	def findFiles(self,bagDirs,fileExtension="all"):
+		if bagName is not "empty":
+			self.setBag(bagName)
+			
+			
+	
+	def _getTopic(self,fileName):
+		sep = "."
+		if isinstance(fileName,str):
+			head = fileName.split(sep, 1)[0]
+			return head
+		elif isinstance(fileName,list) == True and len(fileName) ==1:
+			head = fileName[0].split(sep, 1)[0]
+			return head
+		elif isinstance(fileName,list) == True and len(fileName) != 1:
+			heads = [ singleFile.split(sep, 1)[0] for singleFile in fileName]
+			return heads
+		else:
+			print("no string or list of strings provided")
+
+
+	def _addBasePath(self,basePath,paths):
+
+		if isinstance(paths,str):
+			return str(basePath)+"/"+ str(paths)
+
+		elif isinstance(paths,list) == True and len(paths) ==1:
+			return str(basePath)+"/"+str(paths[0])
+
+		elif isinstance(paths,list) == True and len(paths) != 1:
+			completePaths = [basePath +"/"+ str(path) for path in paths]
+			return completePaths
+		else:
+			print("no string or list of strings provided")
+
+	
+	def _findFiles(self,bagPath,fileExtension="all"): 
 		listOfFiles =[]
 		files = []
-		if len(bagDirs) == 1:
-			listOfFiles = listdir(bagDirs[0])
+		if isinstance(bagPath, str):
+			listOfFiles = listdir(bagPath)
+			# print(listOfFiles)
 		else:
 			print("Only a single bagDir can be provided")
 			return
@@ -50,106 +89,96 @@ class ImportFiles(object):
 		else:
 			print("unkown fileExtension type \n try: all, csv, bag or yaml")
 
+		if len(files) == 1:
+			files = str(files[0])
+
 		return files
-				# if fileExtension == "all":
-		# 	return listOfFiles
-		# elif fileExtension == "csv":
-		# 	csvFiles = [str(file) for file in listOfFiles if str(file).endswith('csv')]
-		# 	return csvFiles
-		# elif fileExtension == "yaml":
-		# 	yamlFiles = [file for file in listOfFiles if file.endswith('yaml')]
-		# 	return yamlFiles
-		# elif fileExtension == "bag":
-		# 	bagFiles = [file for file in listOfFiles if file.endswith('bag')]
-		# 	return bagFiles
-		# else:
-		# 	print("unkown fileExtension type \n try: all, csv, bag or yaml")
+
+	def setBag(self,bagName="empty"):
+
+		if bagName == "empty" and len(self.bag) != 0:
+			print("The bag class has already been intitialized with bag directory: {}".format(self.bag[0]))
+			
+
+		elif bagName == "empty" and len(self.bag) == 0:
+			print("Provide a bag directory as input for 'setBag(dir)'or use the second argument of the class initializer")
+			
+
+		elif isinstance(bagName, str):
+
+			if len(self.bag) == 0:
+				print("The bag class will be intitialized with bag directory: {}".format(bagName))
+
+			else: #len(self.bag) !=0:
+				print("The bag class has already been intitialized with bag directory: \
+				{} \n and will be re-initialized with bag directory: {}".format(self.bag[0],bagName))
+				return
+
+			bagPath = self._addBasePath(self.basePath,bagName)
+			self.bag = (bagName, bagPath)
+
+			allFileNames = self._findFiles(bagPath) # hier gaat het mis
+			print("all file names are {}".format(allFileNames))
+			self.allFiles = (allFileNames, self._addBasePath(bagPath,allFileNames))
+
+			csvFileNames = self._findFiles(bagPath,"csv")
+			self.csvFiles = (csvFileNames, self._addBasePath(bagPath,csvFileNames))
+
+			yamlFileNames = self._findFiles(bagPath,"yaml")
+			self.yamlFiles = (yamlFileNames, self._addBasePath(bagPath,yamlFileNames))
+
+			rosBagFileNames = self._findFiles(bagPath,"bag")
+			self.rosBagFiles = (rosBagFileNames, self._addBasePath(bagPath,rosBagFileNames))
+
+			self.topics = self._getTopic(csvFileNames)
+		else:
+			print("Something went wrong in setbag()")
+
+
 
 
 
 	def importCSV(self,topic="all"):
-		if not self.bagDirs:
+		if not self.bag[1]:
 			print("no directory set use: setBags('bagDirectory')")
 			return
 
 		pandaaas = []
 		if topic == "all":
-			csvFiles = self.findFiles(self.bagDirs,"csv")
-			print(csvFiles)
+			csvFiles = self._findFiles(self.bag[1],"csv")
+
 			if isinstance(csvFiles, str):
 				csvFiles = [csvFiles]
 
-			pandaaas = [pd.read_csv(self.bagDirs[0] +"/"+ str(csvfile)) for csvfile in csvFiles]
+			pandaaas = [pd.read_csv(self.bag[1] +"/"+ str(csvfile)) for csvfile in csvFiles]
 	
 		elif isinstance(topic,str):
-			pandaaas = pd.read_csv(self.bagDirs[0] +"/"+topic)
+			pandaaas = pd.read_csv(self.bag[1] +"/"+topic)
 
 		elif isinstance(topic,list): 
-			pandaaas = [pd.read_csv(self.bagDirs[0] +"/"+ str(topic_i)) for topic_i in topic]
+			pandaaas = [pd.read_csv(self.bag[1] +"/"+ str(topic_i)) for topic_i in topic]
 
-		return pandaaas
+		return pandaaas, csvFiles
 
 
-	def importYaml(self,fileDir):
-		# pd.io.json.json_normalize(yaml.load(fileDir))# , 'reviews', 'doc'
-		return "pandas structure from single Yaml"
+	def importYaml(self,fileDir="empty"):
+		if fileDir=="empty":
+			fileDir = self.yamlFiles[1]
+
+		with open(fileDir, 'r') as stream:
+		    try:
+		        yamltje = yaml.safe_load(stream)
+		        # print(pd.io.json.json_normalize(yaml.safe_load(yaml.safe_load(stream))))
+		    except yaml.YAMLError as exc:
+		        print(exc)
+		return yamltje
+		# return "dictionair of single Yaml"
+
 
 	def importAll(self):
-		return (self.importCSV("all"), self.importYaml())
-
-	def getCSVHeaderLists(self,pandasCSVList):
-
-		headers = [getHeaderCommand(file) for file in pandasCSVList]
-		return headers
-
-	def getParamList(self):
-		return "parameters"
+		pandaaas, csvFiles = self.importCSV("all")
+		return pandaaas, csvFiles, self.importYaml()
 
 
-
-
-if __name__== "__main__":
-	# dir_path = os.path.dirname(os.path.realpath(__file__))
-	path = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001101040_D10_W100_L0.01_0.45_S100_1000"
-
-	#constructor
-	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data")
-
-	#methods
-	names = IF.allBagNames
-	IF.setBags(IF.allBagNames[0])
-	# IF.setBags([20,21])
-	# dirs = IF.bagDirs; print(dirs)
-	print(IF.findFiles(IF.bagDirs))
-	print(IF.importYaml("/home/jasper/omni_marco_gazebo/src/data_processing/data/202001101040_D10_W100_L0.01_0.45_S100_1000/202001101040_D10_W100_L0.01_0.45_S100_1000_par.yaml"))
-
-
-	# files = IF.importCSV('all')
-	# files1 = IF.importCSV('omni1_joint_states.csv')
-	# files2 = IF.importCSV(['omni1_joint_states.csv', 'omni1_force_feedback.csv'])
-
-
-	#Attributes
-	# print(IF.basePath)
-	# print(type(IF.basePath))
-	# print(10*"----")
-
-	# print(IF.allBagNames)
-	# print(type(IF.allBagNames))
-	# print(10*"----")
-
-	# print(IF.allBagDirs)
-	# print(type(IF.allBagDirs))
-	# print(10*"----")
-
-	# print(IF.bagNames)
-	# print(type(IF.bagNames))
-	# print(10*"----")
-
-	# print(IF.bagDirs)
-	# print(type(IF.bagDirs))
-
-
-
-
-	
+# if __name__== "__main__":
+	# pass
