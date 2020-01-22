@@ -24,7 +24,7 @@ class CalcHDFeedbackForce(object):
         self._maxForceLimitsHD = maxForceLimitsHD #[-N, +N]
         self._maxWorkRangeHD = maxWorkrangeHD #[-m, +m]
 
-        # all with respect to the end effector frame\
+        # Everything in this class is with respect to the end effector frame
         self._stiffnessRobot = np.array([])
         self._markerPosition = np.array([])
         self._forcesRobot = np.array([])
@@ -37,17 +37,17 @@ class CalcHDFeedbackForce(object):
     def calcRobotForce(self):
         if self._isEmpty([self._stiffnessRobot,self._markerPosition]):
             self._forcesRobot = np.array([])
+            # self._markerPosition = np.array([])
             return
         self._forcesRobot = self._stiffnessRobot.dot(self._markerPosition)
-        
         
     def calcHDForce(self):
         if self._isEmpty([self._stiffnessRobot,self._currentPositionHD,
                                 self._lockPositionHD]):
             self._forcesHD = np.array([]) # set forces to be empty
             return
-        self._stiffnessHD = self._calcHDStiffness(self._stiffnessRobot)
-        self._forcesHD = self._stiffnessHD.dot(self._currentPositionHD) 
+        self._stiffnessHD = self._calcHDStiffness(self._stiffnessRobot) #In ee frame...
+        self._forcesHD = self._stiffnessHD.dot(self._currentPositionHD) # in ee frame
         # limit force when above commanding range
 
     def setCurrentRobotStiffness(self,stiffnessRobot):
@@ -75,7 +75,7 @@ class CalcHDFeedbackForce(object):
         # stiffnessMaxHD assumes now, that the lockstate is in the center(0,0,0) position of the HD
         stiffnessMaxHD = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1] 
         scaling = stiffnessMaxHD/self._robotStiffnessLimits[1]
-        stiffnessHD = scaling*stiffnessRobot
+        stiffnessHD = scaling*stiffnessRobot #stiffness robot is in EE-frame thus stiffnessHD aswell
 
         return np.array(stiffnessHD)
 
@@ -145,7 +145,7 @@ class OmniFeedbackROS(object):
                                                         [-self._HDMaxForce,self._HDMaxForce],
                                                         [-self._HDWorkRange,self._HDWorkRange]) 
         # 1) get info and check
-        # 2) rotate omni vector to ee frame 
+        # 2) rotate omni vectors to ee frame 
         # 3) find force from robot stiffness matrix in ee frame
         # 4) transform force in ee frame back to omni frame
         # 5) publish messages
@@ -159,49 +159,58 @@ class OmniFeedbackROS(object):
             stiffnessMatrix = self._convertArrayToMatrix(self._stiffnessMessage)
             CalcOmniFeedbackForce.setCurrentRobotStiffness(stiffnessMatrix)
             # find transform (rotation) from wrist to omni and transform the forces 
-            EndEffectorinHDFrame = self.listenToTransform(self._EEFrame,self._HDFrame) 
-            # find vector of virtual_marker in endeffector frame and set in class
-            markerInEEFrame = self.listenToTransform("virtual_marker",self._EEFrame) 
+            HDFrameToEE = self.listenToTransform(self._EEFrame,self._HDFrame) 
+            
+            # find the point of virtual_marker seen from endeffector frame and set in class
+            markerInEEFrame = self.listenToTransform(self._EEFrame,"virtual_marker") 
             trans = markerInEEFrame.transform.translation
             CalcOmniFeedbackForce.setVirtualMarkerPosition([trans.x, trans.y, trans.z])
 
             # 2) rotate omni vector to ee frame 
-            currentPositionInOmni = self.rotateVector(EndEffectorinHDFrame.transform.rotation,
+            currentOmniPositionInEE = self.rotateVector(HDFrameToEE.transform.rotation, 
                                                     self._omniPositionMessage.current_position)
-            lockPositionInOmni = self.rotateVector(EndEffectorinHDFrame.transform.rotation,
+            lockOmniPositionInEE = self.rotateVector(HDFrameToEE.transform.rotation,
                                                         self._omniPositionMessage.lock_position)
 
             # 3) find force from stiffness matrix in ee frame (scaled down to HD capabilities)
             # Get/Set omni lock and current position
-            CalcOmniFeedbackForce.setCurrentHDPosition([currentPositionInOmni.x, 
-                                                        currentPositionInOmni.y,
-                                                        currentPositionInOmni.z])
-            CalcOmniFeedbackForce.setLockPositionHD([lockPositionInOmni.x, 
-                                                        lockPositionInOmni.y, 
-                                                        lockPositionInOmni.z])
-           
-            # get the virtual robot forces
+            CalcOmniFeedbackForce.setCurrentHDPosition([currentOmniPositionInEE.x, 
+                                                        currentOmniPositionInEE.y,
+                                                        currentOmniPositionInEE.z])
+            CalcOmniFeedbackForce.setLockPositionHD([lockOmniPositionInEE.x, 
+                                                        lockOmniPositionInEE.y, 
+                                                        lockOmniPositionInEE.z])
+            
+            # calc the virtual robot forces and omni force
             CalcOmniFeedbackForce.calcRobotForce()
-            robotForces = CalcOmniFeedbackForce.getRobotForces()
-
-            # get the omni stiffness matrix and feedbackForces
             CalcOmniFeedbackForce.calcHDForce()
-            HDStiffness= CalcOmniFeedbackForce.getHDStiffness()
+
+            # get the omni stiffness matrix
+            HDStiffness= CalcOmniFeedbackForce.getHDStiffness() # in EE frame
+            
+            # get the omni feedbackForces and robot force in EE frame
+            robotForces = CalcOmniFeedbackForce.getRobotForces()
             forceInEEFrame= CalcOmniFeedbackForce.getHDForces()
 
             # 4) transform force in ee frame back to omni frame
-            q = EndEffectorinHDFrame.transform.rotation
+            q = HDFrameToEE.transform.rotation
             q.w = -q.w #inverse the rotation
+
+            robotForces = Vector3(robotForces[0],robotForces[1],robotForces[2])
             forceInEEFrame = Vector3(forceInEEFrame[0],forceInEEFrame[1],forceInEEFrame[2])
-            forceInOmniFrame = self.rotateVector(q,forceInEEFrame)
+
+            # need this in omni frame such that we can easily compare the two forces while proccessing the data
+            forceRobotInOmniFrame = self.rotateVector(q,robotForces) 
+            # Need this in omni frame because the forces are fed to the omni node
+            FeedbackForceInOmniFrame = self.rotateVector(q,forceInEEFrame)
 
             # 5) publish messages
-            forceRobotMsg = self._setRobotForceMessage(robotForces)
+            forceRobotMsg = self._setRobotForceMessage(forceRobotInOmniFrame,self._HDFrame)
             stiffnessHDMsg = self._set2DMultiArray(HDStiffness, 3, 3, self._HDFrame)
-            forceHDMsg = self._setOmniFeedbackMessage(forceInOmniFrame,
-                                                    self._omniPositionMessage.lock_position)
+            forceHDMsg = self._setOmniFeedbackMessage(FeedbackForceInOmniFrame,
+                                    self._omniPositionMessage.lock_position, self._HDFrame)
                                                     
-            # self._forceRobotPub.publish(forceRobotMsg) # incorrect Fix!!
+            self._forceRobotPub.publish(forceRobotMsg) 
             self._stiffnessHDPub.publish(stiffnessHDMsg)
             self._forceHDPub.publish(forceHDMsg)
 
@@ -222,10 +231,10 @@ class OmniFeedbackROS(object):
         2*v.x*q.x*q.z - v.z*q.y*q.y + 2*v.y*q.y*q.z + v.z*q.z*q.z)
         return vr;   
 
-    def listenToTransform(self, sourceFrame, targetFrame):      
+    def listenToTransform(self, targetFrame, sourceFrame):      
         try:        # lookup_transform(from this frame, to this frame)
-            trans = self._tfBuffer.lookup_transform(sourceFrame, targetFrame, 
-                                                            Time(0), Duration(30))
+            trans = self._tfBuffer.lookup_transform(targetFrame, sourceFrame, 
+                                                            Time(), Duration(30))
             
         except (LookupException, ConnectivityException, ExtrapolationException):
             pass
@@ -246,13 +255,14 @@ class OmniFeedbackROS(object):
         return matrix
     
 
-    def _setOmniFeedbackMessage(self,feedbackForce, lockPosition):
+    def _setOmniFeedbackMessage(self,feedbackForce, lockPosition, frame_id):
         head = Header()
         head.stamp = Time.now()
-        head.frame_id = self._HDFrame
-
+        head.frame_id = frame_id
+        # In this case, a minuss is necessary! might change when using real impedance controller
+        # minus from actie = -reactie?
         f = Vector3()
-        f.x = -feedbackForce.x # why the minus??
+        f.x = -feedbackForce.x 
         f.y = -feedbackForce.y
         f.z = -feedbackForce.z
 
@@ -280,16 +290,15 @@ class OmniFeedbackROS(object):
         message.F32MA.data = valueList
         return message
 
-    def _setRobotForceMessage(self,force):
+    def _setRobotForceMessage(self,force,frame_id):
         message = Vector3Stamped()
-        # loginfo(message)
-        # loginfo(type(message))
         message.header.stamp = Time.now()
-        message.header.frame_id = "virtual_marker" # form some reason given in this frame and not correct!
-        message.vector.x = force[0]
-        message.vector.y = force[1]
-        message.vector.z = force[2]
-        # loginfo(message)
+        message.header.frame_id = frame_id 
+        # In this case, a minuss is necessary! might change when using real impedance controller
+        # minus from actie = -reactie?
+        message.vector.x = -force.x 
+        message.vector.y = -force.y 
+        message.vector.z = -force.z 
 
         return message
 
