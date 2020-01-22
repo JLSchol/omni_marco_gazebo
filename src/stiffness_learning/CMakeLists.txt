@@ -50,6 +50,7 @@ find_package(Eigen3 REQUIRED)
 
 ## Generate messages in the 'msg' folder
 add_message_files(FILES
+  HeaderFloat32MultiArray.msg
   VectorValue.msg
   EigenPairs.msg
 )

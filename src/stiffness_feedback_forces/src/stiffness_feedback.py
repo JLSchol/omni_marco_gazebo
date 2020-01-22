@@ -10,6 +10,7 @@ from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 from std_msgs.msg import MultiArrayLayout
 from phantom_omni.msg import OmniFeedback
 from phantom_omni.msg import LockState
+from stiffness_learning.msg import HeaderFloat32MultiArray
 
 import numpy as np
 
@@ -95,12 +96,12 @@ class OmniFeedbackROS(object):
         self._getParameters()
         #pub
         self._forceRobotPub = Publisher("virtual_robot_force", Vector3Stamped , queue_size=100)
-        self._stiffnessHDPub = Publisher("omni_stiffness", Float32MultiArray , queue_size=100)
+        self._stiffnessHDPub = Publisher("omni_stiffness", HeaderFloat32MultiArray , queue_size=100)
         self._forceHDPub = Publisher(self._outputTopic, OmniFeedback , queue_size=100)
         #sub
         # wait_for_message(self._stiffnessInput, Float32MultiArray, timeout=5)
         # wait_for_message(self._omniPositionInput, LockState, timeout=5)
-        self._stiffnessSub = Subscriber(self._stiffnessInput, Float32MultiArray, self._stiffnessCallback)
+        self._stiffnessSub = Subscriber(self._stiffnessInput, HeaderFloat32MultiArray, self._stiffnessCallback)
         self._positionSub = Subscriber(self._omniPositionInput, LockState, self._omniPositionCallback)
         self._stiffnessMessage = [] 
         self._omniPositionMessage = []
@@ -196,7 +197,7 @@ class OmniFeedbackROS(object):
 
             # 5) publish messages
             forceRobotMsg = self._setRobotForceMessage(robotForces)
-            stiffnessHDMsg = self._set2DMultiArray(HDStiffness, 3, 3)
+            stiffnessHDMsg = self._set2DMultiArray(HDStiffness, 3, 3, self._HDFrame)
             forceHDMsg = self._setOmniFeedbackMessage(forceInOmniFrame,
                                                     self._omniPositionMessage.lock_position)
                                                     
@@ -235,11 +236,11 @@ class OmniFeedbackROS(object):
         if not multiArray:  
             return
         
-        dstride1 = multiArray.layout.dim[1].stride
-        h = multiArray.layout.dim[0].size
-        w = multiArray.layout.dim[1].size
+        dstride1 = multiArray.F32MA.layout.dim[1].stride
+        h = multiArray.F32MA.layout.dim[0].size
+        w = multiArray.F32MA.layout.dim[1].size
 
-        dataVector = multiArray.data
+        dataVector = multiArray.F32MA.data
         matrix = []
         matrix = [[dataVector[i*dstride1 + j] for i in range(h)] for j in range(w)]
         return matrix
@@ -260,20 +261,23 @@ class OmniFeedbackROS(object):
                                 force = f,
                                 position = p )
 
-    def _set2DMultiArray(self,matrix, height, width):
-        message = Float32MultiArray()
-        message.layout.dim.append(MultiArrayDimension())
-        message.layout.dim.append(MultiArrayDimension())
-        message.layout.dim[0].label = "height"
-        message.layout.dim[1].label = "width"
-        message.layout.dim[0].size = height
-        message.layout.dim[1].size = width
-        message.layout.dim[0].stride = height*width
-        message.layout.dim[1].stride = width
-        message.layout.data_offset = 0
+    def _set2DMultiArray(self,matrix, height, width, frame_id):
+        message = HeaderFloat32MultiArray()
+        message.header.stamp = Time.now()
+        message.header.frame_id = frame_id
+        message.F32MA = Float32MultiArray()
+        message.F32MA.layout.dim.append(MultiArrayDimension())
+        message.F32MA.layout.dim.append(MultiArrayDimension())
+        message.F32MA.layout.dim[0].label = "height"
+        message.F32MA.layout.dim[1].label = "width"
+        message.F32MA.layout.dim[0].size = height
+        message.F32MA.layout.dim[1].size = width
+        message.F32MA.layout.dim[0].stride = height*width
+        message.F32MA.layout.dim[1].stride = width
+        message.F32MA.layout.data_offset = 0
 
         valueList = [value for row in matrix for value in row]
-        message.data = valueList
+        message.F32MA.data = valueList
         return message
 
     def _setRobotForceMessage(self,force):

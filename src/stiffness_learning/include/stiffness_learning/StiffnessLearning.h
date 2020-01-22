@@ -9,6 +9,8 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayLayout.h>
 
+#include "stiffness_learning/HeaderFloat32MultiArray.h"
+
 #include "stiffness_learning/VectorValue.h"
 #include "stiffness_learning/EigenPairs.h"
 
@@ -47,8 +49,8 @@ class StiffnessLearning
 		geometry_msgs::TransformStamped base_to_ee_;
 		geometry_msgs::TransformStamped marker_in_ee_frame_;
 		// other message type parameters
-		std_msgs::Float32MultiArray covariance_matrix_MA_;
-		std_msgs::Float32MultiArray stiffness_matrix_MA_;
+		stiffness_learning::HeaderFloat32MultiArray covariance_matrix_MA_;
+		stiffness_learning::HeaderFloat32MultiArray stiffness_matrix_MA_;
 		stiffness_learning::EigenPairs eigen_pair_;
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
@@ -63,8 +65,8 @@ class StiffnessLearning
         // Initialize inside constructor
         void getParameters();
         void initializePublishers();
-		std_msgs::Float32MultiArray initialize2DMultiArray(
-											int height, int width, int offset);
+		stiffness_learning::HeaderFloat32MultiArray initialize2DMultiArray(
+								int height, int width, int offset, std::string frame_id);
 
 		std::vector<float> getErrorSignal();
 
@@ -90,7 +92,7 @@ class StiffnessLearning
 												Eigen::Vector3f &stiffness_diagonal);
 
 		void fill2DMultiArray(Eigen::Matrix3f matrix, 
-										std_msgs::Float32MultiArray& multi_array);
+								stiffness_learning::HeaderFloat32MultiArray& multi_array);
 		stiffness_learning::EigenPairs setEigenPairMessage(std::pair<Eigen::Matrix3f, 
 													Eigen::Vector3f>& vector_value_pair);
 };

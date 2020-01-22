@@ -10,8 +10,8 @@ nh_("~")
 {
     getParameters();
     initializePublishers();
-    covariance_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
-    stiffness_matrix_MA_ = initialize2DMultiArray(3, 3, 0);
+    covariance_matrix_MA_ = initialize2DMultiArray(3, 3, 0, ee_frame_name_);
+    stiffness_matrix_MA_ = initialize2DMultiArray(3, 3, 0, ee_frame_name_);
 }  
 
 
@@ -333,10 +333,10 @@ Eigen::Matrix3f StiffnessLearning::getStiffnessMatrix(
 
 
 void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
-                                                            std_msgs::Float32MultiArray& multi_array)
+                                                            stiffness_learning::HeaderFloat32MultiArray& multi_array)
 {
-    int height = multi_array.layout.dim[0].size;
-    int width = multi_array.layout.dim[1].size;
+    int height = multi_array.F32MA.layout.dim[0].size;
+    int width = multi_array.F32MA.layout.dim[1].size;
 
     std::vector<float> vec(width*height, 0);
     for (int i=0; i<height; i++){
@@ -344,7 +344,7 @@ void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
             vec[i*width + j] = matrix(i,j);
             }
         }
-    multi_array.data = vec;
+    multi_array.F32MA.data = vec;
 }
 
 
@@ -356,7 +356,7 @@ stiffness_learning::EigenPairs StiffnessLearning::setEigenPairMessage(std::pair<
     
     stiffness_learning::EigenPairs message;
     message.header.stamp = ros::Time::now();
-    message.header.frame_id = ee_frame_name_; // is this necessary and correct?
+    message.header.frame_id = ee_frame_name_; 
 
     for (int i=0; i<3; i++)
     {
@@ -398,14 +398,19 @@ void StiffnessLearning::getParameters()
 
 void StiffnessLearning::initializePublishers()
 {
-    covariance_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(covariance_command_topic_name_,1);
+    covariance_pub_ = nh_.advertise<stiffness_learning::HeaderFloat32MultiArray>(covariance_command_topic_name_,1);
     eigen_pair_pub_ = nh_.advertise<stiffness_learning::EigenPairs>(eigen_pair_topic_name_,1);
-    stiffness_pub_ = nh_.advertise<std_msgs::Float32MultiArray>(stiffness_command_topic_name_,1);
+    stiffness_pub_ = nh_.advertise<stiffness_learning::HeaderFloat32MultiArray>(stiffness_command_topic_name_,1);
 }
 
 
-std_msgs::Float32MultiArray StiffnessLearning::initialize2DMultiArray(int height, int width, int offset)
+stiffness_learning::HeaderFloat32MultiArray StiffnessLearning::initialize2DMultiArray(int height, int width, int offset, std::string frame_id )
 {
+    stiffness_learning::HeaderFloat32MultiArray message;
+
+    message.header.stamp = ros::Time::now();
+    message.header.frame_id = frame_id; 
+
     std_msgs::Float32MultiArray multi_array;
     multi_array.layout.dim.push_back(std_msgs::MultiArrayDimension()); // height
     multi_array.layout.dim.push_back(std_msgs::MultiArrayDimension()); // width
@@ -416,7 +421,10 @@ std_msgs::Float32MultiArray StiffnessLearning::initialize2DMultiArray(int height
     multi_array.layout.dim[0].stride = height*width;
     multi_array.layout.dim[1].stride = width;
     multi_array.layout.data_offset = 0;
-    return multi_array;
+
+    message.F32MA = multi_array;
+
+    return message;
 }
 
 
