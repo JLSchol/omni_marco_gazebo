@@ -34,7 +34,7 @@
     <!--<arg name="rot_matrix_array" default= "0 -1 0 0 0 1 -1 0 0"/>--> <!--test common wrist_ft_tool_link-->
  </include>
 
-<include file="$(find omni_2_marker)/launch/omni_2_marker.launch"> 
+<include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch"> 
     <arg name="button_topic_name" value="$(arg button_topic_name)"/>
     <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
     <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>

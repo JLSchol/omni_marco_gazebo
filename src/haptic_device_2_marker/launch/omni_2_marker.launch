@@ -20,7 +20,7 @@
 
 
 
-  <node pkg="omni_2_marker" name="omni_2_marker" type="omni_2_marker" output="screen">
+  <node pkg="haptic_device_2_marker" name="omni_2_marker" type="omni_2_marker" output="screen">
     <!--Input topic-->
     <!--<param name="joint_state_topic_name" value="$(arg joints_topic_name)"/>-->
     <param name="button_event_topic_name" value="$(arg button_topic_name)"/>

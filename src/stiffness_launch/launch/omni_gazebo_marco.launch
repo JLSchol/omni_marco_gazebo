@@ -39,7 +39,7 @@
         <arg name="rot_matrix_array"     default="$(arg rot_matrix_array)"/>
     </include>
 
-    <include file="$(find omni_2_marker)/launch/omni_2_marker.launch">  
+    <include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch">  
         <arg name="button_topic_name" default="$(arg omni_button_state)"/>
         <arg name="lock_state_topic" default="$(arg omni_position)"/>
         <arg name="marker_topic_name" default="$(arg marker_visualization)"/>

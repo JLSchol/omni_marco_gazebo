@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>omni_2_marker</name>
+  <name>haptic_device_2_marker</name>
   <version>0.0.0</version>
-  <description>The omni_2_marker package</description>
+  <description>The haptic_device_2_marker package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/omni_2_marker</url> -->
+  <!-- <url type="website">http://wiki.ros.org/haptic_device_2_marker</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->

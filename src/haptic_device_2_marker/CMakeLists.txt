@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(omni_2_marker)
+project(haptic_device_2_marker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -107,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES omni_2_marker
+#  LIBRARIES haptic_device_2_marker
 #  CATKIN_DEPENDS roscpp std_msgs tf visualization_msgs
 #  DEPENDS system_lib
 )
@@ -125,7 +125,7 @@ include
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/omni_2_marker.cpp
+#   src/${PROJECT_NAME}/haptic_device_2_marker.cpp
 # )
 
 ## Add cmake target dependencies of the library

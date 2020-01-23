@@ -5,7 +5,7 @@
   <include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">  
  </include>
 
- <include file="$(find omni_2_marker)/launch/omni_2_marker.launch">  
+ <include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch">  
  </include>
 
  <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch">  
