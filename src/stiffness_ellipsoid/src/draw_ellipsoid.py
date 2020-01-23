@@ -18,11 +18,11 @@ from std_msgs.msg import Float32MultiArray
 
 class DrawEllipsoid(object):
     def __init__(self):
-        init_node("draw_ellipsoid", anonymous=False)
+        init_node("draw_ellipsoid", anonymous=True)
 
         self._getParameters()
 
-        self._publisher = Publisher(self._outputTopicName, Marker, queue_size=50)
+        self._publisher = Publisher(str(self._nodeName+self._outputTopicName), Marker, queue_size=50)
         self._subscriber = Subscriber(self._inputTopicName, EigenPairs, self._callback)
         
         self._eigenPair = []
@@ -32,6 +32,7 @@ class DrawEllipsoid(object):
         # input output topic
         self._inputTopicName = get_param("~input_topic_name")
         self._outputTopicName = get_param("~output_topic_name")
+        self._nodeName = get_param("~node_name")
         # get wiggle max and min from parameter server
         # Check if available from parameter server!
         lambdaminPar = 'stiffness_learning/lambda_min'
