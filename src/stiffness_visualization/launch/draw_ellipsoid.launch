@@ -14,7 +14,7 @@
 <arg name="end_effector_frame"          default="wrist_ft_tool_link"/>-->
 
 
-  <node pkg="stiffness_ellipsoid" name="$(arg node_name)" type="draw_ellipsoid.py" output="screen">
+  <node pkg="stiffness_visualization" name="$(arg node_name)" type="draw_ellipsoid.py" output="screen">
 
     <!--Input topic-->
     <param name="input_topic_name" value="$(arg input_topic_name)"/>

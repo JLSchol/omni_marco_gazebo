@@ -1,5 +1,9 @@
-#include "stiffness_ellipsoid/ellipsoid_visualization.h"
-
+#include "stiffness_visualization/ellipsoid_visualization.h"
+/*
+---------------------------------------------------------------------------
+OLD FILE
+---------------------------------------------------------------------------
+*/
 EllipsoidVisualization::EllipsoidVisualization():
 nh_("~")
 {

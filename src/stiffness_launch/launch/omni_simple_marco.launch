@@ -64,7 +64,7 @@
         <arg name="window_length"     default="$(arg window_length)"/>
     </include>
 
-    <include file="$(find stiffness_ellipsoid)/launch/draw_ellipsoid.launch">  
+    <include file="$(find stiffness_visualization)/launch/draw_ellipsoid.launch">  
         <arg name="input_topic_name"        default="$(arg eigen_pair)"/>
         <arg name="output_topic_name"     default="$(arg ellipsoid_visualization)"/>
     </include>
