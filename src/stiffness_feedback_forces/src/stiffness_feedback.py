@@ -10,7 +10,7 @@ from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 from std_msgs.msg import MultiArrayLayout
 from phantom_omni.msg import OmniFeedback
 from phantom_omni.msg import LockState
-from stiffness_learning.msg import HeaderFloat32MultiArray
+from stiffness_commanding.msg import HeaderFloat32MultiArray
 
 import numpy as np
 
@@ -119,15 +119,15 @@ class OmniFeedbackROS(object):
         self._HDWorkRange = get_param("~HDWorkRange")
         self._HDMaxForce = get_param("~HDMaxForce")
 
-        lambdaminPar = 'stiffness_learning/lambda_min'
-        lambdamaxPar = 'stiffness_learning/lambda_max'
+        lambdaminPar = 'stiffness_commanding/lambda_min'
+        lambdamaxPar = 'stiffness_commanding/lambda_max'
         if not has_param(lambdaminPar):
             logfatal("Could not retrive %s from the parameter server", lambdaminPar)
         if not has_param(lambdamaxPar):
             logfatal("Could not retrive %s from the parameter server", lambdamaxPar)
 
-        self._stiffnessMin = get_param("/stiffness_learning/stiffness_min") 
-        self._stiffnessMax = get_param("/stiffness_learning/stiffness_max")
+        self._stiffnessMin = get_param("/stiffness_commanding/stiffness_min") 
+        self._stiffnessMax = get_param("/stiffness_commanding/stiffness_max")
 
     def _stiffnessCallback(self, message):
         self._stiffnessMessage = message

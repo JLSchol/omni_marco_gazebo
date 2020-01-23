@@ -32,7 +32,7 @@
     <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
  </include>
 
- <include file="$(find stiffness_learning)/launch/stiffness_learning.launch"> 
+ <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch"> 
     <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/> 
     <arg name="virtual_marker_name"     default="$(arg virtual_marker_name)"/>
  </include>

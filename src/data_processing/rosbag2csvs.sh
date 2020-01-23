@@ -22,11 +22,11 @@ do
 done
 
 datum=`date +'%Y%m%d%H%M'`
-Wlength=`rosparam get /stiffness_learning/window_length`
-Lmin=`rosparam get /stiffness_learning/lambda_min`
-Lmax=`rosparam get /stiffness_learning/lambda_max`
-Smin=`rosparam get /stiffness_learning/stiffness_min`
-Smax=`rosparam get /stiffness_learning/stiffness_max`
+Wlength=`rosparam get /stiffness_commanding/window_length`
+Lmin=`rosparam get /stiffness_commanding/lambda_min`
+Lmax=`rosparam get /stiffness_commanding/lambda_max`
+Smin=`rosparam get /stiffness_commanding/stiffness_min`
+Smax=`rosparam get /stiffness_commanding/stiffness_max`
 
 
 dir_name="${datum}_D${2}_W${Wlength}_L${Lmin}_${Lmax}_S${Smin}_${Smax}"

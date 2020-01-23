@@ -7,7 +7,7 @@ from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout
 from visualization_msgs.msg import Marker
 #import custom messages
-from stiffness_learning.msg import EigenPairs, VectorValue
+from stiffness_commanding.msg import EigenPairs, VectorValue
 
 from PyKDL import Rotation
 

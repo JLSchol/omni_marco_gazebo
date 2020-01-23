@@ -1,5 +1,5 @@
-#ifndef STIFFNESS_LEARNING_H
-#define STIFFNESS_LEARNING_H
+#ifndef STIFFNESS_COMMANDING_H
+#define STIFFNESS_COMMANDING_H
 
 #include <ros/ros.h>
 
@@ -9,21 +9,21 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayLayout.h>
 
-#include "stiffness_learning/HeaderFloat32MultiArray.h"
+#include "stiffness_commanding/HeaderFloat32MultiArray.h"
 
-#include "stiffness_learning/VectorValue.h"
-#include "stiffness_learning/EigenPairs.h"
+#include "stiffness_commanding/VectorValue.h"
+#include "stiffness_commanding/EigenPairs.h"
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
 
 
-class StiffnessLearning
+class StiffnessCommanding
 {
 	public:
 		// CLASS CONSTRUCTOR
-        StiffnessLearning();
+        StiffnessCommanding();
 
 		// CLASS PUBLIC METHODS
 		void run();
@@ -49,9 +49,9 @@ class StiffnessLearning
 		geometry_msgs::TransformStamped base_to_ee_;
 		geometry_msgs::TransformStamped marker_in_ee_frame_;
 		// other message type parameters
-		stiffness_learning::HeaderFloat32MultiArray covariance_matrix_MA_;
-		stiffness_learning::HeaderFloat32MultiArray stiffness_matrix_MA_;
-		stiffness_learning::EigenPairs eigen_pair_;
+		stiffness_commanding::HeaderFloat32MultiArray covariance_matrix_MA_;
+		stiffness_commanding::HeaderFloat32MultiArray stiffness_matrix_MA_;
+		stiffness_commanding::EigenPairs eigen_pair_;
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
 		// tune parameters
@@ -65,7 +65,7 @@ class StiffnessLearning
         // Initialize inside constructor
         void getParameters();
         void initializePublishers();
-		stiffness_learning::HeaderFloat32MultiArray initialize2DMultiArray(
+		stiffness_commanding::HeaderFloat32MultiArray initialize2DMultiArray(
 								int height, int width, int offset, std::string frame_id);
 
 		std::vector<float> getErrorSignal();
@@ -92,8 +92,8 @@ class StiffnessLearning
 												Eigen::Vector3f &stiffness_diagonal);
 
 		void fill2DMultiArray(Eigen::Matrix3f matrix, 
-								stiffness_learning::HeaderFloat32MultiArray& multi_array);
-		stiffness_learning::EigenPairs setEigenPairMessage(std::pair<Eigen::Matrix3f, 
+								stiffness_commanding::HeaderFloat32MultiArray& multi_array);
+		stiffness_commanding::EigenPairs setEigenPairMessage(std::pair<Eigen::Matrix3f, 
 													Eigen::Vector3f>& vector_value_pair);
 };
 

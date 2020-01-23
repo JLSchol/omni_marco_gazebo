@@ -21,7 +21,7 @@
 
 
 
-  <node pkg="stiffness_learning" name="stiffness_learning" type="stiffness_learning" output="screen">
+  <node pkg="stiffness_commanding" name="stiffness_commanding" type="stiffness_commanding" output="screen">
     <!--Input topic-->
     <!--<param name="marker_topic_name" value="$(arg marker_topic_name)"/>-->
 

@@ -3,5 +3,5 @@
 
 std_msgs/Header header
 
-stiffness_learning/VectorValue[] pairs
+stiffness_commanding/VectorValue[] pairs
 

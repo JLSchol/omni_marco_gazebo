@@ -10,7 +10,7 @@ from ellipsoid_message import EllipsoidMessage
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 #custom messages
-from stiffness_learning.msg import EigenPairs
+from stiffness_commanding.msg import EigenPairs
 
 from std_msgs.msg import Float32MultiArray
 
@@ -35,15 +35,15 @@ class DrawEllipsoid(object):
         self._nodeName = get_param("~node_name")
         # get wiggle max and min from parameter server
         # Check if available from parameter server!
-        lambdaminPar = 'stiffness_learning/lambda_min'
-        lambdamaxPar = 'stiffness_learning/lambda_max'
+        lambdaminPar = 'stiffness_commanding/lambda_min'
+        lambdamaxPar = 'stiffness_commanding/lambda_max'
         if not has_param(lambdaminPar):
             logfatal("Could not retrive %s from the parameter server", lambdaminPar)
         if not has_param(lambdamaxPar):
             logfatal("Could not retrive %s from the parameter server", lambdamaxPar)
         
-        self._lambda_min = get_param("/stiffness_learning/lambda_min")
-        self._lambda_max = get_param("/stiffness_learning/lambda_max")
+        self._lambda_min = get_param("/stiffness_commanding/lambda_min")
+        self._lambda_max = get_param("/stiffness_commanding/lambda_max")
             
      
 

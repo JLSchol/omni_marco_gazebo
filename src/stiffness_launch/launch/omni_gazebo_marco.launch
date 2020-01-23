@@ -49,7 +49,7 @@
         <arg name="scale_marker_deviation" default="$(arg scale_marker_deviation)"/>
     </include>
 
-    <include file="$(find stiffness_learning)/launch/stiffness_learning.launch">  
+    <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch">  
         <arg name="stiffness_topic_name" default="$(arg stiffness_command)"/>
         <arg name="covariance_topic_name" default="$(arg covariance_topic_name)"/>
         <arg name="eigen_pair_topic_name" default="$(arg eigen_pair)"/>

@@ -1,11 +1,11 @@
-#include "stiffness_learning/StiffnessLearning.h"
+#include "stiffness_commanding/StiffnessCommanding.h"
 
 // issues:
 //  When data_matrix has not yet reaches the size of the window_length
 // The eigenvalues and vectors of the covariance matrix seems wrong?
 
 
-StiffnessLearning::StiffnessLearning():
+StiffnessCommanding::StiffnessCommanding():
 nh_("~")
 {
     getParameters();
@@ -15,7 +15,7 @@ nh_("~")
 }  
 
 
-void StiffnessLearning::getTF(tf2_ros::Buffer& buffer)
+void StiffnessCommanding::getTF(tf2_ros::Buffer& buffer)
 {
     // Read as buffer.lookupTransform(target_frame, source_frame, when?, wait x amount of sec untill available):
     // Where the transform can mean two things: 
@@ -32,7 +32,7 @@ void StiffnessLearning::getTF(tf2_ros::Buffer& buffer)
 }
 
 
-void StiffnessLearning::run()
+void StiffnessCommanding::run()
 {
     // get error signal from tf_tree
     std::vector<float> error_signal(3);
@@ -62,7 +62,7 @@ void StiffnessLearning::run()
     // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
 
     fill2DMultiArray(covariance_matrix,covariance_matrix_MA_);
-    stiffness_learning::EigenPairs eigen_message = setEigenPairMessage(eigen_vector_and_values);
+    stiffness_commanding::EigenPairs eigen_message = setEigenPairMessage(eigen_vector_and_values);
     fill2DMultiArray(K_matrix,stiffness_matrix_MA_);
 
     covariance_pub_.publish(covariance_matrix_MA_);
@@ -74,7 +74,7 @@ void StiffnessLearning::run()
 
 
 
-std::vector<float> StiffnessLearning::getErrorSignal()
+std::vector<float> StiffnessCommanding::getErrorSignal()
 {
     std::vector<float> error_signal;
     error_signal.push_back(marker_in_ee_frame_.transform.translation.x);
@@ -89,7 +89,7 @@ std::vector<float> StiffnessLearning::getErrorSignal()
 
 
 // Test this function for observations > window length
-void StiffnessLearning::populateDataMatrix(std::vector<float>& complete_error_signal, 
+void StiffnessCommanding::populateDataMatrix(std::vector<float>& complete_error_signal, 
                                             std::vector< std::vector<float> >& data_matrix)
 {
     // only consider the first 3, x,y,z translations AND NOT THE XYZW QUATERNIONS
@@ -136,7 +136,7 @@ void StiffnessLearning::populateDataMatrix(std::vector<float>& complete_error_si
 
 
 // Need to check the covariance matrix on singularities otherwise loose rank not good blabla
-void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, 
+void StiffnessCommanding::getCovarianceMatrix(std::vector< std::vector<float> >& data_matrix, 
                                                 Eigen::Matrix3f& covariance_matrix)
 {
     if(data_matrix.empty()){
@@ -171,7 +171,7 @@ void StiffnessLearning::getCovarianceMatrix(std::vector< std::vector<float> >& d
 
 
 std::pair<Eigen::Matrix3f, Eigen::Vector3f> 
-                StiffnessLearning::computeEigenVectorsAndValues(Eigen::Matrix3f &matrix)
+                StiffnessCommanding::computeEigenVectorsAndValues(Eigen::Matrix3f &matrix)
 {
     // get eigenvalues and eigenvectors via eigen_solver(finds upon initialization)
     // because we are dealing with real symmetric matrix(A=A^T) matrix==selfadjointmatrix
@@ -217,7 +217,7 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f>
 }
 
 
-bool StiffnessLearning::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vectors)
+bool StiffnessCommanding::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vectors)
 {
     bool right_handed;
 
@@ -260,7 +260,7 @@ bool StiffnessLearning::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vector
 }
 
 
-std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessLearning::shuffelEigenPairs(
+std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessCommanding::shuffelEigenPairs(
                                                             Eigen::Matrix3f &eigen_vectors, 
                                                             Eigen::Vector3f &eigen_values)
 {   
@@ -277,7 +277,7 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessLearning::shuffelEigenPairs
 }
 
 
-Eigen::Vector3f StiffnessLearning::getStiffnessEig(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
+Eigen::Vector3f StiffnessCommanding::getStiffnessEig(std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair)
 {
     Eigen::Vector3f eigen_values = vector_value_pair.second;
 
@@ -316,7 +316,7 @@ Eigen::Vector3f StiffnessLearning::getStiffnessEig(std::pair<Eigen::Matrix3f, Ei
 }
 
 
-Eigen::Matrix3f StiffnessLearning::getStiffnessMatrix(
+Eigen::Matrix3f StiffnessCommanding::getStiffnessMatrix(
                     std::pair<Eigen::Matrix3f, Eigen::Vector3f>& vector_value_pair, 
                                             Eigen::Vector3f &stiffness_diagonal)
 {
@@ -332,8 +332,8 @@ Eigen::Matrix3f StiffnessLearning::getStiffnessMatrix(
 }
 
 
-void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
-                                                            stiffness_learning::HeaderFloat32MultiArray& multi_array)
+void StiffnessCommanding::fill2DMultiArray(Eigen::Matrix3f matrix,
+                                                            stiffness_commanding::HeaderFloat32MultiArray& multi_array)
 {
     int height = multi_array.F32MA.layout.dim[0].size;
     int width = multi_array.F32MA.layout.dim[1].size;
@@ -348,19 +348,19 @@ void StiffnessLearning::fill2DMultiArray(Eigen::Matrix3f matrix,
 }
 
 
-stiffness_learning::EigenPairs StiffnessLearning::setEigenPairMessage(std::pair<Eigen::Matrix3f, 
+stiffness_commanding::EigenPairs StiffnessCommanding::setEigenPairMessage(std::pair<Eigen::Matrix3f, 
 													        Eigen::Vector3f>& vector_value_pair)
 {
     Eigen::Matrix3f eigen_vectors = vector_value_pair.first;
     Eigen::Vector3f eigen_values = vector_value_pair.second;
     
-    stiffness_learning::EigenPairs message;
+    stiffness_commanding::EigenPairs message;
     message.header.stamp = ros::Time::now();
     message.header.frame_id = ee_frame_name_; 
 
     for (int i=0; i<3; i++)
     {
-        stiffness_learning::VectorValue single_pair;
+        stiffness_commanding::VectorValue single_pair;
 
         std::vector<float> Vi;
         Eigen::Vector3f eigen_vector_i = eigen_vectors.col(i);
@@ -378,7 +378,7 @@ stiffness_learning::EigenPairs StiffnessLearning::setEigenPairMessage(std::pair<
 }
 
 
-void StiffnessLearning::getParameters()
+void StiffnessCommanding::getParameters()
 {
     // input output topic names
     nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix"); 
@@ -396,17 +396,17 @@ void StiffnessLearning::getParameters()
 }
 
 
-void StiffnessLearning::initializePublishers()
+void StiffnessCommanding::initializePublishers()
 {
-    covariance_pub_ = nh_.advertise<stiffness_learning::HeaderFloat32MultiArray>(covariance_command_topic_name_,1);
-    eigen_pair_pub_ = nh_.advertise<stiffness_learning::EigenPairs>(eigen_pair_topic_name_,1);
-    stiffness_pub_ = nh_.advertise<stiffness_learning::HeaderFloat32MultiArray>(stiffness_command_topic_name_,1);
+    covariance_pub_ = nh_.advertise<stiffness_commanding::HeaderFloat32MultiArray>(covariance_command_topic_name_,1);
+    eigen_pair_pub_ = nh_.advertise<stiffness_commanding::EigenPairs>(eigen_pair_topic_name_,1);
+    stiffness_pub_ = nh_.advertise<stiffness_commanding::HeaderFloat32MultiArray>(stiffness_command_topic_name_,1);
 }
 
 
-stiffness_learning::HeaderFloat32MultiArray StiffnessLearning::initialize2DMultiArray(int height, int width, int offset, std::string frame_id )
+stiffness_commanding::HeaderFloat32MultiArray StiffnessCommanding::initialize2DMultiArray(int height, int width, int offset, std::string frame_id )
 {
-    stiffness_learning::HeaderFloat32MultiArray message;
+    stiffness_commanding::HeaderFloat32MultiArray message;
 
     message.header.stamp = ros::Time::now();
     message.header.frame_id = frame_id; 
@@ -431,9 +431,9 @@ stiffness_learning::HeaderFloat32MultiArray StiffnessLearning::initialize2DMulti
 
 int main( int argc, char** argv )
 {
-	ros::init(argc, argv, "stiffness_learning");
+	ros::init(argc, argv, "stiffness_commanding");
 
-	StiffnessLearning node;
+	StiffnessCommanding node;
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener TF_listener(tfBuffer);

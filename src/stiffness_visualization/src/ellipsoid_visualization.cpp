@@ -24,15 +24,15 @@ void EllipsoidVisualization::getParameters()
     // rosparam server from other launch file
     // std::string stiffness_min_path, stiffness_max_path, lambda_min_path, lambda_max_path, lambda_max_path;
 
-    if (nh_.hasParam("/stiffness_learning/stiffness_min") &&
-        nh_.hasParam("/stiffness_learning/stiffness_max") &&
-        nh_.hasParam("/stiffness_learning/lambda_min") &&
-        nh_.hasParam("/stiffness_learning/lambda_max"))
+    if (nh_.hasParam("/stiffness_commanding/stiffness_min") &&
+        nh_.hasParam("/stiffness_commanding/stiffness_max") &&
+        nh_.hasParam("/stiffness_commanding/lambda_min") &&
+        nh_.hasParam("/stiffness_commanding/lambda_max"))
     {
-        nh_.getParam("/stiffness_learning/stiffness_min", stiffness_min_);
-        nh_.getParam("/stiffness_learning/stiffness_max", stiffness_max_);
-        nh_.getParam("/stiffness_learning/lambda_min", lambda_min_);
-        nh_.getParam("/stiffness_learning/lambda_max", lambda_max_);
+        nh_.getParam("/stiffness_commanding/stiffness_min", stiffness_min_);
+        nh_.getParam("/stiffness_commanding/stiffness_max", stiffness_max_);
+        nh_.getParam("/stiffness_commanding/lambda_min", lambda_min_);
+        nh_.getParam("/stiffness_commanding/lambda_max", lambda_max_);
     }
     else
     {
