@@ -10,9 +10,10 @@
 #include <std_msgs/MultiArrayLayout.h>
 
 #include "stiffness_commanding/HeaderFloat32MultiArray.h"
-
 #include "stiffness_commanding/VectorValue.h"
 #include "stiffness_commanding/EigenPairs.h"
+
+#include "phantom_omni/LockState.h"
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -34,10 +35,12 @@ class StiffnessCommanding
 		// CLASS PRIVATE ATTRIBUTES
 		// ROS Parameters
 		ros::NodeHandle nh_;
+		ros::Subscriber lock_state_sub_;
 		ros::Publisher covariance_pub_;
 		ros::Publisher eigen_pair_pub_;
 		ros::Publisher stiffness_pub_;		
 		// topic names
+		std::string lock_state_topic_name_;
 		std::string stiffness_command_topic_name_;
 		std::string covariance_command_topic_name_;
 		std::string eigen_pair_topic_name_;
@@ -49,9 +52,13 @@ class StiffnessCommanding
 		geometry_msgs::TransformStamped base_to_ee_;
 		geometry_msgs::TransformStamped marker_in_ee_frame_;
 		// other message type parameters
+		phantom_omni::LockState lockstate_msg_;
 		stiffness_commanding::HeaderFloat32MultiArray covariance_matrix_MA_;
+		stiffness_commanding::EigenPairs eigen_message_;
 		stiffness_commanding::HeaderFloat32MultiArray stiffness_matrix_MA_;
-		stiffness_commanding::EigenPairs eigen_pair_;
+		stiffness_commanding::HeaderFloat32MultiArray prev_covariance_matrix_MA_;
+		stiffness_commanding::EigenPairs prev_eigen_message_;
+		stiffness_commanding::HeaderFloat32MultiArray prev_stiffness_matrix_MA_;		
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
 		// tune parameters
@@ -64,6 +71,8 @@ class StiffnessCommanding
 		// CLASS PRIVATE METHODS
         // Initialize inside constructor
         void getParameters();
+		void initializeSubscribers();
+		void CB_getLockState(const phantom_omni::LockState& lockstate_message);
         void initializePublishers();
 		stiffness_commanding::HeaderFloat32MultiArray initialize2DMultiArray(
 								int height, int width, int offset, std::string frame_id);

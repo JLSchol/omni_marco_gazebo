@@ -1,6 +1,7 @@
  <launch>
 <!--Input topic arguments-->
 <!--<arg name="marker_topic_name" default="/marker_transform"/> -->
+<arg name="lock_state_topic" default="/omni1_lock_state"/> 
 
 <!--Output topics arguments-->
 <arg name="stiffness_topic_name" default="/stiffness_command"/> 
@@ -24,6 +25,7 @@
   <node pkg="stiffness_commanding" name="stiffness_commanding" type="stiffness_commanding" output="screen">
     <!--Input topic-->
     <!--<param name="marker_topic_name" value="$(arg marker_topic_name)"/>-->
+    <param name="lock_state_topic_name" value="$(arg lock_state_topic)"/>
 
     <!--Output topics-->
     <param name="stiffness_topic_name" value="$(arg stiffness_topic_name)"/>

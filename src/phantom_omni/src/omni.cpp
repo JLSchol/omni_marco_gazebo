@@ -122,7 +122,7 @@ public:
 		// state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];
 		// state->force[2] = omnifeed->force.z - 0.001 * state->velocity[2];
 		// ROS_INFO_STREAM("Lock state: "<< state->lock);
-		if (state->lock == true) {
+		if (state->lock_grey == true) {
 			// ROS_INFO_STREAM("in if lock true");
 			state->force[0] = omnifeed->force.x - 0.001 * state->velocity[0];
 			state->force[1] = omnifeed->force.y - 0.001 * state->velocity[1];

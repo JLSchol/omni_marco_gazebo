@@ -9,6 +9,7 @@ StiffnessCommanding::StiffnessCommanding():
 nh_("~")
 {
     getParameters();
+    initializeSubscribers();
     initializePublishers();
     covariance_matrix_MA_ = initialize2DMultiArray(3, 3, 0, ee_frame_name_);
     stiffness_matrix_MA_ = initialize2DMultiArray(3, 3, 0, ee_frame_name_);
@@ -34,6 +35,17 @@ void StiffnessCommanding::getTF(tf2_ros::Buffer& buffer)
 
 void StiffnessCommanding::run()
 {
+    
+    if (lockstate_msg_.lock_white == true){
+        covariance_matrix_MA_ = prev_covariance_matrix_MA_;
+        eigen_message_ = prev_eigen_message_;
+        stiffness_matrix_MA_ = prev_stiffness_matrix_MA_;
+        covariance_pub_.publish(covariance_matrix_MA_);
+        eigen_pair_pub_.publish(eigen_message_);
+        stiffness_pub_.publish(stiffness_matrix_MA_);
+    }
+    else{
+    
     // get error signal from tf_tree
     std::vector<float> error_signal(3);
     error_signal = getErrorSignal(); // x,y,z,qx,qy,qz,qw
@@ -62,14 +74,18 @@ void StiffnessCommanding::run()
     // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
 
     fill2DMultiArray(covariance_matrix,covariance_matrix_MA_);
-    stiffness_commanding::EigenPairs eigen_message = setEigenPairMessage(eigen_vector_and_values);
+    eigen_message_ = setEigenPairMessage(eigen_vector_and_values);
     fill2DMultiArray(K_matrix,stiffness_matrix_MA_);
 
     covariance_pub_.publish(covariance_matrix_MA_);
-    eigen_pair_pub_.publish(eigen_message);
+    eigen_pair_pub_.publish(eigen_message_);
     stiffness_pub_.publish(stiffness_matrix_MA_);
     
     // ROS_INFO_STREAM("---------------------------------------------------");
+    }
+    prev_covariance_matrix_MA_ = covariance_matrix_MA_;
+    prev_eigen_message_ = eigen_message_;
+    prev_stiffness_matrix_MA_ = stiffness_matrix_MA_;
 }
 
 
@@ -384,6 +400,7 @@ void StiffnessCommanding::getParameters()
     nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix"); 
     nh_.param<std::string>("eigen_pair_topic_name", eigen_pair_topic_name_, "/eigen_pair"); 
     nh_.param<std::string>("stiffness_topic_name", stiffness_command_topic_name_, "/stiffness_command");  
+    nh_.param<std::string>("lock_state_topic_name", lock_state_topic_name_, "/omni1_lock_state");
     // TF frame names
     nh_.param<std::string>("ee_frame_name", ee_frame_name_, "end_effector"); 
     nh_.param<std::string>("virtual_marker_name", virtual_marker_name_, "virtual_marker_transform");
@@ -395,6 +412,15 @@ void StiffnessCommanding::getParameters()
     nh_.param<float>("window_length", window_length_, 100); 
 }
 
+void StiffnessCommanding::initializeSubscribers()
+{
+    lock_state_sub_ = nh_.subscribe(lock_state_topic_name_, 1, &StiffnessCommanding::CB_getLockState, this);
+}
+
+void StiffnessCommanding::CB_getLockState(const phantom_omni::LockState& lockstate_message)
+{
+    lockstate_msg_ = lockstate_message;
+}
 
 void StiffnessCommanding::initializePublishers()
 {

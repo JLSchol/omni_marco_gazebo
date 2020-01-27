@@ -12,6 +12,8 @@
 
 <arg name="virtual_marker_name"          default="virtual_marker_transform"/>
 
+<arg name="lock_state_topic" default="/omni1_lock_state"/> 
+
 <!--<arg name="robot_reference_frame"          value="base_footprint"/> -->
 
 
@@ -35,5 +37,6 @@
  <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch"> 
     <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/> 
     <arg name="virtual_marker_name"     default="$(arg virtual_marker_name)"/>
+    <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
  </include>
  </launch>

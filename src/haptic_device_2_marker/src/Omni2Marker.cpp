@@ -79,7 +79,7 @@ void Omni2Marker::getTF(tf2_ros::Buffer& buffer)
 
 void Omni2Marker::run()
 {  
-    if ( (button_msg_.grey_button && button_msg_.white_button) == true)
+    if ( lockstate_msg_.lock_grey == true)
     {
         this->publish_on_ = true;  // set boolean to true if both buttons are pressed
     }
