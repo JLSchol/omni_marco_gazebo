@@ -6,7 +6,7 @@
 <!--Output topics arguments-->
 <arg name="output_topic_name" default="/ellipsoid_visualization"/> <!--need the slash!-->
 
-<arg name="node_name" default="draw_ellipsoid_test"/>
+<arg name="node_name" default="draw_ellipsoid"/>
 
 <!--Tf arguments-->  
 <!--was used for ellipsoid_visualization.cpp-->

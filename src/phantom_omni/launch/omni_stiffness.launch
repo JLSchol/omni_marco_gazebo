@@ -1,0 +1,8 @@
+<launch>
+
+<arg name="omni_frame_name"         default="omni_rotation"/>
+	<!-- omni node publishes joint states on omni1_joint_states -->
+    <node name="omni1" pkg="phantom_omni" type="omni" output="screen">
+        <param name="omni_frame_name"     value="$(arg omni_frame_name)"/>
+	</node>
+</launch>

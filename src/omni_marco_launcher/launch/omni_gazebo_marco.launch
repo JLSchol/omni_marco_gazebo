@@ -1,9 +1,11 @@
 <launch>
 
-<!--<arg name="robot_base_frame"          default="base_footprint"/> 
-<arg name="end_effector_frame"          default="wrist_ft_tool_link"/> -->
-    <!-- omni node publishes joint states on omni1_joint_states -->
-    <node name="omni1" pkg="phantom_omni" type="omni" output="screen" />
+<arg name="omni_frame_name"         default="omni_rotation"/>
+
+ <!-- omni node publishes joint states on omni1_joint_states -->
+    <include file="$(find phantom_omni)/launch/omni_stiffness.launch"> 
+        <arg name="omni_frame_name"     default="$(arg omni_frame_name)"/>
+    </include>
     
     <!-- Node that publishes a gazebo marco -->
     <include file="$(find marco_gazebo)/launch/marco_gazebo.launch">

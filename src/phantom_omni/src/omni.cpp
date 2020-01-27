@@ -38,6 +38,8 @@ struct OmniState {
 	int buttons[2];
 	int buttons_prev[2];
 	bool lock;
+	bool lock_grey;
+	bool lock_white;
 	hduVector3Dd lock_pos;
 };
 
@@ -51,10 +53,14 @@ public:
 	ros::Publisher lock_state_pub;
 	ros::Subscriber haptic_sub;
 	std::string omni_name;
+	std::string omni_frame_name;
 
 	OmniState *state;
 
 	void init(OmniState *s) {
+
+		n.param<std::string>("omni_frame_name", omni_frame_name, "omni_rotation");
+
 		ros::param::param(std::string("~omni_name"), omni_name,
 				std::string("omni1"));
 
@@ -97,6 +103,8 @@ public:
 		state->pos_hist1 = zeros; //3x1 history of position
 		state->pos_hist2 = zeros; //3x1 history of position
 		state->lock = false;
+		state->lock_grey = false;
+		state->lock_white = false;
 		state->lock_pos = zeros;
 
 	}
@@ -165,6 +173,17 @@ public:
 					and (state->buttons[0] == 1)) {
 				state->lock = !(state->lock);
 			}
+
+		if ((state->buttons[0] != state->buttons_prev[0]) 
+				and (state->buttons[0] == 1)) {
+				state->lock_grey = !(state->lock_grey);
+				}
+
+		if ((state->buttons[1] != state->buttons_prev[0]) 
+				and (state->buttons[1] == 1)) {
+				state->lock_white = !(state->lock_white);
+				}
+
 			phantom_omni::PhantomButtonEvent button_event;
 			button_event.header.stamp = ros::Time::now();
 			button_event.grey_button = state->buttons[0];
@@ -177,8 +196,10 @@ public:
 		// publish LockState, current position and locked position
 		phantom_omni::LockState lock_state_msg;
 		lock_state_msg.header.stamp = ros::Time::now();
-		lock_state_msg.header.frame_id = "omni";
+		lock_state_msg.header.frame_id = omni_frame_name;
 		lock_state_msg.lock = state->lock;
+		lock_state_msg.lock_grey = state->lock_grey;
+		lock_state_msg.lock_white = state->lock_white;
 			
 		// lock_state_msg.lock_position = state->lock_pos;
 		lock_state_msg.lock_position.x = state->lock_pos[0]/1000; // from [mm] to [m]
