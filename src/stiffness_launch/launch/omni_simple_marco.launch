@@ -12,7 +12,7 @@
     
     <!--Topic Names-->
     <arg name="omni_button_state" value="/omni1_button"/>
-    <arg name="omni_position" value="/omni1_lock_state"/>
+    <arg name="omni_lock_position_state" value="/omni1_lock_state"/>
     <arg name="marker_visualization" value="/marker_visualization"/>
     <arg name="stiffness_command" value="/stiffness_command"/>
     <arg name="covariance_topic_name" value="/covariance_matrix"/>
@@ -44,7 +44,7 @@
 
     <include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch">  
         <arg name="button_topic_name" default="$(arg omni_button_state)"/>
-        <arg name="lock_state_topic" default="$(arg omni_position)"/>
+        <arg name="lock_state_topic" default="$(arg omni_lock_position_state)"/>
         <arg name="marker_topic_name" default="$(arg marker_visualization)"/>
         <arg name="robot_reference_frame" default="$(arg robot_reference_frame)"/>
         <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
@@ -53,6 +53,7 @@
     </include>
 
     <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch">  
+        <arg name="lock_state_topic"    default= "$(arg omni_lock_position_state)"/>
         <arg name="stiffness_topic_name" default="$(arg stiffness_command)"/>
         <arg name="covariance_topic_name" default="$(arg covariance_topic_name)"/>
         <arg name="eigen_pair_topic_name" default="$(arg eigen_pair)"/>
@@ -72,7 +73,7 @@
 
     <include file="$(find stiffness_feedback_forces)/launch/stiffness_feedback_forces.launch">  
         <arg name="robot_stiffness"     default="$(arg stiffness_command)"/>
-        <arg name="omni_position_input"     default="$(arg omni_position)"/>
+        <arg name="omni_position_input"     default="$(arg omni_lock_position_state)"/>
         <arg name="output_topic"     default="$(arg force_feedback)"/>
         <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
         <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
