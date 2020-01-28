@@ -2,6 +2,7 @@
 #define OMNI_2_MARKER_H
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>

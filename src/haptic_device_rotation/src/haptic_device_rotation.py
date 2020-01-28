@@ -19,7 +19,7 @@ class hapticDeviceRotation():
 
 
     def run(self):
-        rosRate = Rate(30)
+        rosRate = Rate(100)
         broadcaster = StaticTransformBroadcaster()
         while not is_shutdown():
 

@@ -203,10 +203,11 @@ int main( int argc, char** argv )
 
     while (ros::ok()) 
     {
-        ros::Rate loop_rate(30); //publish_frequency_
+        // ros::Rate loop_rate(30); //publish_frequency_
         node.getTF(tfBuffer);
         node.run();
-        ros::spinOnce();
-        loop_rate.sleep();
+        ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(0.1));
+        // ros::spinOnce();
+        // loop_rate.sleep();
     }
 }

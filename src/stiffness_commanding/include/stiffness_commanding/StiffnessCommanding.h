@@ -2,6 +2,7 @@
 #define STIFFNESS_COMMANDING_H
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 
 #include <tf2_ros/transform_listener.h>
 
