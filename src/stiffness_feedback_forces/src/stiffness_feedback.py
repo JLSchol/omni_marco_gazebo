@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, wait_for_message
+from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, wait_for_message, spin
 from rospy import ROSInterruptException, Time, Duration, sleep, get_param, Header, has_param, logfatal
 from tf2_ros import TransformListener, Buffer, LookupException
 from tf2_ros import ConnectivityException, ExtrapolationException
@@ -137,8 +137,8 @@ class OmniFeedbackROS(object):
 
 
     def run(self):
-        publishRate = 30 # Hz
-        rosRate = Rate(publishRate)
+        # publishRate = 30 # Hz
+        # rosRate = Rate(publishRate)
 
         # initialize stiffness feedback            class([stiffness][force][workrange])
         CalcOmniFeedbackForce = CalcHDFeedbackForce([self._stiffnessMin,self._stiffnessMax],
@@ -215,8 +215,8 @@ class OmniFeedbackROS(object):
             self._forceHDPub.publish(forceHDMsg)
 
             # loginfo(10*"---")
-            rosRate.sleep()
-    
+            # rosRate.sleep()
+            
 
 
     def rotateVector(self, q, v):
@@ -311,6 +311,7 @@ if __name__ == "__main__":
 
         node = OmniFeedbackROS()
         node.run()
+        spin()
 
     except ROSInterruptException:
         pass
