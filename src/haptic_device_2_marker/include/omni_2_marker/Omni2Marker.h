@@ -16,6 +16,7 @@
 #include "phantom_omni/LockState.h"
 
 //math
+#include <math.h>
 #include <vector> 
 
 
@@ -40,7 +41,7 @@ class Omni2Marker
 		ros::NodeHandle nh_;
 
 		// ros::Subscriber joint_State_sub_;
-		ros::Subscriber button_event_sub_;
+		// ros::Subscriber button_event_sub_;
 		ros::Subscriber lock_state_sub_;
 		// std::string joint_state_topic_name_;
 		std::string button_event_topic_name_;
@@ -58,10 +59,12 @@ class Omni2Marker
 		std::string virtual_marker_;	
 
 		double scale_marker_deviation_;
+		float lambda_min_;
+		float lambda_max_;
 
 		// message type parameters
 		// sensor_msgs::JointState jointstate_msg_;
-		phantom_omni::PhantomButtonEvent button_msg_; 
+		// phantom_omni::PhantomButtonEvent button_msg_; 
 		phantom_omni::LockState lockstate_msg_;
 		visualization_msgs::Marker marker_;
 		// geometry_msgs::TransformStamped marker_transform_;
@@ -89,7 +92,9 @@ class Omni2Marker
 		// private members
 		void findDeviationFromLockPosition(std::vector<double> &deviation_from_lock);
 		void addMarkerTransform(const std::vector<double> &deviation_from_lock);
-		void fillMarkerMsg(geometry_msgs::TransformStamped& trans);
+		float magnitudeVector(std::vector<float> &vec);
+		std::vector<float> getmarkerColour(float lambda_min, float lambda_max, float magnitude);
+		void fillMarkerMsg(geometry_msgs::TransformStamped& trans, std::vector<float> rgba);
 		void fillMarkerTransformMsg(visualization_msgs::Marker& marker, 
 												geometry_msgs::TransformStamped& trans);
 };

@@ -26,7 +26,9 @@
     <arg name="max_robot_stiffness" value="1000"/>
     <arg name="lambda_min" value="0.01"/>
     <arg name="lambda_max" value="0.45"/>
-    <arg name="window_length" value="100"/>
+    <arg name="window_length" value="200"/>
+    <arg name="HD_work_range" value="0.06"/>
+    <arg name="HD_max_force" value="3.3"/>
  
     <include file="$(find omni_marco_launcher)/launch/omni_gazebo_marco.launch">
         <!--<arg name="robot_base_frame"     default="$(arg robot_base_frame)"/>
@@ -48,6 +50,8 @@
         <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
         <arg name="end_effector_frame" default="$(arg end_effector_frame)"/>
         <arg name="scale_marker_deviation" default="$(arg scale_marker_deviation)"/>
+        <arg name="lambda_min"        default="$(arg lambda_min)"/>
+        <arg name="lambda_max"        default="$(arg lambda_max)"/>
     </include>
 
     <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch"> 
@@ -76,6 +80,8 @@
         <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
         <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
         <arg name="virtual_marker_frame"     default="$(arg virtual_marker_name)"/>
+        <arg name="HD_work_range"     default="$(arg HD_work_range)"/>
+        <arg name="HD_max_force"     default="$(arg HD_max_force)"/>
     </include>
 
 

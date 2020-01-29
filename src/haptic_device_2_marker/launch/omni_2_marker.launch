@@ -17,6 +17,8 @@
 <arg name="virtual_marker_name"          default="virtual_marker"/>
 <!--Scaling coefficient of omni workspace to robot-->
 <arg name="scale_marker_deviation"          default="0.01"/>
+<arg name="lambda_min" default="0.01"/>
+<arg name="lambda_max" default="0.45"/>
 
 
 
@@ -24,7 +26,6 @@
     <!--Input topic-->
     <!--<param name="joint_state_topic_name" value="$(arg joints_topic_name)"/>-->
     <param name="button_event_topic_name" value="$(arg button_topic_name)"/>
-    <param name="lock_state_topic_name" value="$(arg lock_state_topic)"/>
 
     <!--Output topics-->
     <param name="marker_topic_name" value="$(arg marker_topic_name)"/>
@@ -36,6 +37,8 @@
     <param name="virtual_marker_name"     value="$(arg virtual_marker_name)"/>
 
     <param name="scale_marker_deviation"     value="$(arg scale_marker_deviation)"/>
+    <param name="lambda_min"        value="$(arg lambda_min)"/>
+    <param name="lambda_max"        value="$(arg lambda_max)"/>
 
   </node>
  </launch>

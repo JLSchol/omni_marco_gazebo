@@ -3,7 +3,6 @@
 Omni2Marker::Omni2Marker():
 nh_("~")
 {
-    // ROS_INFO_STREAM("----------------------------------");
     getParameters();
     initializeSubscribers();
     initializePublishers();
@@ -24,12 +23,15 @@ void Omni2Marker::getParameters()
     nh_.param<std::string>("virtual_marker_name", virtual_marker_, "virtual_marker"); 
 
     nh_.param<double>("scale_marker_deviation", scale_marker_deviation_, 1.0);  
+
+    nh_.param<float>("lambda_min", lambda_min_, 0.01); 
+    nh_.param<float>("lambda_max", lambda_max_, 0.45); 
 }
 
 void Omni2Marker::initializeSubscribers()
 {
     // joint_State_sub_ = nh_.subscribe(joint_state_topic_name_, 1, &Omni2Marker::CB_getJointStates, this);
-    button_event_sub_ = nh_.subscribe(button_event_topic_name_, 1, &Omni2Marker::CB_getButtonEvent, this);
+    // button_event_sub_ = nh_.subscribe(button_event_topic_name_, 1, &Omni2Marker::CB_getButtonEvent, this);
     lock_state_sub_ = nh_.subscribe(lock_state_topic_name_, 1, &Omni2Marker::CB_getLockState, this);
 }
 
@@ -44,10 +46,10 @@ void Omni2Marker::initializePublishers()
 //     jointstate_msg_ = jointstate_message;
 // }
 
-void Omni2Marker::CB_getButtonEvent(const phantom_omni::PhantomButtonEvent& button_message)
-{
-    button_msg_ = button_message;
-}
+// void Omni2Marker::CB_getButtonEvent(const phantom_omni::PhantomButtonEvent& button_message)
+// {
+//     button_msg_ = button_message;
+// }
 
 void Omni2Marker::CB_getLockState(const phantom_omni::LockState& lockstate_message)
 {
@@ -92,13 +94,32 @@ void Omni2Marker::run()
         findDeviationFromLockPosition(deviation_from_lock);
         addMarkerTransform(deviation_from_lock);
 
-        // fill messages for visualizatoin
-        fillMarkerMsg(marker_in_base_);
+        // Color marker green/red
+        std::vector<float> scaled_vec;
+        for(int i=0; i<deviation_from_lock.size(); ++i){
+            scaled_vec.push_back(scale_marker_deviation_*deviation_from_lock[i]);
+        } 
+        float magnitude = magnitudeVector(scaled_vec);
+        std::vector<float> rgba = getmarkerColour(lambda_min_,lambda_max_,magnitude);
+
+        // fill messages for visualization
+        fillMarkerMsg(marker_in_base_,rgba);
 
         // publish messages
         marker_pub_.publish(marker_);
         // marker_transform_pub_.publish(marker_in_base_);
     }
+}
+
+float Omni2Marker::magnitudeVector(std::vector<float> &vec)
+{
+    float squared_sum = 0;
+    for(int i=0; i<vec.size(); ++i){
+        float x2 = std::pow(vec[i],2.0);
+        squared_sum = squared_sum + x2;            
+    }
+    float magnitude = sqrt(squared_sum);
+    return magnitude;
 }
 
 void Omni2Marker::findDeviationFromLockPosition(std::vector<double> &deviation_from_lock)
@@ -138,7 +159,36 @@ void Omni2Marker::addMarkerTransform(const std::vector<double> &deviation_from_l
     br.sendTransform(marker_in_base_);
 }
 
-void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans)
+std::vector<float> Omni2Marker::getmarkerColour(float lambda_min, float lambda_max, float magnitude)
+{
+    std::vector<float> rgba;
+    float red = 0.0;
+    float green = 1.0;
+    float coeff;
+
+    float lower_bound = lambda_min*sqrt(2);
+    float upper_bound = lambda_max*sqrt(2);
+        
+
+    if (  (magnitude > upper_bound) ){ //(magnitude < lower_bound) or
+        red = 1.0;
+        green = 0.0;
+    }
+    else{
+        float coeff = (magnitude - lower_bound)/(upper_bound-lower_bound);   
+        red = coeff;
+        green= 1-coeff;
+    }
+    rgba.push_back(red);
+    rgba.push_back(green);
+    rgba.push_back(0.0);
+    rgba.push_back(1);
+
+    return rgba;
+}
+
+
+void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans, std::vector<float> rgba)
 {
     // Set the frame ID and timestamp. Also parent frame
     marker_.header = trans.header;
@@ -169,10 +219,10 @@ void Omni2Marker::fillMarkerMsg(geometry_msgs::TransformStamped& trans)
     marker_.scale.z = 0.05;
 
     // Set the color -- be sure to set alpha to something non-zero!
-    marker_.color.r = 0.0f;
-    marker_.color.g = 1.0f;
-    marker_.color.b = 0.0f;
-    marker_.color.a = 1.0;
+    marker_.color.r = rgba[0];
+    marker_.color.g = rgba[1];
+    marker_.color.b = rgba[2];
+    marker_.color.a = rgba[3];
 
     marker_.lifetime = ros::Duration();
 }
