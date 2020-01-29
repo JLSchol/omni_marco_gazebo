@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # ros classes
-from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, sleep
+from rospy import init_node, Publisher, Subscriber, is_shutdown, Rate, loginfo, spin
 from rospy import ROSInterruptException, Time, get_param, has_param, logwarn, logfatal
 from tf2_ros import TransformBroadcaster
 # custom class
@@ -58,8 +58,8 @@ class DrawEllipsoid(object):
 
         ellipsoidMsgClass = EllipsoidMessage()
         
-        publishRate = 30 # Hz
-        rosRate = Rate(publishRate)
+        # publishRate = 30 # Hz
+        # rosRate = Rate(publishRate)
         while not is_shutdown():
             if not self._eigenPair:  
                 continue
@@ -108,6 +108,7 @@ if __name__ == "__main__":
     try:
         node = DrawEllipsoid()
         node.run()
+        spin()
 
     except ROSInterruptException:
         pass
