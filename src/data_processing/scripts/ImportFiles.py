@@ -26,7 +26,15 @@ class ImportFiles(object):
 		if bagName is not "empty":
 			self.setBag(bagName)
 			
-			
+	def _openYaml(self,fileDir):
+		with open(fileDir, 'r') as stream:
+		    try:
+		        yamltje = yaml.safe_load(stream)
+		        # print(pd.io.json.json_normalize(yaml.safe_load(yaml.safe_load(stream))))
+		    except yaml.YAMLError as exc:
+		        print(exc)
+    		return yamltje
+
 	
 	def _getTopic(self,fileName):
 		sep = "."
@@ -118,7 +126,7 @@ class ImportFiles(object):
 			self.bag = (bagName, bagPath)
 
 			allFileNames = self._findFiles(bagPath) # hier gaat het mis
-			print("all file names are {}".format(allFileNames))
+			# print("all file names are {}".format(allFileNames))
 			self.allFiles = (allFileNames, self._addBasePath(bagPath,allFileNames))
 
 			csvFileNames = self._findFiles(bagPath,"csv")
@@ -149,8 +157,10 @@ class ImportFiles(object):
 
 			if isinstance(csvFiles, str):
 				csvFiles = [csvFiles]
-
+			# print(self.bag[1] +"/"+ str(csvFiles[2]))
 			pandaaas = [pd.read_csv(self.bag[1] +"/"+ str(csvfile)) for csvfile in csvFiles]
+			# print(csvFiles[11])
+			# pandaaas = pd.read_csv(self.bag[1]+"/"+str(csvFiles[11]))
 	
 		elif isinstance(topic,str):
 			pandaaas = pd.read_csv(self.bag[1] +"/"+topic)
@@ -161,24 +171,33 @@ class ImportFiles(object):
 		return pandaaas, csvFiles
 
 
-	def importYaml(self,fileDir="empty"):
-		if fileDir=="empty":
-			fileDir = self.yamlFiles[1]
+	def importYaml(self,fileDir="all"):
+		if fileDir=="all":
+			fileDirs = self.yamlFiles[1]
 
-		with open(fileDir, 'r') as stream:
-		    try:
-		        yamltje = yaml.safe_load(stream)
-		        # print(pd.io.json.json_normalize(yaml.safe_load(yaml.safe_load(stream))))
-		    except yaml.YAMLError as exc:
-		        print(exc)
-		return yamltje
-		# return "dictionair of single Yaml"
+			yamltjes = [self._openYaml(file) for file in fileDirs]
+			return yamltjes, self.yamlFiles[0]
+		else:
+			yaml = self._openYaml(fileDir)
+			return yaml
+
 
 
 	def importAll(self):
-		pandaaas, csvFiles = self.importCSV("all")
-		return pandaaas, csvFiles, self.importYaml()
+		panda, pandanameList = self.importCSV()
+		yam, yamNamesList = self.importYaml()
+		print("The panda files: \n {} \n ----".format(pandanameList))
+		print("The yaml files: \n {} \n ----".format(yamNamesList))
+		return panda, pandanameList, yam, yamNamesList
 
 
-# if __name__== "__main__":
-	# pass
+
+
+		# self.allBags = (allBagNames,allBagDirs)
+		# self.bag = []
+		# self.allFiles = []
+		# self.csvFiles = []
+		# self.yamlFiles = []
+		# self.rosBagFiles = []
+
+		# self.topics = []
