@@ -32,16 +32,29 @@ Smax=`rosparam get /stiffness_commanding/stiffness_max`
 dir_name="${datum}_D${2}_W${Wlength}_L${Lmin}_${Lmax}_S${Smin}_${Smax}"
 bag_name="${dir_name}_bag"
 par_name="${dir_name}_par"
+info_name="rosbag_info"
 
 echo "path (s1): " $1"/"$dir_name
 echo "duration: " $2
-echo "topics: " $topics
+
 
 mkdir -p $1"/"$dir_name
 
-rosbag record -O $1"/"$dir_name"/"$bag_name.bag --duration=$2 $topics
-rosparam dump $1"/"$dir_name"/"$par_name.yaml # can add /namespace to find specific params
+rosparam dump $1"/"$dir_name"/"$par_name.yaml  # can add /namespace to find specific params
 
+if [ "$#" = 2 ]; then
+	rosbag record -O $1"/"$dir_name"/"$bag_name.bag --duration=$2 -a
+else
+	rosbag record -O $1"/"$dir_name"/"$bag_name.bag --duration=$2 $topics
+fi
+
+rosbag info -y $1"/"$dir_name"/"$bag_name.bag > $info_name.yaml
+mv $info_name.yaml $1"/"$dir_name
+
+if [ "$#" = 2 ]; then
+	topics=`cat $1"/"$dir_name"/"$info_name.yaml | grep topic: | awk '{print $3}'`
+fi
+echo "topics: " $topics
 
 for topic in $topics
 do 
@@ -50,5 +63,7 @@ do
 	mv "${filename}".csv $1"/"$dir_name
 	echo $filename".csv created"
 done
+
+rm $1"/"$dir_name"/"rosout.csv
 
 
