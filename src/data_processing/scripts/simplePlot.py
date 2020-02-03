@@ -5,7 +5,6 @@ import pandas as pd
 
 # paths
 # path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001101040_D10_W100_L0.01_0.45_S100_1000"
-# path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001131800_D30_W100_L0.01_0.45_S100_1000"
 # path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001140841_D30_W100_L0.01_0.45_S100_1000"
 path2folder = "/home/jasper/omni_marco_gazebo/src/data_processing/data/202001140849_D30_W100_L0.01_0.45_S100_1000"
 
@@ -28,7 +27,7 @@ tfPD = pd.read_csv(path2folder+"/"+tfFile)
 # print(stiffnessPD)
 firstTime = stiffnessPD['%time'][0]
 lastTime = stiffnessPD['%time'][-1:] 
-timeVec = map(lambda x: round((x-firstTime)*float(10**(-9)),2),  stiffnessPD['%time'])
+timeVec = map(lambda x: round((x-firstTime)*float(10**(-9)),2),  stiffnessPD['%time'])	
 Kxx = stiffnessPD['field.data0']
 Kyy = stiffnessPD['field.data4']
 Kzz = stiffnessPD['field.data8']

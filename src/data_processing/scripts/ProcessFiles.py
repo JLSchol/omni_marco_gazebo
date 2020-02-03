@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from ImportFiles import ImportFiles
+import pandas as pd
 
 
 
@@ -22,6 +23,7 @@ class ProcessFiles(object):
 		self.paramValue = []
 		self.topicList = []
 
+
 	def trimDict(self,dictionairtje,removeKeysList):
 		if isinstance(removeKeysList,str):
 			removeKeysList = [removeKeysList]
@@ -40,6 +42,8 @@ class ProcessFiles(object):
 		self.csvFiles = trimmedCsvPandas
 		self.setYamlParams(trimmedDictionair)
 		self.setTopicList(csvList)
+
+	# def setyamlInfo(self,dictionair):
 
 
 	def setYamlParams(self,dictionair):
@@ -90,33 +94,199 @@ class ProcessFiles(object):
 		else:
 			print("no string or list of strings provided")
 
+	def unixTimeToSec(self,time):
+		return(time*float(10**(-9)))
+
+	def _convertDfTime(self,df):
+		f = lambda x: x*float(10**(-9))
+		timeCol = df['%time'].apply(f)
+		df['%time'] = timeCol
+		return df
+
+	def convertDfTimes(self,dfList):
+		newDfList = []
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList] # make list such that iterable
+			listBool = False
+
+		for df in dfList:
+			df = self._convertDfTime(df)
+			
+			df['dateTime'] = pd.to_datetime(df['%time'],unit='s')
+			df.set_index('dateTime',inplace=True)
+			# print(df.head(5))
+			
+			newDfList.append(df)
+
+		if listBool == False:
+			return newDfList[0] # return pandas
+		else:
+			return newDfList # return pandas list
+
+
+	def getTimeVec(self,dfList,roundDecimal):
+		timeVecList =[]
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+			listBool = False
+
+		for df in dfList:
+			firstTime = df['%time'].iloc[0]
+			timeVec = map(lambda x: round( (x-firstTime),roundDecimal),df['%time'])
+			timeVecList.append(timeVec)
+
+		if listBool == False:
+			return timeVecList[0] # return pandas
+		else:
+			return timeVecList # return pandas list
+
+	# def allignTime(self,dfList):
+	# 	if not isinstance(dfList,list):
+	# 		dfList = [dfList]
+	# 	slicedDfList = []
+	# 	latestFirstTime = []
+	# 	earliestLastTime = []
+
+	# 	for df in dfList:
+	# 		firstTime = df['%time'].iloc[0]
+	# 		lastTime = df['%time'].iloc[-1]
+	# 		print(firstTime)
+	# 		print(lastTime)
+	# 		print('---------')
+	# 		if not latestFirstTime:
+	# 			latestFirstTime = firstTime
+	# 			earliestLastTime = lastTime
+	# 			continue
+	# 		if firstTime > latestFirstTime:
+	# 			latestFirstTime = firstTime
+	# 		if lastTime < earliestLastTime:
+	# 			earliestLastTime = lastTime
+
+	# 	for df in dfList:
+	# 		# print(df.head(5))
+	# 		df = df[df['%time']>=latestFirstTime]
+	# 		df = df[df['%time']<=earliestLastTime]
+	# 		slicedDfList.append(df)
+
+	# 	return slicedDfList
+
+	def resample(self,dfList):
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+			listBool = False
+
+		sampledList = []
+		for df in dfList:
+			sampled = df.resample('10ms', label='left', closed='left', axis=0).first()
+			sampledList.append(sampled)
+
+
+		if listBool == False:
+			return sampledList[0] # return pandas
+		else:
+			return sampledList # return pandas list
+
+
+	def alignSamples(self,dfList):
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+		slicedDfList = []
+		latestFirstTime = []
+		earliestLastTime = []
+
+		for df in dfList:
+			firstTime = df.index.values[0]
+			lastTime = df.index.values[-1]
+
+			if not latestFirstTime:
+				latestFirstTime = firstTime
+				earliestLastTime = lastTime
+			else:
+				if firstTime > latestFirstTime:
+					latestFirstTime = firstTime
+				if lastTime < earliestLastTime:
+					earliestLastTime = lastTime
+
+		for df in dfList:
+			df = df[df.index>=latestFirstTime]
+			df = df[df.index<=earliestLastTime]
+			slicedDfList.append(df)
+
+		return slicedDfList
+
+
+
 
 
 if __name__== "__main__":
-	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202001140841_D30_W100_L0.01_0.45_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
-	csvsPandas,csvList,yamlDict = IF.importAll()
-	# csvsPandas, csvList = IF.importCSV()
-	# yamlDict = IF.importYaml()
+	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/test","202001301532_D5_W200_L0.03_0.2_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
+	csvsPandas,csvList,yamlDict,yamlList = IF.importAll()
+
+	
+	PF = ProcessFiles(yamlDict[1])
+	print(len(csvsPandas))
+
+	csvsPandas.pop(11)
+	csvsPandas.pop(6)
+	csvList.pop(11)
+	csvList.pop(6)
+
 	print(csvList)
-	# print(csvsPandas)
-	# print(yamlDict)
-	
-	PF = ProcessFiles(yamlDict,csvsPandas)
-	paramDict = PF.trimDict(yamlDict,['rosdistro','roslaunch','run_id','rosversion'])
-
-	
-	
-	PF.setParams(csvsPandas,csvList,paramDict)
-	print(10*"----------")
+	csvsPandas = PF.convertDfTimes(csvsPandas)
+	csvsPandas = PF.resample(csvsPandas)
+	csvsPandas = PF.alignSamples(csvsPandas)
 
 
+	for i,csvPanda in enumerate(csvsPandas):
+		csvPanda.to_csv(str("bewerkt_"+ csvList[i]))
+		# print(csvPanda.index.values)
+		# print(csvPanda.columns.values)
+		# print(csvPanda.head(1))
+		# print(csvPanda.tail(1))
+		# print(csvPanda.index.values[0])
+		# print(csvPanda.index.values[-1])
+		# print(csvPanda.shape)
+		# print(csvPanda.index.values[0])
+		# print(10*"-----")
 
-		# self.originalParam = yamltje
-		# self.originalCsvs = csvtjes
+	# [stiffness_command,omni_stiffness] = PF.convertDfTimes([stiffness_command,omni_stiffness])
+	# [stiffness_command,omni_stiffness] = PF.allignTime([stiffness_command,omni_stiffness])
+	# [stiffness_command,omni_stiffness] = PF.resample([stiffness_command,omni_stiffness])
 
-		# self.paramFile = []
-		# self.csvFiles =[]
+	# print(stiffness_command.index.values)
+	# print(stiffness_command.columns.values)
+	# print(stiffness_command.head(5))
+	# print(stiffness_command)
 
-		# self.nodeList = []
-		# self.paramValue = []
-		# self.topicList = []
+	# print(omni_stiffness.index.values)
+	# print(omni_stiffness.columns.values)
+	# print(omni_stiffness.head(5))
+	# print(omni_stiffness)
+
+
+	# [sVec,oVec] = PF.getTimeVec([stiffness_command,omni_stiffness],2)
+
+
+	# print(sVec)
+	# print(10*"-----")
+	# print(oVec)
+
+
+	# get time vector
+	# timeVec = PF.getTimeVec(stiffness_command)
+	# print(timeVec)
+
+
+	# PF = ProcessFiles(yamlDict,csvsPandas)
+	# paramDict = PF.trimDict(yamlDict,['rosdistro','roslaunch','run_id','rosversion'])
+
+	# print(force.columns.values)
+	# print(force.index.values)
+
+	# print(10*"----------")
+
+
+
