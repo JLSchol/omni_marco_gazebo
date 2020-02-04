@@ -24,6 +24,85 @@ class ProcessFiles(object):
 		self.topicList = []
 
 
+	def convertDfTimes(self,dfList):
+		newDfList = []
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList] # make list such that iterable
+			listBool = False
+
+		for df in dfList:
+			df = self._convertDfTime(df)
+			df.loc[:,'dateTime'] = pd.to_datetime(df['%time'],unit='s')
+			df.set_index('dateTime',inplace=True)
+			newDfList.append(df)
+
+		if listBool == False:
+			return newDfList[0] # return pandas
+		else:
+			return newDfList # return pandas list
+
+	def addTimeVecCol(self,dfList,columnName='timeVec',roundoff=2):
+		newDfList =[]
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+			listBool = False
+
+		for df in dfList:
+			firstTime = df['%time'].iloc[0]
+			print(firstTime)
+			timeVec = map(lambda x: round( (x-firstTime),roundoff),df['%time'])
+			df[columnName] = timeVec
+			newDfList.append(df)
+
+		if listBool == False:
+			return newDfList[0] # return pandas
+		else:
+			return newDfList # return pandas list
+
+
+	def resample(self,dfList):
+		listBool = True
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+			listBool = False
+
+		sampledList = []
+		for df in dfList:
+			sampled = df.resample('10ms', label='left', closed='left', axis=0).first()
+			sampledList.append(sampled)
+
+		if listBool == False:
+			return sampledList[0] # return pandas
+		else:
+			return sampledList # return pandas list
+
+	def alignTimeIndex(self,dfList):
+		if not isinstance(dfList,list):
+			dfList = [dfList]
+		slicedDfList = []
+		latestFirstTime = []
+		earliestLastTime = []
+		# print(dfList)
+		for i,df in enumerate(dfList):
+			firstTime = df.index.values[0]
+			lastTime = df.index.values[-1]
+			if not latestFirstTime:
+				latestFirstTime = firstTime
+				earliestLastTime = lastTime
+			else:
+				if firstTime > latestFirstTime:
+					latestFirstTime = firstTime
+				if lastTime < earliestLastTime:
+					earliestLastTime = lastTime
+
+		for df in dfList:
+			df = df[df.index>=latestFirstTime]
+			df = df[df.index<=earliestLastTime]
+			slicedDfList.append(df)
+		return slicedDfList
+
 	def trimDict(self,dictionairtje,removeKeysList):
 		if isinstance(removeKeysList,str):
 			removeKeysList = [removeKeysList]
@@ -36,15 +115,11 @@ class ProcessFiles(object):
 
 		return dictionairtje
 
-
 	def setParams(self,trimmedCsvPandas,csvList,trimmedDictionair):
 		self.paramFile = trimmedDictionair
 		self.csvFiles = trimmedCsvPandas
 		self.setYamlParams(trimmedDictionair)
 		self.setTopicList(csvList)
-
-	# def setyamlInfo(self,dictionair):
-
 
 	def setYamlParams(self,dictionair):
 		self.nodeList = self._getNodes(dictionair)
@@ -55,12 +130,24 @@ class ProcessFiles(object):
 			csvList = [csvList]
 		self.topicList = [self._getTopic(csvName) for csvName in csvList]
 
+	def unixTimeToSec(self,time):
+		return(time*float(10**(-9)))
+
+
+
+
+	def _convertDfTime(self,df):
+		f = lambda x: x*float(10**(-9))
+		# timeCol = df['%time'].apply(f)
+		# df['%time'] = df['%time'].apply(f)
+		df.loc[:,'%time'] = df['%time'].apply(f)
+		# df['%time'] = timeCol
+		return df
 
 	def _getNodes(self,dictionair):
 		if not isinstance(dictionair,dict):
 			print("instance is not a dictionair")
 			return
-
 		ActiveNodes = [node for node in dictionair] 
 		return ActiveNodes
 
@@ -68,7 +155,6 @@ class ProcessFiles(object):
 		if not isinstance(dictionair,dict):
 			print("instance is not a dictionair")
 			return
-
 		nodes = self._getNodes(dictionair)
 		if isinstance(nodes,str):
 			print("string found")
@@ -94,154 +180,84 @@ class ProcessFiles(object):
 		else:
 			print("no string or list of strings provided")
 
-	def unixTimeToSec(self,time):
-		return(time*float(10**(-9)))
-
-	def _convertDfTime(self,df):
-		f = lambda x: x*float(10**(-9))
-		timeCol = df['%time'].apply(f)
-		df['%time'] = timeCol
-		return df
-
-	def convertDfTimes(self,dfList):
-		newDfList = []
-		listBool = True
-		if not isinstance(dfList,list):
-			dfList = [dfList] # make list such that iterable
-			listBool = False
-
-		for df in dfList:
-			df = self._convertDfTime(df)
-			
-			df['dateTime'] = pd.to_datetime(df['%time'],unit='s')
-			df.set_index('dateTime',inplace=True)
-			# print(df.head(5))
-			
-			newDfList.append(df)
-
-		if listBool == False:
-			return newDfList[0] # return pandas
-		else:
-			return newDfList # return pandas list
 
 
-	def getTimeVec(self,dfList,roundDecimal):
-		timeVecList =[]
-		listBool = True
-		if not isinstance(dfList,list):
-			dfList = [dfList]
-			listBool = False
+	def splitTfFrames(self,tfPanda):
+		# initialize
+		tfPandaList = []
+		tfSplitted = []
+		parentFieldName = 'field.transforms0.header.frame_id'
+		childFieldName = 'field.transforms0.child_frame_id'
 
-		for df in dfList:
-			firstTime = df['%time'].iloc[0]
-			timeVec = map(lambda x: round( (x-firstTime),roundDecimal),df['%time'])
-			timeVecList.append(timeVec)
+		# get unique parent and child frame list(s)
+		parentFrame = tfPanda[parentFieldName].unique().tolist()
+		nr_parents = len(parentFrame)
+		if nr_parents > 1:
+			print("There are {} parent frames! \n Function only works with 1 parent!".format(nr_parents))
+			return
+		childFrameList = tfPanda[childFieldName].unique().tolist()
+		
+		# Split (on child frame names only!)
+		for childName in childFrameList:
+			tfSplitted = tfPanda[tfPanda[childFieldName] == childName]
+			tfPandaList.append(tfSplitted)
 
-		if listBool == False:
-			return timeVecList[0] # return pandas
-		else:
-			return timeVecList # return pandas list
+		# add ".csv" for consistency in names
+		childFrameList = [str(name +"_tf.csv") for name in childFrameList]
 
-	# def allignTime(self,dfList):
-	# 	if not isinstance(dfList,list):
-	# 		dfList = [dfList]
-	# 	slicedDfList = []
-	# 	latestFirstTime = []
-	# 	earliestLastTime = []
+		return tfPandaList, childFrameList
 
-	# 	for df in dfList:
-	# 		firstTime = df['%time'].iloc[0]
-	# 		lastTime = df['%time'].iloc[-1]
-	# 		print(firstTime)
-	# 		print(lastTime)
-	# 		print('---------')
-	# 		if not latestFirstTime:
-	# 			latestFirstTime = firstTime
-	# 			earliestLastTime = lastTime
-	# 			continue
-	# 		if firstTime > latestFirstTime:
-	# 			latestFirstTime = firstTime
-	# 		if lastTime < earliestLastTime:
-	# 			earliestLastTime = lastTime
+	def trimCsvs(self, csvsPandas, csvNameList, trimList):
+		removedCsvList = []
+		removedNameList = []
+		toRemoveIndices = []
 
-	# 	for df in dfList:
-	# 		# print(df.head(5))
-	# 		df = df[df['%time']>=latestFirstTime]
-	# 		df = df[df['%time']<=earliestLastTime]
-	# 		slicedDfList.append(df)
+		# print(any(i in csvNameList for i in trimList))
+		both = set(csvNameList).intersection(trimList)
+		indices = [csvNameList.index(x) for x in both]
 
-	# 	return slicedDfList
+		for index in indices:
+			poppedCsv = csvsPandas.pop(index)
+			poppedName = csvNameList.pop(index)
+			removedCsvList.append(poppedCsv)
+			removedNameList.append(poppedName)
 
-	def resample(self,dfList):
-		listBool = True
-		if not isinstance(dfList,list):
-			dfList = [dfList]
-			listBool = False
-
-		sampledList = []
-		for df in dfList:
-			sampled = df.resample('10ms', label='left', closed='left', axis=0).first()
-			sampledList.append(sampled)
-
-
-		if listBool == False:
-			return sampledList[0] # return pandas
-		else:
-			return sampledList # return pandas list
-
-
-	def alignSamples(self,dfList):
-		if not isinstance(dfList,list):
-			dfList = [dfList]
-		slicedDfList = []
-		latestFirstTime = []
-		earliestLastTime = []
-
-		for df in dfList:
-			firstTime = df.index.values[0]
-			lastTime = df.index.values[-1]
-
-			if not latestFirstTime:
-				latestFirstTime = firstTime
-				earliestLastTime = lastTime
-			else:
-				if firstTime > latestFirstTime:
-					latestFirstTime = firstTime
-				if lastTime < earliestLastTime:
-					earliestLastTime = lastTime
-
-		for df in dfList:
-			df = df[df.index>=latestFirstTime]
-			df = df[df.index<=earliestLastTime]
-			slicedDfList.append(df)
-
-		return slicedDfList
-
-
-
+		return csvsPandas, csvNameList, removedCsvList, removedNameList
 
 
 if __name__== "__main__":
+	# set correct directories
 	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/test","202001301532_D5_W200_L0.03_0.2_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
-	csvsPandas,csvList,yamlDict,yamlList = IF.importAll()
+	csvsPandas,csvNames,yamlDict,yamlNames = IF.importAll()
 
-	
+	# load files in the process class
 	PF = ProcessFiles(yamlDict[1])
-	print(len(csvsPandas))
+	
+	# remove tf topics as they need specific processing
+	removeList = ['tf.csv','tf_static.csv'] 
+	csvsPandas,csvNames,tfPandas,tfNames = PF.trimCsvs(csvsPandas, csvNames, removeList) # might shuffels imput list!
 
-	csvsPandas.pop(11)
-	csvsPandas.pop(6)
-	csvList.pop(11)
-	csvList.pop(6)
+	# split Tf child frames into seperate pandas data frame objects
+	tfList, tfNameList = PF.splitTfFrames(tfPandas[1])  
+	tf_staticList, tf_staticNameList = PF.splitTfFrames(tfPandas[0])
 
-	print(csvList)
+	# add to list of csvs and names
+	csvsPandas.extend(tfList)
+	csvNames.extend(tfNameList)
+	csvsPandas.extend(tf_staticList)
+	csvNames.extend(tf_staticNameList)
+
+	# add columns,convert time, add dateTime as index, sample and square data frames
+	
 	csvsPandas = PF.convertDfTimes(csvsPandas)
 	csvsPandas = PF.resample(csvsPandas)
-	csvsPandas = PF.alignSamples(csvsPandas)
+	csvsPandas = PF.alignTimeIndex(csvsPandas)
+	csvsPandas = PF.addTimeVecCol(csvsPandas,"timeVec",2)
 
+	print(csvNames)
 
 	for i,csvPanda in enumerate(csvsPandas):
-		csvPanda.to_csv(str("bewerkt_"+ csvList[i]))
+		# csvPanda.to_csv(str("new_"+ csvNames[i]))
 		# print(csvPanda.index.values)
 		# print(csvPanda.columns.values)
 		# print(csvPanda.head(1))
@@ -250,21 +266,7 @@ if __name__== "__main__":
 		# print(csvPanda.index.values[-1])
 		# print(csvPanda.shape)
 		# print(csvPanda.index.values[0])
-		# print(10*"-----")
-
-	# [stiffness_command,omni_stiffness] = PF.convertDfTimes([stiffness_command,omni_stiffness])
-	# [stiffness_command,omni_stiffness] = PF.allignTime([stiffness_command,omni_stiffness])
-	# [stiffness_command,omni_stiffness] = PF.resample([stiffness_command,omni_stiffness])
-
-	# print(stiffness_command.index.values)
-	# print(stiffness_command.columns.values)
-	# print(stiffness_command.head(5))
-	# print(stiffness_command)
-
-	# print(omni_stiffness.index.values)
-	# print(omni_stiffness.columns.values)
-	# print(omni_stiffness.head(5))
-	# print(omni_stiffness)
+		print(10*"-----")
 
 
 	# [sVec,oVec] = PF.getTimeVec([stiffness_command,omni_stiffness],2)
