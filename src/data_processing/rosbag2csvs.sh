@@ -64,6 +64,6 @@ do
 	echo $filename".csv created"
 done
 
-rm $1"/"$dir_name"/"rosout.csv
+rm $1"/"$dir_name"/"rosout.csv #While processing the data this provides errors!
 
 
