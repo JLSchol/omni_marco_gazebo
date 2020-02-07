@@ -277,8 +277,8 @@ if __name__== "__main__":
 
 
 	# # data checking
-	# for i,csvPanda in enumerate(csvsPandas):
-	# 	csvPanda.to_csv(str("new_"+ csvNames[i]))
+	for i,csvPanda in enumerate(csvsPandas):
+		csvPanda.to_csv(str("new_"+ csvNames[i]))
 	# 	print(csvPanda.index.values)
 	# 	print(csvPanda.columns.values)
 	# 	print(csvPanda.head(1))
@@ -287,7 +287,7 @@ if __name__== "__main__":
 	# 	print(csvPanda.index.values[-1])
 	# 	print(csvPanda.shape)
 	# 	print(csvPanda.index.values[0])
-	# 	print(10*"-----")
+		print(10*"-----")
 
 	# # class variable
 	# print(PF.processedParam)

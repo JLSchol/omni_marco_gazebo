@@ -65,5 +65,5 @@ do
 done
 
 rm $1"/"$dir_name"/"rosout.csv #While processing the data this provides errors!
-
+rm $1"/"$dir_name"/"rosout_agg.csv #While processing the data this provides errors!
 
