@@ -7,17 +7,29 @@ import roslaunch
 
 from Tkinter import * 
 from functools import partial
-
+import ttk
 
 class GuiWindow(Frame):
 
 	def __init__(self,master=None):
 		Frame.__init__(self,master)
 		self.master = master
-		self.participantNumber = StringVar()
+		self.participantNumber = StringVar(self, value=1)
 		self.male = IntVar()
 		self.female = IntVar()
 		self.other = IntVar()
+
+		completePath = os.path.abspath('simple_experiment_gui.py')
+		delimiter = 'stiffness_simple_experiment'
+		pathToPkg = completePath.split(delimiter)[0] + delimiter + '/'
+		self.options = [Dir[0] for Dir in os.walk(pathToPkg)]
+		self.dirs = StringVar()
+
+		
+
+
+		self.savePath = StringVar(self, value=pathToPkg)
+		self.fileName = StringVar()
 
 
         # self.label = Label(master, text="This is our first GUI!")
@@ -69,6 +81,8 @@ class GuiWindow(Frame):
 		stopStiffness = Button(self.master, text="Stop stiffness pkg", command=self.stopStiffnessCB)
 		stopStiffness.place(relx=col3,rely=row1,relwidth=bw,relheight=bh)
 
+
+
 		exp1 = Button(self.master, text="Start experiment 1", command= lambda: self.startExperimentCB(1))
 		exp1.place(relx=col1,rely=row2,relwidth=bw,relheight=bh)
 		exp2 = Button(self.master, text="Start experiment 2", command=lambda: self.startExperimentCB(2))
@@ -81,13 +95,13 @@ class GuiWindow(Frame):
 		stopExp.place(relx=col3,rely=row2,relwidth=bw,relheight=bh)
 
 
+
 		labelUsrinfo = Label(self.master, text='Participant nr')
 		labelUsrinfo.place(relx=col1,rely=row3,relwidth=0.15,relheight=bh)
 
 		entryParticipant = Entry(self.master, bg='white', textvariable=self.participantNumber)
 		self.participantNumber.trace('w',self.partChangeCB)
-		entryParticipant.place(relx=(0.15 +col1),rely=row3,relwidth=0.4,relheight=bh)
-
+		entryParticipant.place(relx=(bw +col1),rely=row3,relwidth=0.4,relheight=bh)
 
 		checkBoxMale = Checkbutton(self.master, text="male", variable=self.male)
 		self.male.trace('w', self.maleCB)
@@ -103,8 +117,32 @@ class GuiWindow(Frame):
 
 		startLog = Button(self.master, text="Start logger", command=self.startLoggerCB)
 		startLog.place(relx=col1,rely=row4,relwidth=bw,relheight=bh)
-		stopLog = Button(self.master, text="Stop logger", command=self.stopLoggerCB)
+
+		# optionPath = apply(OptionMenu, (self.master,self.dirs) + tuple(self.options))
+		# self.dirs.trace('w',self.savePathCB)
+		# # self.dirs.trace('w',self.savePathCB)
+		# optionPath.place(relx=(col1+bw),rely=row4,relwidth=0.1,relheight=bh)
+
+		comboOptionPath = ttk.Combobox(self.master,values=self.options ,textvariable=self.dirs)
+		self.dirs.trace('w',self.savePathCB)
+		comboOptionPath.place(relx=(col1+bw),rely=row4,relwidth=0.5,relheight=bh)
+
+
+		# entryPath = Entry(self.master, bg='white', textvariable=self.savePath)
+		# self.savePath.trace('w',self.savePathCB)
+		# entryPath.place(relx=(col1+bw+0.1),rely=row4,relwidth=0.3,relheight=bh)
+
+
+		entryFileName = Entry(self.master, bg='white', textvariable=self.fileName)
+		self.fileName.trace('w',self.saveFileNameCB)
+		entryFileName.place(relx=(col1+bw+0.4+0.1),rely=row4,relwidth=0.2,relheight=bh)
+
+		stopLog = Button(self.master, text="Stop and save", command=self.stopLoggerCB)
 		stopLog.place(relx=col3,rely=row4,relwidth=bw,relheight=bh)
+
+
+	# def ok():
+	# 	print(self.dirs.get())
 
 	def startStiffnessCB(self, arg):
 		print("roslaunch stiffness_launch omni_simple_marco.launch")
@@ -136,6 +174,10 @@ class GuiWindow(Frame):
 	def saveRosbagsCB(self,name,location):
 		pass
 
+	def savePathCB(self, *args):
+		print(self.dirs.get())
+	def saveFileNameCB(self, *args):
+		print(self.fileName.get())
 
 
 	def saveParticipantInfo(self):
