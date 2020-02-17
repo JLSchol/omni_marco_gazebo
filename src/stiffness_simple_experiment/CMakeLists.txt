@@ -7,8 +7,11 @@ project(stiffness_simple_experiment)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED
-stiffness_visualization
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  # geometry_msgs
+  std_msgs
+  stiffness_visualization
 )
 
 ## System dependencies are found with CMake's conventions
@@ -36,7 +39,9 @@ stiffness_visualization
 ##     * add a exec_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+)
 ##   * add "message_runtime" and every package in MSG_DEP_SET to
 ##     catkin_package(CATKIN_DEPENDS ...)
 ##   * uncomment the add_*_files sections below as needed
@@ -45,11 +50,9 @@ stiffness_visualization
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(FILES
+  gui_commands.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -66,10 +69,9 @@ stiffness_visualization
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -103,7 +105,9 @@ stiffness_visualization
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stiffness_simple_experiment
- CATKIN_DEPENDS stiffness_visualization
+ CATKIN_DEPENDS 
+ stiffness_visualization
+#  messages_runtime
 #  DEPENDS system_lib
 )
 
