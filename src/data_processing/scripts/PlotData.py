@@ -96,6 +96,7 @@ class PlotData(object):
 		# set on gridspec
 		fig,ax = self.simpleFigure(df,figureInfo,fig,ax) 
 
+
 		return fig,ax
 
 
@@ -130,6 +131,14 @@ if __name__== "__main__":
 	fig,ax = PD.simpleFigure(dfList[0],info)
 	fig,ax = PD.addSubPlot(dfList[1],TI.getInfo(nameList[1]),fig,ax)
 	fig,ax = PD.addSubPlot(dfList[2],TI.getInfo(nameList[2]),fig,ax)
+	xx =ax.get_lines()
+	x_data = xx[0].get_data()[0]
+	y_data = xx[0].get_data()[1]
+
+	fi2 = plt.figure
+	fi2.plot(x_data,y_data)
+	# plt.plot(xx)
+	# plt.plot(3lines)
 	# left  = 0.125  # the left side of the subplots of the figure
 	# right = 0.9    # the right side of the subplots of the figure
 	# bottom = 0.1   # the bottom of the subplots of the figure

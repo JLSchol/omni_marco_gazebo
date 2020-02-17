@@ -106,7 +106,7 @@ class GuiWindow(Frame):
 		self.participantAge.trace('w',self.partAgeCB)
 		entryPartAge.place(relx=(bw +col1),rely=row3+2*bh,relwidth=0.1,relheight=bh)
 		comboOptionExp = ttk.Combobox(self.master,values=['none','some','experienced'] ,textvariable=self.experience)
-		self.gender.trace('w',self.saveExperianceCB)
+		self.experience.trace('w',self.saveExperianceCB)
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
 
 		self.expInfoText = Text(self.master, yscrollcommand=True)
