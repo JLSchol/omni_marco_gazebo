@@ -9,7 +9,7 @@ project(stiffness_visualization)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
-  roscpp
+  # roscpp
   std_msgs
   tf
   tf2_ros
@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(Eigen3 REQUIRED)
+# find_package(Eigen3 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -108,6 +108,8 @@ find_package(Eigen3 REQUIRED)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
+catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES stiffness_ellipsoid
@@ -123,9 +125,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include ${catkin_INCLUDE_DIRS}
-include
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
+# include
+  # ${catkin_INCLUDE_DIRS}
+  # ${EIGEN3_INCLUDE_DIRS}
 )
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -186,11 +188,11 @@ include
 # )
 
 # Mark cpp header files for installation
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
-)
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#   FILES_MATCHING PATTERN "*.h"
+#   PATTERN ".svn" EXCLUDE
+# )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
@@ -213,10 +215,10 @@ install(DIRECTORY include/${PROJECT_NAME}/
 # catkin_add_nosetests(test)
 
 
-add_executable(ellipsoid_visualization
-  src/ellipsoid_visualization.cpp
-)
-add_dependencies(ellipsoid_visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(ellipsoid_visualization
-  ${catkin_LIBRARIES}
-)
+# add_executable(ellipsoid_visualization
+#   src/ellipsoid_visualization.cpp
+# )
+# add_dependencies(ellipsoid_visualization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(ellipsoid_visualization
+#   ${catkin_LIBRARIES}
+# )
