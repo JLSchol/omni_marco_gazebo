@@ -2,11 +2,11 @@
 
 std_msgs/Header header
 
-
-bool start_stiffness
+# bool start_stiffness
 bool start_experiment
-bool start_logger
-bool learning
-uint16 experiment_number
 
+uint16 experiment_number
+bool learning
+
+int8 trial
 

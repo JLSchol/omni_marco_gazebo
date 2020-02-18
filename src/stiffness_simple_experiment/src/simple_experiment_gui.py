@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import rospy
+from rospy import Subscriber, Publisher, init_node, Time
 import os
 import roslaunch
 from time import strftime
@@ -10,32 +10,61 @@ import unicodedata
 from Tkinter import * 
 from functools import partial
 import ttk
+from std_msgs.msg import Header, Bool, String
+# custom msgs
+from stiffness_simple_experiment.msg import gui_command
 
 class GuiWindow(Frame):
 
 	def __init__(self,master=None):
 		Frame.__init__(self,master)
 		self.master = master
+
+		# traced button variables from gui
 		self.participantNumber = StringVar(self)
 		self.gender = StringVar()
 		self.participantAge = StringVar(self)
 		self.experience = StringVar(self)
 		self.experimentInfo = StringVar(self)
-
-
-		self.experimentNumber = StringVar(self)
+		self.experimentNumber = IntVar(self)
 		self.learning = IntVar(self)
 
+		# other variables from gui
 		pathToPkg, self.absPaths = self.getPaths()
-		# self.trimmedPaths = 
 		self.dirs = StringVar()
 		self.fileName = StringVar(self, value=self.generateFileName())
 		# self.savePath = StringVar(self, value=pathToPkg)
 
+		# intialize esthetics and button
 		self.initializeWindow()
 
+        # Initialize ROS 
+        # ros variables
+		self.guiMsg = []
+		self.logString	= []
+		init_node('simple_experiment_gui')
+		self._initializeGuiCommands()
+		self._guiSub = Subscriber('simple_experiment_logger',String, self._guiLoggerCB)
+		self._initializePublishers()
 
 
+	def _initializeGuiCommands(self):
+		self.guiMsg = gui_command()
+		self.guiMsg.header.stamp = Time.now()
+		# self.guiMsg.start_stiffness = False
+		self.guiMsg.start_experiment = False
+
+	def _initializePublishers(self):
+		self.stiffnessPub = Publisher('start_stiffness',Bool, latch=False, queue_size=1) # to stiffness code
+		self.guiPub = Publisher('gui_commands',gui_command, latch=False, queue_size=1) # to experiment
+		self.loggerPub= Publisher('rosbag_log',Bool, queue_size=1)
+		# self.guiMsg.experiment_number = False
+		# self.guiMsg.learning = False
+		# self.guiMsg.trial =  +1 or -1
+
+	def _guiLoggerCB(self,message):
+		self.logString = message
+		self.loggerWindow.insert(END, str(self.logString) + "\n")
 
 	def initializeWindow(self):
 		# Frame
@@ -68,7 +97,7 @@ class GuiWindow(Frame):
 		######## ROW 2 ########
 		exp1 = Button(self.master, text="Start experiment", command= lambda: self.startExperimentCB(1))
 		exp1.place(relx=col1,rely=row2,relwidth=bw,relheight=bh)
-		comboBoxExpNr = ttk.Combobox(self.master,values=['1','2','3'] ,textvariable=self.experimentNumber)
+		comboBoxExpNr = ttk.Combobox(self.master,values=[1,2,3,4,5] ,textvariable=self.experimentNumber)
 		self.experimentNumber.trace('w',self.saveExperimentNrCB)
 		comboBoxExpNr.place(relx=(col1+bw),rely=row2,relwidth=0.1,relheight=bh)
 
@@ -84,6 +113,11 @@ class GuiWindow(Frame):
 		checkBoxLearning = Checkbutton(self.master, text="practice?", variable=self.learning)
 		self.learning.trace('w', self.LearningPhaseCB)
 		checkBoxLearning.place(relx=(col1+bw+0.1),rely=row2,relwidth=0.1,relheight=bh)
+
+		prevTrial = Button(self.master, text="previous trial", command= lambda: self.trialCB(-1))
+		prevTrial.place(relx=col1,rely=(row2+2*bh),relwidth=bw,relheight=bh)
+		nextTrial = Button(self.master, text="next trial", command=lambda: self.trialCB(1))
+		nextTrial.place(relx=col2,rely=(row2+2*bh),relwidth=bw,relheight=bh)
 
 
 		######## ROW 3 ########
@@ -132,27 +166,41 @@ class GuiWindow(Frame):
 
 	def startStiffnessCB(self, arg):
 		print("roslaunch stiffness_launch omni_simple_marco.launch")
-		print(arg)	
+		# print(arg)	
 
 	def stopStiffnessCB(self):
 		print("Control c gweoon")	
 
 	def startExperimentCB(self,number):
 		print("Start experiment {}".format(number))
+		self.guiMsg.start_experiment = True
+		self.guiPub.publish(self.guiMsg)
+
 	def saveExperimentNrCB(self,*args):
 		print(self.experimentNumber.get())
+		self.guiMsg.experiment_number = self.experimentNumber.get()
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
 		# self.saveFileNameCB() # prints
 
 	def LearningPhaseCB(self,*args):
 		print(self.learning.get())
+		self.guiMsg.learning = self.learning.get()
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
 		# self.saveFileNameCB() # prints
 
 	def stopExperimentCB(self):
 		print("STOPPPPP")
+		self.guiMsg.start_experiment = False
+		self.guiPub.publish(self.guiMsg)
+
+
+	def trialCB(self,number):
+		print("Publish: {}".format(number))
+		self.guiMsg.trial = number
+		self.guiPub.publish(self.guiMsg)
+		print(self.guiMsg.trial)
 
 	def partNrCB(self,*args):
 		print(self.participantNumber.get())
