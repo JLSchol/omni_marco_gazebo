@@ -53,6 +53,7 @@ class GuiWindow(Frame):
 		self.guiMsg.header.stamp = Time.now()
 		# self.guiMsg.start_stiffness = False
 		self.guiMsg.start_experiment = False
+		self.guiMsg.trial_change = 0
 
 	def _initializePublishers(self):
 		self.stiffnessPub = Publisher('start_stiffness',Bool, latch=False, queue_size=1) # to stiffness code
@@ -79,17 +80,21 @@ class GuiWindow(Frame):
 		col2 = 0.425
 		col3 = 0.80
 		row1 = 0.05
-		row2 = 0.20
+		row2 = 0.3
 		row3 = 0.55
 		row4 = 0.9
 		bw = 0.15
 		bh = 0.05
 
 		######## ROW 1 ########
-		startStiffness = Button(self.master, text="Start stiffness pkg", command=partial(self.startStiffnessCB, arg='hoi'))
-		startStiffness.place(relx=col1,rely=row1,relwidth=bw,relheight=bh)
+		launchStiffness = Button(self.master, text="Launch stiffness pkg", command=partial(self.launchStiffnessCB, arg='hoi'))
+		launchStiffness.place(relx=col1,rely=row1,relwidth=bw,relheight=bh)
 		stopStiffness = Button(self.master, text="Stop stiffness pkg", command=self.stopStiffnessCB)
 		stopStiffness.place(relx=col2,rely=row1,relwidth=bw,relheight=bh)
+		launchExp = Button(self.master, text="Launch experiment", command=self.launchExperimentCB)
+		launchExp.place(relx=col1,rely=row1+2*bh,relwidth=bw,relheight=bh)
+		stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
+		stopExp.place(relx=col2,rely=row1+2*bh,relwidth=bw,relheight=bh)
 
 		self.loggerWindow = Text(self.master, yscrollcommand=True)
 		self.loggerWindow.place(relx=col2+bw+0.05,rely=row1,relwidth=0.325,relheight=0.45)
@@ -107,8 +112,8 @@ class GuiWindow(Frame):
 		# exp3.place(relx=col1,rely=(row2+0.2),relwidth=bw,relheight=bh)
 		# pauseExp = Button(self.master, text="Pauze experiment", command=self.pauseExperimentCB)
 		# pauseExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
-		stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
-		stopExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
+		# stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
+		# stopExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
 
 		checkBoxLearning = Checkbutton(self.master, text="practice?", variable=self.learning)
 		self.learning.trace('w', self.LearningPhaseCB)
@@ -163,10 +168,35 @@ class GuiWindow(Frame):
 
 
 
-
-	def startStiffnessCB(self, arg):
+	def launchStiffnessCB(self, arg):
 		print("roslaunch stiffness_launch omni_simple_marco.launch")
+		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+		roslaunch.configure_logging(uuid)
+
+		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_launch/launch/omni_simple_marco.launch"
+		launch = roslaunch.parent.ROSLaunchParent(uuid, file_path)
+		launch.start()
+
+
+
 		# print(arg)	
+    # def Cockpit_launch_button(self):
+    #     uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+    #     roslaunch.configure_logging(uuid)
+    #     # os.system("roslaunch marco_cockpit_launcher cockpit.launch")
+    #     cockpit_args = ['marco_cockpit_launcher','cockpit.launch']
+    #     roslaunch_file = roslaunch.rlutil.resolve_launch_arguments(cockpit_args)
+    #     self.parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
+    #     self.parent.start()
+
+	def launchExperimentCB(self):
+		print("roslaunch stiffness_launch omni_simple_marco.launch")
+		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+		roslaunch.configure_logging(uuid)
+		
+		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/simple_experiment.launch"
+		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
+		launch.start()
 
 	def stopStiffnessCB(self):
 		print("Control c gweoon")	
@@ -196,11 +226,13 @@ class GuiWindow(Frame):
 		self.guiPub.publish(self.guiMsg)
 
 
-	def trialCB(self,number):
-		print("Publish: {}".format(number))
-		self.guiMsg.trial = number
+	def trialCB(self,indecrement):
+		print("Publish: {}".format(indecrement))
+		self.guiMsg.trial_change = indecrement
 		self.guiPub.publish(self.guiMsg)
-		print(self.guiMsg.trial)
+		self.guiMsg.trial_change = 0
+		# self.guiPub.publish(self.guiMsg)
+
 
 	def partNrCB(self,*args):
 		print(self.participantNumber.get())
@@ -242,8 +274,6 @@ class GuiWindow(Frame):
 			trial = "Learn"
 		else:
 			trial = "Real"
-
-
 		t = strftime("%m%d%H%M") # month day hour minutes
 		nameString= ("Part"+str(self.participantNumber.get())+"_Exp"+
 			str(self.experimentNumber.get())+"_"+trial+"_"+str(t))

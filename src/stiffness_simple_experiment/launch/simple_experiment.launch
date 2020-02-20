@@ -1,0 +1,14 @@
+<launch>
+    <!--TF arguments-->
+    
+     <node name="simple_experiment" pkg="stiffness_simple_experiment" type="simple_experiment.py" output="screen">
+
+        <!--<param name="ParentName"     value="$(arg parent_frame)"/>
+        <param name="ChildName"     value="$(arg child_frame)"/>
+
+        <param name="EEPose"     value="$(arg EE_pose)"/>-->
+
+    </node>
+
+
+</launch>
