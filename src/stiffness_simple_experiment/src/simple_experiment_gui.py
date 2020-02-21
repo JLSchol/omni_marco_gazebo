@@ -2,6 +2,7 @@
 
 from rospy import Subscriber, Publisher, init_node, Time
 import os
+import subprocess
 import roslaunch
 from time import strftime
 import unicodedata
@@ -174,7 +175,7 @@ class GuiWindow(Frame):
 		roslaunch.configure_logging(uuid)
 
 		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_launch/launch/omni_simple_marco.launch"
-		launch = roslaunch.parent.ROSLaunchParent(uuid, file_path)
+		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
 		launch.start()
 
 
@@ -199,6 +200,12 @@ class GuiWindow(Frame):
 		launch.start()
 
 	def stopStiffnessCB(self):
+		path2File = "home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/kill_nodes.sh"
+		# 
+		nodes = "draw_ellipsoid haptic_device_rotation mock_End_Effector omni1 omni_2_marker omni_feedback_force stiffness_commanding"
+		bashCommand = "/"+path2File+ " "+ nodes
+		print(bashCommand)
+		subprocess.call(bashCommand)
 		print("Control c gweoon")	
 
 	def startExperimentCB(self,number):
