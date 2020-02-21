@@ -211,8 +211,10 @@ class SimpleExperiment(object):
 
             
     def _createLogString(self,trial,time,accuracy):
+        
+        # time = round(float(time)*float(10**(-9)),3)
         logString = "trial number: {}, time: {} seconds, accuracy: {}%".format(
-                                                                trial,time,accuracy)
+                                                                trial,time.to_sec(),accuracy)
         return logString
 
 
