@@ -2,7 +2,9 @@
 
 from rospy import Subscriber, Publisher, init_node, Time
 import os
+import errno
 import subprocess
+import yaml
 import roslaunch
 from time import strftime
 import unicodedata
@@ -31,7 +33,7 @@ class GuiWindow(Frame):
 		self.learning = IntVar(self)
 
 		# other variables from gui
-		pathToPkg, self.absPaths = self.getPaths()
+		self.pathToPkgData, self.absPaths = self.getPaths()
 		self.dirs = StringVar()
 		self.fileName = StringVar(self, value=self.generateFileName())
 		# self.savePath = StringVar(self, value=pathToPkg)
@@ -148,15 +150,22 @@ class GuiWindow(Frame):
 		comboOptionExp = ttk.Combobox(self.master,values=['none','some','experienced'] ,textvariable=self.experience)
 		self.experience.trace('w',self.saveExperianceCB)
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
+		saveParticipantButton = Button(self.master, text="save info", command=self.saveParticipantInfoCB)
+		saveParticipantButton.place(relx=col1,rely=row3+4*bh,relwidth=bw,relheight=bh)
+
 
 		self.expInfoText = Text(self.master, yscrollcommand=True)
 		self.expInfoText.place(relx=col2,rely=row3,relwidth=0.525,relheight=0.2)
+		saveExpNotesButton = Button(self.master, text="save notes/logger", command=self.saveExperimentNotesCB)
+		saveExpNotesButton.place(relx=col2,rely=row3+0.2,relwidth=bw,relheight=bh)
+
 
 		######## ROW 4 ########
 		startLog = Button(self.master, text="Start logger", command=self.startLoggerCB)
 		startLog.place(relx=col1,rely=row4,relwidth=bw,relheight=bh)
 
-		comboOptionPath = ttk.Combobox(self.master,values=self.absPaths ,textvariable=self.dirs)
+		comboOptionPath = ttk.Combobox(self.master,values=self.absPaths ,textvariable=self.dirs, 
+										postcommand=lambda: comboOptionPath.configure(values=self.absPaths))
 		self.dirs.trace('w',self.savePathCB)
 		comboOptionPath.place(relx=(col1+bw),rely=row4,relwidth=0.4,relheight=bh)
 
@@ -200,13 +209,14 @@ class GuiWindow(Frame):
 		launch.start()
 
 	def stopStiffnessCB(self):
-		path2File = "home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/kill_nodes.sh"
-		# 
+		# path2File = "home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/kill_nodes.sh"
+		# path2File = "../kill_nodes.sh"
+		path2File = "./../kill_nodes.sh"
 		nodes = "draw_ellipsoid haptic_device_rotation mock_End_Effector omni1 omni_2_marker omni_feedback_force stiffness_commanding"
-		bashCommand = "/"+path2File+ " "+ nodes
+		bashCommand = path2File+ " "+ nodes
 		print(bashCommand)
-		subprocess.call(bashCommand)
-		print("Control c gweoon")	
+		subprocess.call(bashCommand, shell=True)
+		print("Control c die shit gweoon")	
 
 	def startExperimentCB(self,number):
 		print("Start experiment {}".format(number))
@@ -245,7 +255,7 @@ class GuiWindow(Frame):
 		print(self.participantNumber.get())
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
-		# self.saveFileNameCB() # prints 
+
 
 	def partAgeCB(self,*args):
 		print(self.participantAge.get())
@@ -271,9 +281,43 @@ class GuiWindow(Frame):
 		print(self.fileName.get())
 
 
-	def saveParticipantInfo(self):
-		# save All the info in suitable text,yaml,t=dict whatever format
-		pass
+	def saveParticipantInfoCB(self):
+		dirName = "part_"+ str(self.participantNumber.get())
+		dumpPath = self.pathToPkgData+'/'+dirName
+		fileName = "part_"+str(self.participantNumber.get())+"_info.yaml"
+		filePath = dumpPath+'/'+fileName
+		try:
+			os.mkdir(dumpPath)
+			print("directiory: {} is created".format(dirName))
+		except OSError as e:
+		    if e.errno == errno.EEXIST:
+		        print("directiory: {} already exists and file: {} is saved in: {}".format(dirName,fileName,dumpPath))
+		    else:
+		        raise
+
+		infoDict = self.generateParticipantInfoDict()
+
+		with open(filePath,'w') as outfile:
+			yaml.dump(infoDict,outfile)
+		# set and update combobox
+		self.dirs.set(dumpPath)
+		self.absPaths.append(dumpPath)
+
+	def saveExperimentNotesCB(self):
+		dumpPath = self.dirs.get()
+		if not dumpPath:
+			print("specify path to dump file")
+			return
+		fileName = self.fileName.get()
+
+		expText= self.expInfoText.get(1.0,END)
+		logText= self.loggerWindow.get(1.0,END)
+		with open(dumpPath+'/'+fileName+'.txt','w') as outfile:
+			outfile.write(expText)
+			outfile.write(logText)
+		print("file: {} saved in {}".format(fileName,dumpPath))
+
+
 
 	def generateFileName(self):
 		trial = "Real"
@@ -290,8 +334,18 @@ class GuiWindow(Frame):
 		completePath = os.path.abspath('simple_experiment_gui.py') #File name
 		delimiter = 'stiffness_simple_experiment' #Package name
 		pathToPkg = completePath.split(delimiter)[0] + delimiter + '/'
-		dirsInPkg = [Dir[0] for Dir in os.walk(pathToPkg)]
-		return pathToPkg, dirsInPkg
+		pathToPkgData = pathToPkg +'data'
+		dirsInPkgData = [Dir[0] for Dir in os.walk(pathToPkgData)]
+		return pathToPkgData, dirsInPkgData
+
+	def generateParticipantInfoDict(self):
+
+		participantInfo = {'number': self.participantNumber.get(),
+							'gender': self.gender.get(),
+							'age': self.participantAge.get(),
+							'experience': self.experience.get()}
+		return participantInfo
+
 
 
 
