@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Usage:
-# ./kill_nodes Node1 Node2 etc
+# ./kill_nodes 	Node1 	Node2 	etc
+# $0			$1		$2		etc
 
 function list_include_item {
   local list="$1"
@@ -15,15 +16,10 @@ function list_include_item {
   return $result
 }
 
-
 to_kill_nodes=""
-for var in "$@"
+for var in "$@" 	# Skips $0!!!! only $1 >
 do
-	if [ "var" = "$1" ]; then 
-		continue
-	else
-		to_kill_nodes+=" /${var}"
-	fi
+	to_kill_nodes+=" /${var}"
 done
 
 active_nodes=`rosnode list`
@@ -36,5 +32,3 @@ do
 		echo $to_kill_node "is not an active node"
 	fi
 done
-
-# rosnode kill $nodes

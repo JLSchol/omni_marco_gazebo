@@ -3,7 +3,8 @@
 # rosbag2csvs.sh
 
 # use in the directory where rosbag2csvs.sh is located:
-# ./rosbag2csvs.sh relative_directory bagDuration Topic1 Topic2 etc...
+# ./rosbag2csvs.sh 	relative_directory 	bagDuration Topic1 	Topic2 	etc...
+# $0 				$1					$2 			$3 		$3		etc
 # topics:
 
 
@@ -12,7 +13,7 @@
 
 
 topics=""
-for var in "$@"
+for var in "$@" # Skips $0!!!! only $1 >
 do
 	if [ "$var" = "$1" ] || [ "$var" = "$2" ]; then 
 		continue
