@@ -33,8 +33,8 @@ class GuiWindow(Frame):
 		self.learning = IntVar(self)
 
 		# other variables from gui
-		self.pathToPkgData, self.absPaths = self.getPaths()
-		self.dirs = StringVar()
+		self.pathToPkg, self.pathToPkgData, self.absPaths = self.getPaths()
+		self.saveDir = StringVar()
 		self.fileName = StringVar(self, value=self.generateFileName())
 		# self.savePath = StringVar(self, value=pathToPkg)
 
@@ -45,6 +45,7 @@ class GuiWindow(Frame):
         # ros variables
 		self.guiMsg = []
 		self.logString	= []
+		self.loggerNodeName = "experiment_log"
 		init_node('simple_experiment_gui')
 		self._initializeGuiCommands()
 		self._guiSub = Subscriber('simple_experiment_logger',String, self._guiLoggerCB)
@@ -92,12 +93,14 @@ class GuiWindow(Frame):
 		######## ROW 1 ########
 		launchStiffness = Button(self.master, text="Launch stiffness pkg", command=partial(self.launchStiffnessCB, arg='hoi'))
 		launchStiffness.place(relx=col1,rely=row1,relwidth=bw,relheight=bh)
-		stopStiffness = Button(self.master, text="Stop stiffness pkg", command=self.stopStiffnessCB)
-		stopStiffness.place(relx=col2,rely=row1,relwidth=bw,relheight=bh)
+		killStiffness = Button(self.master, text="Kill stiffness pkg", command=self.killStiffnessCB)
+		killStiffness.place(relx=col2,rely=row1,relwidth=bw,relheight=bh)
 		launchExp = Button(self.master, text="Launch experiment", command=self.launchExperimentCB)
 		launchExp.place(relx=col1,rely=row1+2*bh,relwidth=bw,relheight=bh)
-		stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
-		stopExp.place(relx=col2,rely=row1+2*bh,relwidth=bw,relheight=bh)
+
+
+		killExp = Button(self.master, text="Kill experiment", command=self.killExperimentCB)
+		killExp.place(relx=col2,rely=row1+2*bh,relwidth=bw,relheight=bh)
 
 		self.loggerWindow = Text(self.master, yscrollcommand=True)
 		self.loggerWindow.place(relx=col2+bw+0.05,rely=row1,relwidth=0.325,relheight=0.45)
@@ -121,6 +124,9 @@ class GuiWindow(Frame):
 		checkBoxLearning = Checkbutton(self.master, text="practice?", variable=self.learning)
 		self.learning.trace('w', self.LearningPhaseCB)
 		checkBoxLearning.place(relx=(col1+bw+0.1),rely=row2,relwidth=0.1,relheight=bh)
+		stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
+		stopExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
+
 
 		prevTrial = Button(self.master, text="previous trial", command= lambda: self.trialCB(-1))
 		prevTrial.place(relx=col1,rely=(row2+2*bh),relwidth=bw,relheight=bh)
@@ -164,16 +170,16 @@ class GuiWindow(Frame):
 		startLog = Button(self.master, text="Start logger", command=self.startLoggerCB)
 		startLog.place(relx=col1,rely=row4,relwidth=bw,relheight=bh)
 
-		comboOptionPath = ttk.Combobox(self.master,values=self.absPaths ,textvariable=self.dirs, 
+		comboOptionPath = ttk.Combobox(self.master,values=self.absPaths ,textvariable=self.saveDir, 
 										postcommand=lambda: comboOptionPath.configure(values=self.absPaths))
-		self.dirs.trace('w',self.savePathCB)
+		self.saveDir.trace('w',self.savePathCB)
 		comboOptionPath.place(relx=(col1+bw),rely=row4,relwidth=0.4,relheight=bh)
 
 		entryFileName = Entry(self.master, bg='white', textvariable=self.fileName)
 		self.fileName.trace('w',self.saveFileNameCB)
 		entryFileName.place(relx=(col1+bw+0.4),rely=row4,relwidth=0.2,relheight=bh)
 
-		stopLog = Button(self.master, text="Stop and save", command=self.stopLoggerCB)
+		stopLog = Button(self.master, text="Stop logger", command=self.stopLoggerCB)
 		stopLog.place(relx=col3,rely=row4,relwidth=bw,relheight=bh)
 
 
@@ -187,18 +193,6 @@ class GuiWindow(Frame):
 		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
 		launch.start()
 
-
-
-		# print(arg)	
-    # def Cockpit_launch_button(self):
-    #     uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-    #     roslaunch.configure_logging(uuid)
-    #     # os.system("roslaunch marco_cockpit_launcher cockpit.launch")
-    #     cockpit_args = ['marco_cockpit_launcher','cockpit.launch']
-    #     roslaunch_file = roslaunch.rlutil.resolve_launch_arguments(cockpit_args)
-    #     self.parent = roslaunch.parent.ROSLaunchParent(uuid, roslaunch_file)
-    #     self.parent.start()
-
 	def launchExperimentCB(self):
 		print("roslaunch stiffness_launch omni_simple_marco.launch")
 		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
@@ -208,15 +202,18 @@ class GuiWindow(Frame):
 		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
 		launch.start()
 
-	def stopStiffnessCB(self):
-		# path2File = "home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/kill_nodes.sh"
-		# path2File = "../kill_nodes.sh"
-		path2File = "./../kill_nodes.sh"
+	def killStiffnessCB(self):
+		bashFile = "kill_nodes.sh"
 		nodes = "draw_ellipsoid haptic_device_rotation mock_End_Effector omni1 omni_2_marker omni_feedback_force stiffness_commanding"
-		bashCommand = path2File+ " "+ nodes
-		print(bashCommand)
+		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
-		print("Control c die shit gweoon")	
+
+
+	def killExperimentCB(self):
+		bashFile = "kill_nodes.sh"
+		nodes = "simple_experiment"
+		bashCommand = self.pathToPkg+bashFile+" "+nodes
+		subprocess.call(bashCommand, shell=True)
 
 	def startExperimentCB(self,number):
 		print("Start experiment {}".format(number))
@@ -262,17 +259,33 @@ class GuiWindow(Frame):
 
 
 	def startLoggerCB(self, pik='pik'):
-		print("StartLog")
+		if len(self.saveDir.get()) == 0:
+			print("no directory specified!!! \nspecify directory and try again")
+			return
+		if not os.path.isdir(self.saveDir.get()):
+			print("{} is not a existing directory.\nSpecify correct path")
+			return
+		bashFile = "rosbag_record.sh"
+		bagName = "my_test_bag"
+		topics = "simple_experiment_logger hoi"
+		# ./rosbag_record 	saveDir bagName logNodeName topic1 	topic2 	etc
+		# $0 				$1		$2 		$3 			$3		$3 		etc
+		bashCommand = self.pathToPkg+bashFile+" "+self.saveDir.get()+" "+bagName+" "+self.loggerNodeName+" "+topics
+		subprocess.call(bashCommand, shell=True)
+		print("Logger started")
+
+
 	def stopLoggerCB(self):
-		expText= self.expInfoText.get(1.0,END)#.encode('ascii','ignore')
-		print(expText)
-		print("STOPPP!!1")
+		bashFile = "kill_nodes.sh"
+		nodes = self.loggerNodeName
+		bashCommand = self.pathToPkg+bashFile+" "+nodes
+		subprocess.call(bashCommand, shell=True)
 
 	def saveRosbagsCB(self,name,location):
 		pass
 
 	def savePathCB(self, *args):
-		print(self.dirs.get())
+		print(self.saveDir.get())
 	def saveGenderCB(self, *args):
 		print(self.gender.get())
 	def saveExperianceCB(self, *args):
@@ -300,11 +313,11 @@ class GuiWindow(Frame):
 		with open(filePath,'w') as outfile:
 			yaml.dump(infoDict,outfile)
 		# set and update combobox
-		self.dirs.set(dumpPath)
+		self.saveDir.set(dumpPath)
 		self.absPaths.append(dumpPath)
 
 	def saveExperimentNotesCB(self):
-		dumpPath = self.dirs.get()
+		dumpPath = self.saveDir.get()
 		if not dumpPath:
 			print("specify path to dump file")
 			return
@@ -331,15 +344,14 @@ class GuiWindow(Frame):
 		return nameString
 
 	def getPaths(self):
-		completePath = os.path.abspath('simple_experiment_gui.py') #File name
+		completePath = os.path.abspath(__file__) #File name
 		delimiter = 'stiffness_simple_experiment' #Package name
 		pathToPkg = completePath.split(delimiter)[0] + delimiter + '/'
 		pathToPkgData = pathToPkg +'data'
 		dirsInPkgData = [Dir[0] for Dir in os.walk(pathToPkgData)]
-		return pathToPkgData, dirsInPkgData
+		return pathToPkg, pathToPkgData, dirsInPkgData
 
 	def generateParticipantInfoDict(self):
-
 		participantInfo = {'number': self.participantNumber.get(),
 							'gender': self.gender.get(),
 							'age': self.participantAge.get(),
