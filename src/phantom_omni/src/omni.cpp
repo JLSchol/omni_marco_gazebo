@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include "ros/master.h"
 #include <sensor_msgs/JointState.h>
 
 #include <string.h>
@@ -17,6 +18,7 @@
 #include "phantom_omni/OmniFeedback.h"
 #include "phantom_omni/LockState.h"
 #include <pthread.h>
+// #include <vector.h>
 
 int calibrationStyle;
 
@@ -211,6 +213,27 @@ public:
 		lock_state_msg.current_position.z = state->position[2]/1000;
 
 		lock_state_pub.publish(lock_state_msg);
+		// When experiment runs toggle back to :
+
+		std::vector<std::string> v;
+		std::string node_name = "/simple_experiment";
+		if(!ros::master::getNodes(v))
+        {
+          ROS_INFO("Error");
+        }   
+         else
+        {  
+           for (int i = 0; i < v.size(); i++){
+				if (node_name == v[i]){
+					state->lock_white = false;
+					lock_state_msg.lock_white = state->lock_white;
+					ROS_INFO_STREAM("in State")
+		   }
+        }
+
+
+		}
+		
 
 	}
 };

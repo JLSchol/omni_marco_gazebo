@@ -2,9 +2,6 @@
 
 std_msgs/Header header
 
-# uint16 command_counter
-
-# bool start_stiffness
 bool start_experiment
 
 uint16 experiment_number
