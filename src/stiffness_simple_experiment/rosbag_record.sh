@@ -39,3 +39,4 @@ do
 done
 
 rosbag record -O $1"/"$2.bag $record_list __name:=$3 &
+rosparam dump $1"/"$2.yaml
