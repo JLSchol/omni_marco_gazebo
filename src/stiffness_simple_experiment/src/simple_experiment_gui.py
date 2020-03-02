@@ -263,7 +263,7 @@ class GuiWindow(Frame):
 			print("no directory specified!!! \nspecify directory and try again")
 			return
 		if not os.path.isdir(self.saveDir.get()):
-			print("{} is not a existing directory.\nSpecify correct path")
+			print("{} is not a existing directory.\nSpecify correct path".format(self.saveDir.get()))
 			return
 		bashFile = "rosbag_record.sh"
 		bagName = "my_test_bag"

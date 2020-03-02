@@ -1,74 +1,27 @@
 #!/usr/bin/env python
-
+# rospy
 from rospy import init_node, Publisher, Subscriber, is_shutdown, signal_shutdown, Rate, loginfo
 from rospy import ROSInterruptException, Time, get_param, has_param, logwarn, logfatal, spin
+# python 
+# from keyboard import is_pressed
 # custom class
 from stiffness_visualization.ellipsoid_message import EllipsoidMessage
 # from stiffness_visualization.draw_ellipsoid import DrawEllipsoid
-
+#import ellipsoid sequence
+from experiment_ellipsoids import ExperimentInfo
 #import messages
 from std_msgs.msg import Float32MultiArray,MultiArrayLayout,String
 from visualization_msgs.msg import Marker
 #import custom messages
+from phantom_omni.msg import LockState
 from stiffness_commanding.msg import EigenPairs, VectorValue
 # custom msgs
 from stiffness_simple_experiment.msg import gui_command
 
-class ExperimentInfo(object):
-    def __init__(self,experimentNr=1,PracticeRun=False):
-        self.data = self.getInfo(experimentNr,PracticeRun)     
 
-    def getInfo(self,experimentNr,PracticeRun):
-        experiment = str(experimentNr) + str(PracticeRun)
-        switcher={
-            '1False':self.experiment1Real,
-            '1True':self.experiment1Practice,
-            '2False':self.experiment2Real,
+# class ExperimentVariables():
+#     def __init__(self,):
 
-        }
-        if experiment in switcher:
-            func = switcher.get(experiment, lambda: "invalid experiment definition: {}"
-                                                                    .format(experiment))
-            self.data = func()
-            return func()
-        else:
-            print("invalid experiment name: {}".format(experiment))
-
-    def experiment1Real(self):
-        infoSequence={  'experiment': '1False',
-                        'trialNr': range(0,2),
-                        # tussen 0.0849 - 0.56557
-                        'scale': [  [0.15,0.09,0.09],[0.2,0.15,0.09],
-                                    [0.4,0.1,0.1]],
-                        'orientation': [    [0.0,0.0,0.0,1.0],[0.3826834, 0.0, 0.0, 0.9238795],
-                                            [0.0, 0.5, 0.0, 0.8660254]]
-                        }
-        return infoSequence
-    def experiment1Practice(self):
-        infoSequence={  'experiment': '1True',
-                        'trialNr': range(0,2),
-                        # tussen 0.0849 - 0.56557
-                        'scale': [  [0.15,0.09,0.09],[0.2,0.15,0.09],
-                                    [0.4,0.1,0.1]],
-                        'orientation': [    [0.0,0.0,0.0,1.0],[0.3826834, 0.0, 0.0, 0.9238795],
-                                            [0.0, 0.5, 0.0, 0.8660254]]
-                        }
-        return infoSequence
-    def experiment2Real(self):
-        infoSequence={  'experiment': '2False',
-                        'trialNr': range(0,2),
-                        # tussen 0.0849 - 0.56557
-                        'scale': [  [0.15,0.09,0.09],[0.2,0.15,0.09],
-                                    [0.4,0.1,0.1]],
-                        'orientation': [    [0.0,0.0,0.0,1.0],[0.3826834, 0.0, 0.0, 0.9238795],
-                                            [0.0, 0.5, 0.0, 0.8660254]]
-                        }
-        return infoSequence
-        
-    def getShape(self,trialNr,data):
-        scales = data['scale'][trialNr]
-        orientation = data['orientation'][trialNr]
-        return scales, orientation
 
 
 class SimpleExperiment(object):
@@ -80,15 +33,20 @@ class SimpleExperiment(object):
         # self._getParameters()
 
         self._guiSub = Subscriber("gui_commands", gui_command, self._guiCallBack)
+        self._omniSub = Subscriber("/omni1_lock_state", LockState, self._phantomCallBack)
         self._ellipsPub = Publisher("experiment_ellipsoid", Marker, queue_size=2)
         self._logPub = Publisher("simple_experiment_logger", String,queue_size=1)
 
     def _initVars(self):
         self.newGuiCommand = False
-        self.newExperiment = []
-        self.prevGuiMsg = gui_command()
+        # self.newExperiment = []
+        # self.prevGuiMsg = gui_command()
         self.guiMsg = gui_command()
+        self.lockStateMsg = LockState()
+        self.prevLockStateMsg = LockState()
+
         self.guiMsg.start_experiment = []
+        self.userTrialPass=False
         self.prevTrialNr = []
         self.trialNr = 0
         self.trialTime = []
@@ -114,19 +72,23 @@ class SimpleExperiment(object):
         positions=[0.5,0.5,0.5]
         rgba=[0.9,0.9,30.15,0.2]
         
-        # rosRate = Rate(5)
+        rosRate = Rate(100)
         while not is_shutdown():
             if not self.guiMsg.start_experiment:
                 print("node launched exp not started")
+                # need to reset certain variables
                 continue
 
-            # if self.newExperiment==True:
-            #     print("new experiment started")
-            #     self._resetTrials()
-            #     self.newExperiment = False
+            # if self.lockStateMsg.lock_white:
+            #     print("ellipsoid is fixed, puaze tussen trial")
+            #     continue
+            # print("while: "str(self.lockStateMsg.lock_white))
+            if ( (self.lockStateMsg.lock_white==True) and (self.lockStateMsg.header != self.prevLockStateMsg.header) ):
+                print("lockstate = True")
+                self.userTrialPass = True
 
-            # print(self.prevTrialNr)
-            # if self._firstLoop():
+            print("while lock: "+ str(self.lockStateMsg.lock_white))
+            print("while :"+str(self.userTrialPass))
             if not isinstance(self.prevTrialNr,int):
                 print('in first loop')
                 # _checkGuiMsg and initialization and 
@@ -135,9 +97,11 @@ class SimpleExperiment(object):
                 # need to check if start experiment has changed
                 EI = ExperimentInfo(self.guiMsg.experiment_number,self.guiMsg.learning)
                 EM = EllipsoidMessage()
+                self.userTrialPass=False
                 print(10*"-----")
                 # print("crach2")
 
+            # other loops check for trial pass and update
             elif self._newTrial(self.guiMsg):
                 print('in NEWTRIAL loop')
                 # Do stuff to update trial properties
@@ -146,27 +110,26 @@ class SimpleExperiment(object):
                                                                             self.startTimeTrial)
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
-                                                    self.trialNr,self.guiMsg.trial_change,False)
+                                                    self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
                 acc = self._getAccuracy()
                 self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,acc))
+
+                # update boolian 
+                self.userTrialPass=False
                 print(10*"-----")
-                # print("crach3")
-            # publish ellipsoid
-            # print('normal')
-            # print("crach4")
+
             data = EI.data
-            # print(self.trialNr)
             scales,quats = EI.getShape(self.trialNr,data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
                                                 positions,quats,scales,rgba)
             self._ellipsPub.publish(ellipsoid)  
 
-            
+            self.userTrialPass=False
             # shutdown node from gui command
-            if self.guiMsg.start_experiment == False:
-                signal_shutdown("User requisted shutdown")
+            # if self.guiMsg.start_experiment == False:
+            #     signal_shutdown("User requisted shutdown")
 
-            # rosRate.sleep()
+            rosRate.sleep()
          
     def _firstLoop(self):
         # needs other check:
@@ -177,10 +140,7 @@ class SimpleExperiment(object):
             return True
 
     def _newTrial(self,guiMsg):
-        userTrialPass = False
-        # print(newGuiCommand)
-        # print(guiMsg.trial_change)
-        if userTrialPass==True:
+        if self.userTrialPass==True:
             print("new trial from user pass")
             return True
         elif self.newGuiCommand == True and guiMsg.trial_change!=0:
@@ -197,7 +157,7 @@ class SimpleExperiment(object):
         time = stopTime - startTime
         return time, stopTime
 
-    def _getUpdatedTrialNumbers(self,trialNr,guiMsgTrial,userTrialPass=True):
+    def _getUpdatedTrialNumbers(self,trialNr,guiMsgTrial,userTrialPass):
         # update trial number
         prevTrialNr = trialNr
         if userTrialPass: # increase with one
@@ -228,13 +188,22 @@ class SimpleExperiment(object):
         #     print("new experiment_number")      
         print("Callback received")
 
+    def _phantomCallBack(self, message):
+        self.prevLockStateMsg = self.lockStateMsg
+        self.lockStateMsg = message
+        
+        # print("cb: " + str(self.lockStateMsg.lock_white))
+
+
+
+
 
 
 if __name__ == "__main__":
     try:
         node = SimpleExperiment()
         node.run()
-        spin()
+        # spin()
 
     except ROSInterruptException:
         pass
