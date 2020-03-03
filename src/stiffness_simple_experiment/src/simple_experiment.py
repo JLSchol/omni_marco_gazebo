@@ -69,8 +69,8 @@ class SimpleExperiment(object):
         frame_id='base_footprint' #wrist_ft_tool_link
         marker_ns='ellips_experiment'
         marker_id=1
-        positions=[0.5,0.5,0.5]
-        rgba=[0.9,0.9,30.15,0.2]
+        positions=[1,1,1]
+        rgba=[0.95,0.95,0.05,0.2]
         
         rosRate = Rate(100)
         while not is_shutdown():
