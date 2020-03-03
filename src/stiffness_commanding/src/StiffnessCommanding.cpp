@@ -216,8 +216,9 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f>
     Therefore, only 3 are correct and associated with a rotation.*/
     bool right_handed = checkRightHandednessMatrix(eigen_vectors);
 
-    if(right_handed == false)  { // then Shuffle
-        std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
+    if(right_handed == false)  { // then Shuffle correctEigenPairs
+        std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = correctEigenPairs(eigen_vectors,eigen_values);
+        // std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
 
         bool check = checkRightHandednessMatrix(pair.first);
         if(check == false){ // shuffle succeeded?
@@ -275,6 +276,14 @@ bool StiffnessCommanding::checkRightHandednessMatrix(Eigen::Matrix3f &eigen_vect
     return right_handed;
 }
 
+std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessCommanding::correctEigenPairs(
+                                                            Eigen::Matrix3f &eigen_vectors, 
+                                                            Eigen::Vector3f &eigen_values)
+{   
+    Eigen::Matrix3f shuffled_vectors;
+    eigen_vectors.col(0) = -eigen_vectors.col(0);
+    return std::make_pair(eigen_vectors,eigen_values);
+}
 
 std::pair<Eigen::Matrix3f, Eigen::Vector3f> StiffnessCommanding::shuffelEigenPairs(
                                                             Eigen::Matrix3f &eigen_vectors, 

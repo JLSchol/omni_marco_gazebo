@@ -90,6 +90,9 @@ class StiffnessCommanding
 												Eigen::Matrix3f &stiffness_matrix);
 			bool checkRightHandednessMatrix(
 									Eigen::Matrix3f &eigen_vectors);
+			std::pair<Eigen::Matrix3f, Eigen::Vector3f> correctEigenPairs(
+													Eigen::Matrix3f &eigen_vectors, 
+													Eigen::Vector3f &eigen_values);
 			std::pair<Eigen::Matrix3f, Eigen::Vector3f> shuffelEigenPairs(
 													Eigen::Matrix3f &eigen_vectors, 
 													Eigen::Vector3f &eigen_values);
