@@ -10,6 +10,7 @@ from visualization_msgs.msg import Marker
 from stiffness_commanding.msg import EigenPairs, VectorValue
 
 from PyKDL import Rotation
+from tf.transformations import *
 
 import numpy as np
 from numpy import array, transpose, sqrt, zeros
@@ -31,9 +32,9 @@ class EllipsoidMessage(object):
         return rightHanded
 
 
-    def shuffleEig(self,flag,eigenValues,eigenVectors):
+    def shuffleEig(self,flag,eigenValues,eigenVectors,sequence):
         # Shuffel 2 arbritary vectors will always result in a rotation instead of an reflection
-        shuffleSequence = [0,2,1] # in stead of [0,1,2]
+        # sequence = [0,2,1] # in stead of [0,1,2]
         i = np.argsort(shuffleSequence)
         eigenValues = eigenValues[i]
         eigenVectors = eigenVectors[:,i]
@@ -146,4 +147,93 @@ class EllipsoidMessage(object):
 
         return marker
 
+    def relativeRotationQuat(self,q1,q2):
+        q1Inv = q1
+        q1Inv[3] = -q1Inv[3]
+        qr = quaternion_multiply(q2,q1Inv)
+        return qr
 
+    def innerProductOfUnitQuaternion(self,q1,q2):
+        # angle4 = np.arccos(abs(np.dot(q1[0:2],q2[0:2])))
+        rad = np.arccos(min(abs(np.dot(q1,q2)),1.0))
+        return rad
+
+    def normOfDifferences(self,q1,q2):
+        # dimensionless
+        distance = min(np.linalg.norm(q1-q2),np.linalg.norm(q1+q2))
+        return distance
+
+
+    def absoluteAngle(self,q1,q2,deg='deg'):
+        qr = self.relativeRotationQuat(q1,q2)
+        angle = 2*np.arctan2(np.linalg.norm(qr[0:2]),qr[3])
+        angle2 = 2*np.arccos(qr[3])
+        angle3 = 2*np.arcsin(np.linalg.norm(qr[0:2]))
+        # dist = self.normOfDifferences(q1,q2)
+        innerProd = self.innerProductOfUnitQuaternion(q1,q2)
+        innerProdx2 = innerProd*2
+        absoluteAngle = abs(np.pi - (2*innerProd))
+
+        #  shortest shortest angle
+        # Mathf.Acos(  Mathf.Min( Mathf.Abs(Quaternion.Dot(a, b)), 1f) ) * 2.0 * 57.2957801818848  );
+        # print("initial angle: {} rad, {} deg".format(angle,np.degrees(angle)))
+        print("initial angle2: {} rad, {} deg".format(angle2,np.degrees(angle2)))
+        # print("initial angle3: {} rad, {} deg".format(angle3,np.degrees(angle3)))
+        # distance metrics phi1 and phi2 from http://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
+        # print("distance: {} [-]".format(dist))
+        print("2Xinnerproduct: {} rad, {} deg".format(innerProdx2,np.degrees(innerProdx2)))
+        print("new angle innerprod: {} rad, {} deg".format(absoluteAngle,np.degrees(absoluteAngle)))
+
+
+        newAngle = self.transformAngle(angle2)
+        print("new angle: {} rad, {} deg".format(newAngle,np.degrees(newAngle)))
+
+        if deg == 'deg':
+            newAngle = np.degrees(newAngle)
+        elif deg=='rad':
+            pass
+        else:
+            print("{} is not a valid option. Use 'deg' or 'rad'. \nOutput is given in rad".format(deg))
+
+        return newAngle
+
+    def transformAngle(self,radian):
+
+        quarter = 1*np.pi/2
+        half = 2*np.pi/2
+        threeQuarter = 3*np.pi/2
+        whole = 4*np.pi/2
+
+        correction = []
+        sign = -1 if radian > 0 else 1
+        absRad = abs(radian)
+        # print("absrad: {}".format(absRad))
+
+        if absRad >= 0 and absRad <= quarter:
+            correction = 0
+        elif absRad>quarter and absRad<=threeQuarter:
+            correction = half
+        elif absRad>=threeQuarter and absRad<=whole:
+            correction = whole
+        else:
+            print("abs({}) is larger than 2 PI".format(radian))
+
+        # print("sign: {}, correction: {}".format(sign,correction))
+        newRad = radian + sign*correction
+        # print("new rad: {}".format(newRad))
+        return newRad
+
+
+if __name__ == "__main__":
+
+    # roll pitch yaw
+
+
+    q1 = quaternion_from_euler(np.pi/4,0,0)
+    q2 = quaternion_from_euler(np.pi/2,0,0)
+    print(q1)
+    print(q2)
+    
+    EM = EllipsoidMessage()
+    qr = EM.absoluteAngle(q1,q2,"rad")
+    # print(EM.transformAngle(qr))
