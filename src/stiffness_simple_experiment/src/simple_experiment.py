@@ -14,8 +14,7 @@ from std_msgs.msg import Float32MultiArray,MultiArrayLayout,String
 from visualization_msgs.msg import Marker
 #import custom messages
 from phantom_omni.msg import LockState
-from stiffness_commanding.msg import EigenPairs, VectorValue
-# custom msgs
+from stiffness_commanding.msg import EigenPairs
 from stiffness_simple_experiment.msg import gui_command
 
 
@@ -30,12 +29,22 @@ class SimpleExperiment(object):
         # self.prevGuiMsg = gui_command()
         self._initVars()
         
-        # self._getParameters()
+        self._getParameters()
 
         self._guiSub = Subscriber("gui_commands", gui_command, self._guiCallBack)
         self._omniSub = Subscriber("/omni1_lock_state", LockState, self._phantomCallBack)
+        self._eigenSub = Subscriber("/eigen_pair", EigenPairs, self._eigenCallBack)
         self._ellipsPub = Publisher("experiment_ellipsoid", Marker, queue_size=2)
         self._logPub = Publisher("simple_experiment_logger", String,queue_size=1)
+
+    def _getParameters(self):
+        lambdaminPar = '/stiffness_commanding/lambda_min'
+        lambdamaxPar = '/stiffness_commanding/lambda_max'
+        for param in [lambdaminPar, lambdamaxPar]:
+            if not has_param(param):
+                logfatal("Could not retrive %s from the parameter server", param)
+        self._lambda_min = get_param(lambdaminPar)
+        self._lambda_max = get_param(lambdamaxPar)
 
     def _initVars(self):
         self.newGuiCommand = False
@@ -44,6 +53,7 @@ class SimpleExperiment(object):
         self.guiMsg = gui_command()
         self.lockStateMsg = LockState()
         self.prevLockStateMsg = LockState()
+        self.eigenPairMsg = EigenPairs()
 
         self.guiMsg.start_experiment = []
         self.userTrialPass=False
@@ -87,8 +97,8 @@ class SimpleExperiment(object):
                 print("lockstate = True")
                 self.userTrialPass = True
 
-            print("while lock: "+ str(self.lockStateMsg.lock_white))
-            print("while :"+str(self.userTrialPass))
+            # print("while lock: "+ str(self.lockStateMsg.lock_white))
+            # print("while :"+str(self.userTrialPass))
             if not isinstance(self.prevTrialNr,int):
                 print('in first loop')
                 # _checkGuiMsg and initialization and 
@@ -111,15 +121,14 @@ class SimpleExperiment(object):
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
                                                     self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
-                acc = self._getAccuracy()
+                acc = self._getAccuracy(self.prevTrialNr,EI,EM)
                 self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,acc))
 
                 # update boolian 
                 self.userTrialPass=False
                 print(10*"-----")
 
-            data = EI.data
-            scales,quats = EI.getShape(self.trialNr,data)
+            scales,quats = EI.getShape(self.trialNr,EI.data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
                                                 positions,quats,scales,rgba)
             self._ellipsPub.publish(ellipsoid)  
@@ -166,7 +175,23 @@ class SimpleExperiment(object):
             trialNr += guiMsgTrial
         return trialNr,prevTrialNr
 
-    def _getAccuracy(self):
+    def _getAccuracy(self,trialNr,EI,EM):
+        ############ EXPERIMENT ELLIPSOID ############
+        # get scales and quats from spawned ellipsoid
+        scalesExperiment, quatsExperiment = EI.getShape(trialNr,EI.data)
+        ############ PARTICIPANT ELLIPSOID ############
+        # Convert message to vector value pairs
+        (eigVectors, eigValues) = EM.EigenPairMsgsToMatrixVector(self.eigenPairMsg)
+        # shuffel vector value pairs to get nice orientation somehow
+        # use scales to shuffle if 3 different axis
+        # otherwise, find closest quaternion
+        # get ellipsoid scales , quats from user 
+        scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)
+        quats = EM.getQuatFromMatrix(eigVectors)
+
+        print("Scales exp: {}  ;   user: {}".format(scalesExperiment, scales))
+        print("Quats exp: {}  ;   user: {}".format(quatsExperiment, quats))
+
         return 89.9
 
             
@@ -186,13 +211,15 @@ class SimpleExperiment(object):
         # if self.guiMsg.experiment_number != self.prevGuiMsg.experiment_number:
         #     self.newExperiment = True  
         #     print("new experiment_number")      
-        print("Callback received")
+        print("Gui callback received")
 
     def _phantomCallBack(self, message):
         self.prevLockStateMsg = self.lockStateMsg
         self.lockStateMsg = message
-        
-        # print("cb: " + str(self.lockStateMsg.lock_white))
+
+    def _eigenCallBack(self, message):
+        self.eigenPairMsg = message
+
 
 
 
