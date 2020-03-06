@@ -76,10 +76,10 @@ class SimpleExperiment(object):
         EM = []
 
         # initialize ellipsoid data
-        frame_id='base_footprint' #wrist_ft_tool_link
+        frame_id='wrist_ft_tool_link' #wrist_ft_tool_link
         marker_ns='ellips_experiment'
         marker_id=1
-        positions=[1,1,1]
+        positions=[0,0,0]
         rgba=[0.95,0.95,0.05,0.2]
         
         rosRate = Rate(100)
@@ -131,8 +131,11 @@ class SimpleExperiment(object):
             scales,quats = EI.getShape(self.trialNr,EI.data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
                                                 positions,quats,scales,rgba)
-            self._ellipsPub.publish(ellipsoid)  
+            EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
 
+
+            self._ellipsPub.publish(ellipsoid)  
+            
             self.userTrialPass=False
             # shutdown node from gui command
             # if self.guiMsg.start_experiment == False:
@@ -182,17 +185,30 @@ class SimpleExperiment(object):
         ############ PARTICIPANT ELLIPSOID ############
         # Convert message to vector value pairs
         (eigVectors, eigValues) = EM.EigenPairMsgsToMatrixVector(self.eigenPairMsg)
-        # shuffel vector value pairs to get nice orientation somehow
-        # use scales to shuffle if 3 different axis
-        # otherwise, find closest quaternion
         # get ellipsoid scales , quats from user 
-        scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)
+        scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)       
         quats = EM.getQuatFromMatrix(eigVectors)
 
-        print("Scales exp: {}  ;   user: {}".format(scalesExperiment, scales))
-        print("Quats exp: {}  ;   user: {}".format(quatsExperiment, quats))
+        shuffleSequence = EM.getShuffleSequence(scalesExperiment,scales,eigValues,eigVectors)
+        (newValues, newVectors) = EM.shuffleEig(eigValues, eigVectors, shuffleSequence)
 
-        return 89.9
+        if not EM.checkRightHandedNessMatrix(newVectors):
+            logfatal("not a valid rotation, could NOT find a solution")
+
+        newScales = EM.getEllipsoidScales(newValues, self._lambda_min, self._lambda_max)
+        newQuats = EM.getQuatFromMatrix(newVectors)
+
+        print(10*"----")
+        print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
+        print("initial User scales: {}  ;   quats: {}".format(scales, quats))
+        print("New user scales: {}  ;   quats: {}".format(newScales, newQuats))
+        print(10*"----")
+        
+        angle = EM.absoluteAngle(quatsExperiment,newQuats,'deg')
+        print(angle)
+        rotationAccuracy = 100.0 - (angle/90.0)
+
+        return rotationAccuracy
 
             
     def _createLogString(self,trial,time,accuracy):

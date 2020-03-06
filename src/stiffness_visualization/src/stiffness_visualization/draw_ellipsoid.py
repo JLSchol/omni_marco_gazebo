@@ -80,27 +80,27 @@ class DrawEllipsoid(object):
 
             self._publisher.publish(ellipsoid)
             # publish ellipsoid orientation
-            # self._broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
+            ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
             # loginfo(10*"---")
 
 
-    def _broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):
-        br = TransformBroadcaster()
-        t = TransformStamped()
+    # def _broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):
+    #     br = TransformBroadcaster()
+    #     t = TransformStamped()
 
-        t.header.stamp = Time.now()
-        t.header.frame_id = parentID
-        t.child_frame_id = childID
-        t.transform.translation.x = position[0]
-        t.transform.translation.y = position[1]
-        t.transform.translation.z = position[2]
+    #     t.header.stamp = Time.now()
+    #     t.header.frame_id = parentID
+    #     t.child_frame_id = childID
+    #     t.transform.translation.x = position[0]
+    #     t.transform.translation.y = position[1]
+    #     t.transform.translation.z = position[2]
 
-        t.transform.rotation.x = quaternion[0]
-        t.transform.rotation.y = quaternion[1]
-        t.transform.rotation.z = quaternion[2]
-        t.transform.rotation.w = quaternion[3]
+    #     t.transform.rotation.x = quaternion[0]
+    #     t.transform.rotation.y = quaternion[1]
+    #     t.transform.rotation.z = quaternion[2]
+    #     t.transform.rotation.w = quaternion[3]
 
-        br.sendTransform(t)
+    #     br.sendTransform(t)
 
 
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from rospy import Time
-
+from tf2_ros import TransformBroadcaster
 #import messages
+from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout
 from visualization_msgs.msg import Marker
@@ -20,6 +21,8 @@ class EllipsoidMessage(object):
         pass
 
     def checkRightHandedNessMatrix(self,matrix):
+        # print(matrix)
+        # print(type(matrix))
         v1 = np.array(matrix[:,0])
         v2 = np.array(matrix[:,1])
         v3 = np.array(matrix[:,2])
@@ -32,12 +35,19 @@ class EllipsoidMessage(object):
         return rightHanded
 
 
-    def shuffleEig(self,flag,eigenValues,eigenVectors,sequence):
+    def shuffleEig(self,eigenValues,eigenVectors,sequence):
         # Shuffel 2 arbritary vectors will always result in a rotation instead of an reflection
         # sequence = [0,2,1] # in stead of [0,1,2]
-        i = np.argsort(shuffleSequence)
-        eigenValues = eigenValues[i]
-        eigenVectors = eigenVectors[:,i]
+        # sequence=np.argsort(sequence)
+        # print("sequence {}".format(sequence))
+        # print("eigenValues {}".format(eigenValues))
+        eigenValues = np.array(eigenValues)
+        eigenVectors = np.array(eigenVectors)
+
+        eigenValues = eigenValues[sequence]
+        # print("newEigenVaues {}".format(eigenValues))
+        eigenVectors = eigenVectors[:,sequence]
+
 
         return eigenValues, eigenVectors
 
@@ -94,7 +104,6 @@ class EllipsoidMessage(object):
 
         lambdaVec = zeros(3)
         ellipsoid_axis_scale=[]
-
         for i,eigenValue in enumerate(eigenValues):
 
             # round to zero when close to zero
@@ -166,12 +175,12 @@ class EllipsoidMessage(object):
 
     def absoluteAngle(self,q1,q2,deg='deg'):
         qr = self.relativeRotationQuat(q1,q2)
-        angle = 2*np.arctan2(np.linalg.norm(qr[0:2]),qr[3])
+        # angle = 2*np.arctan2(np.linalg.norm(qr[0:2]),qr[3])
         angle2 = 2*np.arccos(qr[3])
-        angle3 = 2*np.arcsin(np.linalg.norm(qr[0:2]))
+        # angle3 = 2*np.arcsin(np.linalg.norm(qr[0:2]))
         # dist = self.normOfDifferences(q1,q2)
         innerProd = self.innerProductOfUnitQuaternion(q1,q2)
-        innerProdx2 = innerProd*2
+        # innerProdx2 = innerProd*2
         absoluteAngle = abs(np.pi - (2*innerProd))
 
         #  shortest shortest angle
@@ -181,7 +190,7 @@ class EllipsoidMessage(object):
         # print("initial angle3: {} rad, {} deg".format(angle3,np.degrees(angle3)))
         # distance metrics phi1 and phi2 from http://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
         # print("distance: {} [-]".format(dist))
-        print("2Xinnerproduct: {} rad, {} deg".format(innerProdx2,np.degrees(innerProdx2)))
+        # print("2Xinnerproduct: {} rad, {} deg".format(innerProdx2,np.degrees(innerProdx2)))
         print("new angle innerprod: {} rad, {} deg".format(absoluteAngle,np.degrees(absoluteAngle)))
 
 
@@ -190,12 +199,14 @@ class EllipsoidMessage(object):
 
         if deg == 'deg':
             newAngle = np.degrees(newAngle)
+            absoluteAngle = np.degrees(absoluteAngle)
         elif deg=='rad':
             pass
         else:
             print("{} is not a valid option. Use 'deg' or 'rad'. \nOutput is given in rad".format(deg))
 
-        return newAngle
+        # return newAngle
+        return absoluteAngle
 
     def transformAngle(self,radian):
 
@@ -223,17 +234,117 @@ class EllipsoidMessage(object):
         # print("new rad: {}".format(newRad))
         return newRad
 
+    def getShuffleSequence(self,scaleExp,scaleUser,eigValues,eigVectors):
+        # print("desired: {}".format([0,2,1]))
+        shuffleSequence = ['x','y','z']
+        print("Values: {}".format(eigValues))
+        print("Vectors:\n {}\n {}\n {}".format(eigVectors[0][:],eigVectors[1][:],eigVectors[2][:]))
+        # try to find the suffle sequence
+        maxIndex = lambda x: x.index(max(x))
+        shuffleImax = maxIndex(scaleExp)
+        shuffleVmax = maxIndex(scaleUser)
+
+        # check if shuffle is necessary 
+        if shuffleImax == shuffleVmax:
+            print("greatest principial axis is alligned, no shuffle needed")
+            shuffleSequence = [0,1,2]
+            print(shuffleSequence)
+            return [0,1,2]
+
+        # start creating shuffle sequence
+        shuffleSequence[shuffleImax] = shuffleVmax # ['x',maxValue,'z']
+        print(shuffleSequence)
+
+        # get random guess voor shuffleSequence ['x',maxValue,'z']
+        shuffleIRandom = []
+        shuffleVRandom = []
+        if shuffleImax != 0:
+            shuffleIRandom = 0 
+            if shuffleVmax != 0:
+                shuffleVRandom = 0
+            else:
+                shuffleVRandom = 1 # or 2
+        else:
+            shuffleIRandom = 1 # or 2
+            if shuffleVmax != 0:
+                shuffleVRandom = 0
+            else:
+                shuffleVRandom = 1 # or 2
+        shuffleSequence[shuffleIRandom] = shuffleVRandom # ['x',maxValue,randomValue] (on random index)
+        print(shuffleSequence)
+
+        # get remaining index value for shuffleSequence ['x',maxValue,randomValue]
+        shuffleIRemain = 3 - shuffleImax - shuffleIRandom
+        shuffleVRemain = 3 - shuffleVmax - shuffleVRandom
+        shuffleSequence[shuffleIRemain] = shuffleVRemain # [remainginValue,maxValue,randomValue] (on remaining index)
+        print(shuffleSequence)
+
+        # Check if found sequence provides an actual rotation, otherwise swap -> should give rotation!
+        (shuffledValues, shuffledVectors) = self.shuffleEig(eigValues, eigVectors, shuffleSequence)
+        validRotation = self.checkRightHandedNessMatrix(shuffledVectors)
+        print("validRotation? {}".format(validRotation))
+
+        if not validRotation:
+            # swap the guessed and remaining index value pair in the shuffle sequence
+            shuffleSequence[shuffleIRemain] = shuffleVRandom
+            shuffleSequence[shuffleIRandom] = shuffleVRemain
+            print(shuffleSequence)
+
+        return shuffleSequence
+
+
+    def broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):
+        br = TransformBroadcaster()
+        t = TransformStamped()
+
+        t.header.stamp = Time.now()
+        t.header.frame_id = parentID
+        t.child_frame_id = childID
+        t.transform.translation.x = position[0]
+        t.transform.translation.y = position[1]
+        t.transform.translation.z = position[2]
+
+        t.transform.rotation.x = quaternion[0]
+        t.transform.rotation.y = quaternion[1]
+        t.transform.rotation.z = quaternion[2]
+        t.transform.rotation.w = quaternion[3]
+
+        br.sendTransform(t)
 
 if __name__ == "__main__":
 
-    # roll pitch yaw
+    ############ shuffle testing ############
+    scaleUser = [0.1,0.1,0.5]   # sequence: [1,2,0] or [0,2,1]
+    # scaleUser = [0.1,0.5,0.1] # sequence: [0,1,2] or [2,1,0]
+    # scaleUser = [0.5,0.1,0.1] # sequence: [2,0,1] or [1,0,2]
 
+    # scaleUser = [0.1,0.1,0.5] # should be [0.1 0.5 0.1]
+    scaleExp = [0.08,0.4,0.08]
 
-    q1 = quaternion_from_euler(np.pi/4,0,0)
-    q2 = quaternion_from_euler(np.pi/2,0,0)
-    print(q1)
-    print(q2)
-    
+    Vec = [ [0,0,1],
+            [1,0,0],
+            [0,1,0]]
+    print(Vec[0][2])
+    Val = [1,1,5]
+
+    # find index sequence that maps user to experiment
     EM = EllipsoidMessage()
-    qr = EM.absoluteAngle(q1,q2,"rad")
+    sequence = EM._getShuffleSequence(scaleExp,scaleUser,Val,Vec)
+    (newValues, newVectors) = EM.shuffleEig(Val, Vec, sequence)
+    validRotation = EM.checkRightHandedNessMatrix(newVectors)
+    print(validRotation)
+    print(newValues)
+    print(newVectors)
+    
+
+    # desiredSequence = [0,2,1] # of [1,2,0]
+    # print(scaleUser[desiredSequence]) # [0.1 0.5 0.1]
+
+    ############ absoluteAngle ############
+    # q1 = quaternion_from_euler(np.pi/4,0,0)
+    # q2 = quaternion_from_euler(np.pi/2,0,0)
+    # print(q1)
+    # print(q2)
+    # EM = EllipsoidMessage()
+    # qr = EM.absoluteAngle(q1,q2,"rad")
     # print(EM.transformAngle(qr))
