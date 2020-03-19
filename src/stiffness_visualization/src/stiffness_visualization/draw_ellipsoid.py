@@ -80,7 +80,7 @@ class DrawEllipsoid(object):
 
             self._publisher.publish(ellipsoid)
             # publish ellipsoid orientation
-            ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"ellipsoidAxis")
+            ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"Raw_user_ellips")
             # loginfo(10*"---")
 
 

@@ -17,7 +17,7 @@ from phantom_omni.msg import LockState
 from stiffness_commanding.msg import EigenPairs
 from stiffness_simple_experiment.msg import gui_command
 
-
+import numpy as np
 # class ExperimentVariables():
 #     def __init__(self,):
 
@@ -62,6 +62,9 @@ class SimpleExperiment(object):
         self.trialTime = []
         self.startTimeTrial = []
         self.stopTimeTrial =[]
+        self.qAllignedQuats = [0,0,0,1]
+        self.newQuats = [0,0,0,1]
+        self.originalQuat = [0,0,0,1]
 
     def _resetTrials(self):
         self.prevTrialNr = []
@@ -131,6 +134,9 @@ class SimpleExperiment(object):
             scales,quats = EI.getShape(self.trialNr,EI.data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
                                                 positions,quats,scales,rgba)
+            EM.broadcastEllipsoidAxis(positions,self.originalQuat,frame_id,'original_usercommanded')
+            EM.broadcastEllipsoidAxis(positions,self.qAllignedQuats,frame_id,'largest_axis_alligned')
+            EM.broadcastEllipsoidAxis(positions,self.newQuats,frame_id,'corrected_ellips')
             EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
 
 
@@ -184,31 +190,41 @@ class SimpleExperiment(object):
         scalesExperiment, quatsExperiment = EI.getShape(trialNr,EI.data)
         ############ PARTICIPANT ELLIPSOID ############
         # Convert message to vector value pairs
-        (eigVectors, eigValues) = EM.EigenPairMsgsToMatrixVector(self.eigenPairMsg)
+        eigVectors, eigValues = EM.EigenPairMsgsToMatrixVector(self.eigenPairMsg)
         # get ellipsoid scales , quats from user 
         scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)       
         quats = EM.getQuatFromMatrix(eigVectors)
 
+        # get new quaternion where the longest axis of user and experiment is alligned
+        # By shuffeleng the eigenvectors
         shuffleSequence = EM.getShuffleSequence(scalesExperiment,scales,eigValues,eigVectors)
-        (newValues, newVectors) = EM.shuffleEig(eigValues, eigVectors, shuffleSequence)
-
+        newValues, newVectors = EM.shuffleEig(eigValues, eigVectors, shuffleSequence)
         if not EM.checkRightHandedNessMatrix(newVectors):
             logfatal("not a valid rotation, could NOT find a solution")
-
         newScales = EM.getEllipsoidScales(newValues, self._lambda_min, self._lambda_max)
-        newQuats = EM.getQuatFromMatrix(newVectors)
+
+        self.originalQuat = list(quats)
+        qAlligned = list(EM.getQuatFromMatrix(newVectors))
+        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(qAlligned,quatsExperiment,newScales)
+        # self.oneAxisAllignedQuat = list(EM.getQuatFromMatrix(newVectors))
+        # self.newQuats = list(EM.closestQuaternion(self.oneAxisAllignedQuat,quatsExperiment,scalesExperiment))
+
+        # find the closest orientation by rotating around the longest axis
+
+
 
         print(10*"----")
         print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
         print("initial User scales: {}  ;   quats: {}".format(scales, quats))
-        print("New user scales: {}  ;   quats: {}".format(newScales, newQuats))
+        print("One axis alligned: {}  ;   quats: {}".format(newScales, self.qAllignedQuats))
+        print("New user scales: {}  ;   quats: {}".format(newScales, self.newQuats))
         print(10*"----")
         
-        angle = EM.absoluteAngle(quatsExperiment,newQuats,'deg')
+        angle = EM.absoluteAngle(quatsExperiment,self.newQuats,'deg')
         print(angle)
-        rotationAccuracy = 100.0 - (angle/90.0)
+        # rotationAccuracy = 100.0 - (angle/90.0)
 
-        return rotationAccuracy
+        return angle
 
             
     def _createLogString(self,trial,time,accuracy):
