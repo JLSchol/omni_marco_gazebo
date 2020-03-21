@@ -124,8 +124,8 @@ class SimpleExperiment(object):
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
                                                     self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
-                acc = self._getAccuracy(self.prevTrialNr,EI,EM)
-                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,acc))
+                volumeAcc, rotationAcc = self._getAccuracy(self.prevTrialNr,EI,EM)
+                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,volumeAcc,rotationAcc))
 
                 # update boolian 
                 self.userTrialPass=False
@@ -194,22 +194,17 @@ class SimpleExperiment(object):
         # get ellipsoid scales , quats from user 
         scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)       
         quats = EM.getQuatFromMatrix(eigVectors)
-
-        # get new quaternion where the longest axis of user and experiment is alligned
-        # By shuffeleng the eigenvectors
-        shuffleSequence = EM.getShuffleSequence(scalesExperiment,scales,eigValues,eigVectors)
-        newValues, newVectors = EM.shuffleEig(eigValues, eigVectors, shuffleSequence)
-        if not EM.checkRightHandedNessMatrix(newVectors):
-            logfatal("not a valid rotation, could NOT find a solution")
-        newScales = EM.getEllipsoidScales(newValues, self._lambda_min, self._lambda_max)
-
         self.originalQuat = list(quats)
-        qAlligned = list(EM.getQuatFromMatrix(newVectors))
-        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(qAlligned,quatsExperiment,newScales)
-        # self.oneAxisAllignedQuat = list(EM.getQuatFromMatrix(newVectors))
-        # self.newQuats = list(EM.closestQuaternion(self.oneAxisAllignedQuat,quatsExperiment,scalesExperiment))
 
+        # get new quaternion where the longest axis of user and experiment is alligned 
+        # by swapping axes e.g. [x=y,y=z,z=x]
+        # Then check direction of the new alligned axis ans rotate 180 when pionting in opposite directino
+        # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis
+        swappedAxisQuat, newScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,'long')
+        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newScales)
+
+        
 
 
 
@@ -220,18 +215,26 @@ class SimpleExperiment(object):
         print("New user scales: {}  ;   quats: {}".format(newScales, self.newQuats))
         print(10*"----")
         
-        angle = EM.absoluteAngle(quatsExperiment,self.newQuats,'deg')
-        print(angle)
-        # rotationAccuracy = 100.0 - (angle/90.0)
+        angle = EM.absoluteAngleBetweenEllipsoids(quatsExperiment,self.newQuats,'deg')
 
-        return angle
+
+        userVolume = EM.volumeEllipsoid(scales)
+        experimentVolume = EM.volumeEllipsoid(scalesExperiment)
+
+        percentage = lambda nominator, denominator: 100 * (1 - float(nominator)/float(denominator))
+        rotationAccuracy = round(percentage(angle,90.0),2)
+        volumeAccuracy = round(percentage(abs(userVolume-experimentVolume),experimentVolume),2)
+
+        print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
+        print("userVolume = {} [m3]; experimentVolume = {} [m3]".format(userVolume,experimentVolume))
+
+        return volumeAccuracy, rotationAccuracy
 
             
-    def _createLogString(self,trial,time,accuracy):
+    def _createLogString(self,trial,time,volAcc,rotAcc):
         
-        # time = round(float(time)*float(10**(-9)),3)
-        logString = "trial number: {}, time: {} seconds, accuracy: {}%".format(
-                                                                trial,time.to_sec(),accuracy)
+        t = round(time.to_sec(),2)
+        logString = "trial number: {}, time: {} [sec], shape: {} [%], orientation: {} [%]".format(trial,t,volAcc,rotAcc)
         return logString
 
 
