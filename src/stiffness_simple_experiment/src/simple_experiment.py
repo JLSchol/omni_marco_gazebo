@@ -201,8 +201,13 @@ class SimpleExperiment(object):
         # Then check direction of the new alligned axis ans rotate 180 when pionting in opposite directino
         # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis
-        swappedAxisQuat, newScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,'long')
-        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newScales)
+        axis = 'long'
+        print(EI.data['experiment'])
+        if EI.data['experiment']=='2False':
+            axis = 'short'
+        print(axis)
+        swappedAxisQuat, newScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,axis)
+        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newScales,axis)
 
         
 

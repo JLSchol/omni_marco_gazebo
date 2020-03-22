@@ -73,8 +73,8 @@ class EllipsoidMessage(object):
             
             # scale the axis of the ellipsoid
             #2 = diameter is two time the radius
-            #sqrt(2) = is term from the eigendecomposition
-            ellipsoid_axis_scale.append(2*sqrt(2)*lambda_)
+            #sqrt(2) = is term from the eigendecomposition?
+            ellipsoid_axis_scale.append(2.0*sqrt(2.0)*lambda_)
 
         return ellipsoid_axis_scale
     
@@ -238,7 +238,8 @@ class EllipsoidMessage(object):
         # along largest (long) axis or smalles (short) axis
         # get user scales:
         userScales = self.getEllipsoidScales(userEigVal, lambda_min, lambda_max)
-        shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec)
+        print("userScales: {}, expScales: {}".format(userScales,expScales))
+        shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec,axis)
         newUserVal, newUserVec = self.shuffleEig(userEigVal, userEigVec, shuffleSeq)
         newUserScales = self.shuffleList(userScales,shuffleSeq)
         if not self.checkRightHandedNessMatrix(newUserVec):
@@ -246,49 +247,55 @@ class EllipsoidMessage(object):
         swappedAxisQuat = self.getQuatFromMatrix(newUserVec)
         return swappedAxisQuat, newUserScales, newUserVec, newUserVal,   
 
-        # return swappedAxisQuat, shuffeledScales, shuffledValues, shuffledVectors
-
-    def closestQuaternionProjection(self,q,qTarget,scales):
-        # get indices from long and short axis
-        longIndex, shortIndex1, shortIndex2 = self._getAxisIndices1DofElipse(scales)
-        print("large: {}, small_1: {}, small_2: {}".format(longIndex,shortIndex1,shortIndex2))
+    def closestQuaternionProjection(self,q,qTarget,scales,axis='long'):
+        # get indices from long and short axis other2
+        longOrShortIndex, other1Index, other2Index = self._getAxisIndicesOfEllipses(scales,axis)
+        print("short or long?: {} at: {}, other1Index: {}, small_2: {}".format(axis,longOrShortIndex,other1Index,other2Index))
 
         # Check if axis is not pointing the opposite way (180 deg)
-        qCorrected = self._flipAxis180Degrees(q,qTarget,longIndex)
-        projectionOfX, XTarget = self._projectUnitVectorOnPlane(qCorrected,qTarget,longIndex,shortIndex1)
-        projectionOfY, YTarget = self._projectUnitVectorOnPlane(qCorrected,qTarget,longIndex,shortIndex2)
+        qCorrected = self._flipAxis180Degrees(q,qTarget,longOrShortIndex)
+        projectionOfOther1Vec, other1Vec = self._projectUnitVectorOnPlane(qCorrected,qTarget,longOrShortIndex,other1Index)
+        projectionOfOther2Vec, other2Vec = self._projectUnitVectorOnPlane(qCorrected,qTarget,longOrShortIndex,other2Index)
 
         # get angle between axis
         angle = [0,0]
-        angle[0] = self.angleBetween2UnitVec(projectionOfX,XTarget)
-        angle[1] = self.angleBetween2UnitVec(projectionOfY,YTarget)
+        angle[0] = self.angleBetween2UnitVec(projectionOfOther1Vec,other1Vec)
+        angle[1] = self.angleBetween2UnitVec(projectionOfOther2Vec,other2Vec)
 
-        # rotate correct quaternions with found projection angle
+        # rotate userEllips quaternionion to experimentEllips quaternions with found projection angle
         axisOfRotation = [0,0,0]
-        axisOfRotation[longIndex] = 1
+        axisOfRotation[longOrShortIndex] = 1
         qRoted = [[0,0,0,0],[0,0,0,0]]
         qRoted[0] = self.rotateQuatOverOneAxis(qCorrected,axisOfRotation,angle[0])
         qRoted[1] = self.rotateQuatOverOneAxis(qCorrected,axisOfRotation,angle[1])
 
-        for iterator,shortAxisIndex in enumerate([shortIndex1,shortIndex2]):
-            if not self._isAxisAlligned(qRoted[iterator],qTarget,longIndex,shortAxisIndex):
+        for iterator,otherAxisIndex in enumerate([other1Index,other2Index]):
+            if not self._isAxisAlligned(qRoted[iterator],qTarget,longOrShortIndex,otherAxisIndex):
                 # angle[iterator] = -angle[iterator] # or other rule??
                 # find new rotation with correct angle of rotaton
                 qRoted[iterator] = self.rotateQuatOverOneAxis(qCorrected,axisOfRotation,-angle[iterator])
 
-        for iterator,shortAxisIndex in enumerate([shortIndex1,shortIndex2]):
-            if not self._isAxisAlligned(qRoted[iterator],qTarget,longIndex,shortAxisIndex):
+        for iterator,otherAxisIndex in enumerate([other1Index,other2Index]):
+            if not self._isAxisAlligned(qRoted[iterator],qTarget,longOrShortIndex,otherAxisIndex):
                 print("nog steeds niet alligned probeer wat anders")
-
 
         # find angle in de middle of the two found rotations
         qExpNew = self.slerp(qRoted[0],qRoted[1],[0.5])[0]
         return qExpNew, qCorrected
 
-    def _getAxisIndices1DofElipse(self,scales):
-        largeI = scales.index(max(scales))
-        longIndex, shortIndex1, shortIndex2 = self._getRemainingIndices(largeI)
-        return longIndex, shortIndex1, shortIndex2
+    # renamed change check 
+    def _getAxisIndicesOfEllipses(self,scales,axis='long'):
+        if axis == 'long':
+            largeI = scales.index(max(scales))
+            _, smallI1, smallI2 = self._getRemainingIndices(largeI)
+            return largeI, smallI1, smallI2
+            
+        elif axis == 'short':
+            smallI = scales.index(min(scales))
+            _, largeI1, largeI2 = self._getRemainingIndices(smallI)
+            return smallI, largeI1, largeI2
+        else:
+            print("{} is not a valid 2nd input arg. Try: 'long', 'short' or leave empty.".format(axis))
 
     def _getRemainingIndices(self,index):
         if index == 0:
@@ -355,6 +362,9 @@ class EllipsoidMessage(object):
         elif axis == 'short':
             shuffleImaxOrMin = minIndex(scaleExp)
             shuffleVmaxOrMin = minIndex(scaleUser)
+        else: 
+            print("{} is not an option. Try: 'long', 'short' or leave 5e input empty".format(axis))
+            return
 
 
         # check if shuffle is necessary 
@@ -370,7 +380,7 @@ class EllipsoidMessage(object):
         # set a random guess voor one of the oterh two in shuffleSequence ['x',maxOrMinValue,'z']
         shuffleIRandom = []
         shuffleVRandom = []
-        if shuffleImaxOrMin != 0:
+        if shuffleImaxOrMin != 0:   
             shuffleIRandom = 0 
             if shuffleVmaxOrMin != 0:
                 shuffleVRandom = 0
@@ -560,35 +570,29 @@ if __name__ == "__main__":
 
     # Complete fucking process Make function for axisSwap part
     # exp
-    qExp = EM.normalizeList([0.65268,0.342767,-0.568442,-0.365325])
+    qExpBaseRot = EM.normalizeList([ 0.5, 0.5, 0.5, -0.5 ])
+    qExp = EM.rotateQuatOverOneAxis(quaternion_multiply(qExpBaseRot,[ 0.0868241, 0.0868241, 0.0075961, 0.9924039 ]),[0,0,1],0*(np.pi/4)) # in base
+    # # qExp =  [ 0.5773503, 0, -0.5773503, 0.5773503 ]# in base
     expEigVec = EM.matrixFromQuat(qExp)
-    expScales = [0.09,0.09,0.4]         # longest is z-axis
+    expScales = [0.4,0.4,0.09]         # shortest is z-axis
     # user
     userQuat = [0,0,0,1]     # 
-    userScales = [0.35,0.1,0.1]         # longest axis is x-axis
+    userScales = [0.29,0.095,0.31]         # longest axis is x-axis
     userEigVec = EM.matrixFromQuat(userQuat)
-    userEigVal = [0.35/(2*sqrt(2)), 0.1/(2*sqrt(2)), 0.1/(2*sqrt(2))] # dont really care about this much
+    userEigVal = [(userScales[0]/(2.0*sqrt(2.0)))**2.0, (userScales[1]/(2.0*sqrt(2.0)))**2.0, (userScales[2]/(2.0*sqrt(2.0)))**2.0] # dont really care about this much
     print("userScales: {}, expScales: {}".format(userScales,expScales))
     # print("userEigVec: {}\nexpEigVec: {}".format(userEigVec,expEigVec))
-    print(userEigVec)
+    print(userEigVal)
     
+    axis = 'short'
 
-    swappedAxisQuat, newScales, _, _ = EM.axisSwap(expScales,userEigVec,userEigVal,0.03,0.20,'long')
-    ##############################################
-    ##############################################
-    # # now need to allign y-axis! by shuffeling (create function for this-> AxisSwap(longest,shortest))
-    # shuffleSec  = EM.getShuffleSequence(expScales,userScales,userValues,userEigVec)
-    # newUserValues, newUserVec = EM.shuffleEig(userValues, userEigVec, shuffleSec)
-    # print(newUserVec)
-    # newScales = EM.shuffleEig(userScales, userEigVec, shuffleSec)[0] # Cheat this function to get newSales
-    # newScales = list(newScales)
-    # q1Aligned = EM.getQuatFromMatrix(newUserVec)
-    ##############################################
-    ##############################################
+    swappedAxisQuat, newScales, _, _ = EM.axisSwap(expScales,userEigVec,userEigVal,0.03,0.20,axis)
+
+    print("newScales {}".format(newScales))
 
     # flip axis, project and rotate user Quat
-    qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(swappedAxisQuat,qExp,newScales)
-
+    qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(swappedAxisQuat,qExp,newScales,axis)
+    angle = EM.absoluteAngleBetweenEllipsoids(qExp,qExpNew,'deg')
     # x = array([1,2,3])
     # xx = array([[1,2,3],[4,5,6],[7,8,9]])
     # se = [2,0,1]

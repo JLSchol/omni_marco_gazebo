@@ -21,13 +21,14 @@ class ExperimentInfo(object):
             print("invalid experiment name: {}".format(experiment))
 
     def experiment1Real(self):
+        # testDict = {i: i*i for i in range(10)}
         infoSequence={  'experiment': '1False',
                         'trialNr': range(0,2),
                         # tussen 0.0849 - 0.56557
-                        'scale': [  [0.09,0.09,0.4],[0.4,0.09,0.09],
-                                    [0.09,0.09,0.4]],
+                        'scale': [  [0.09,0.09,0.4],
+                                    [0.09,0.4,0.09],[0.4,0.09,0.09],[0.4,0.09,0.09]],
                         'orientation': [    [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0],
-                                            [0.0,0.0,0.0,1.0]]
+                                            [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0]]
                         }
         return infoSequence
     def experiment1Practice(self):
@@ -44,10 +45,12 @@ class ExperimentInfo(object):
         infoSequence={  'experiment': '2False',
                         'trialNr': range(0,2),
                         # tussen 0.0849 - 0.56557
-                        'scale': [  [0.15,0.09,0.09],[0.2,0.15,0.09],
-                                    [0.4,0.1,0.1]],
-                        'orientation': [    [0.0,0.0,0.0,1.0],[0.3826834, 0.0, 0.0, 0.9238795],
-                                            [0.0, 0.5, 0.0, 0.8660254]]
+                        'scale': [  [0.4,0.09,0.4],[0.4,0.09,0.4],
+                                    [0.4,0.4,0.09],[0.4,0.4,0.09],
+                                    [0.09,0.4,0.4],[0.09,0.4,0.4]],
+                        'orientation': [    [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0],
+                                            [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0],
+                                            [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0]]
                         }
         return infoSequence
         
