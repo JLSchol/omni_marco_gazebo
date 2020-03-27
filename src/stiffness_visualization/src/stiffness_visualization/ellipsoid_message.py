@@ -233,6 +233,63 @@ class EllipsoidMessage(object):
 
 
 ######################### Specific function to fix orientation problem  ###################################  
+    def getCharacteristicAxis(self,scalesExperiment,scalesUser):
+        minValueExp = min(scalesExperiment)
+        maxValueExp = max(scalesExperiment)
+        minValueUser = min(scalesUser)
+        maxValueUser = max(scalesUser)
+
+        minListExp = [x for x in scalesExperiment if x == minValueExp]
+        maxListExp = [x for x in scalesExperiment if x == maxValueExp]
+        minListUser = [x for x in scalesUser if x == minValueUser]
+        maxListUser = [x for x in scalesUser if x == maxValueUser]
+
+        axis = []
+        if len(minListExp) == 2 and len(minListUser) == 2: # werkt long
+            # print("beiden Sigaar") 
+            axis = 'long'
+        elif len(minListExp) == 2 and len(maxListUser) == 2: # werkt niet short and long
+            print("Dismiss trial incorrect orientation")
+            axis = 'long'
+        elif len(minListExp) == 2 and len(minListUser) == 1: # werkt long
+            print("exp sigaar, user ovaal")
+            axis = 'long'
+        elif len(minListExp) == 2 and len(minListUser) == 3: # werkt nooit
+            print("Dismiss trial incorrect orientation")
+            axis = 'long'
+
+        elif len(maxListExp) == 2 and len(maxListUser) == 2: # werkt short
+            print("beden pannenkoek")
+            axis = 'short'
+        elif len(maxListExp) == 2 and len(minListUser) == 2: # werkt niet long and short
+            print("Dismiss trial incorrect orientation")
+            axis = 'long'
+        elif len(maxListExp) == 2 and len(maxListUser) == 1: # werkt short
+            print("exp pannenkoek, user ovaal")
+            axis = 'short'
+        elif len(maxListExp) == 2 and len(minListUser) == 3: # werkt nooit
+            print("Dismiss trial incorrect orientation")
+            axis = 'short'
+
+        elif len(maxListExp) == 1 and len(minListUser) == 2: # werkt long
+            print("exp ovaal, user Sigaar")
+            axis = 'long'
+        elif len(maxListExp) == 1 and len(maxListUser) == 2: # werkt short
+            print("exp ovaal, user pannenkoek")
+            axis = 'short'
+        elif len(maxListExp) == 1 and len(minListUser) == 1: # werkt long 
+            print("exp ovaal, user ovaal")
+            axis = 'long'
+        elif len(maxListExp) == 1 and len(minListUser) == 3: # werkt nooit
+            print("Dismiss trial incorrect orientation")
+            axis = 'long'
+
+        else:
+            print("no more cases possible -> otherwise error in code/logic")
+
+        return axis
+
+
     def axisSwap(self,expScales,userEigVec,userEigVal,lambda_min,lambda_max ,axis='long'):
         # Swaps the axis of input orientation(eigVectors) by shuffeling vector,value,scales
         # along largest (long) axis or smalles (short) axis
@@ -479,6 +536,11 @@ class EllipsoidMessage(object):
         # scales are diameter
         # V = 4*pi/3 * r1*r2*r3
         return (4.0*np.pi/3.0 * (0.5**3)*scales[0]*scales[1]*scales[2])
+
+    def distanceEllipsoid(self,scales):
+        principleAxisLength = [0.5*scale for scale in scales]
+        distance = np.linalg.norm(principleAxisLength)
+        return distance
 
 #################### Outdated/ not used/ not effective methods relating simple_experiment.py  #################### 
     def rotateTillClosest(self,q,qTarget,axis):
