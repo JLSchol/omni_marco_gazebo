@@ -62,9 +62,10 @@ class SimpleExperiment(object):
         self.trialTime = []
         self.startTimeTrial = []
         self.stopTimeTrial =[]
-        self.qAllignedQuats = [0,0,0,1]
-        self.newQuats = [0,0,0,1]
-        self.originalQuat = [0,0,0,1]
+        # self.qAllignedQuats = [0,0,0,1]
+        self.userQuat = [0,0,0,1]
+        self.userScales = []
+        self.originalUserQuat = [0,0,0,1]
 
     def _resetTrials(self):
         self.prevTrialNr = []
@@ -134,9 +135,10 @@ class SimpleExperiment(object):
             scales,quats = EI.getShape(self.trialNr,EI.data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
                                                 positions,quats,scales,rgba)
-            EM.broadcastEllipsoidAxis(positions,self.originalQuat,frame_id,'original_usercommanded')
-            EM.broadcastEllipsoidAxis(positions,self.qAllignedQuats,frame_id,'largest_axis_alligned')
-            EM.broadcastEllipsoidAxis(positions,self.newQuats,frame_id,'corrected_ellips')
+
+            EM.broadcastEllipsoidAxis(positions,self.originalUserQuat,frame_id,'original_user_ellips')
+            # EM.broadcastEllipsoidAxis(positions,self.qAllignedQuats,frame_id,'minmax_axis_alligned')
+            EM.broadcastEllipsoidAxis(positions,self.userQuat,frame_id,'corrected_user_ellips')
             EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
 
 
@@ -194,46 +196,46 @@ class SimpleExperiment(object):
         # get ellipsoid scales , quats from user 
         scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)       
         quats = EM.getQuatFromMatrix(eigVectors)
-        self.originalQuat = list(quats)
+        self.originalUserQuat = list(quats)
 
         # get new quaternion where the longest axis of user and experiment is alligned 
         # by swapping axes e.g. [x=y,y=z,z=x]
         # Then check direction of the new alligned axis ans rotate 180 when pionting in opposite directino
         # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis
-        axis = 'long'
-        print(EI.data['experiment'])
-        if EI.data['experiment']=='2False':
-            axis = 'short'
-        print(axis)
-        swappedAxisQuat, newScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,axis)
-        self.newQuats, self.qAllignedQuats = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newScales,axis)
-
         
+        axis = EM.getCharacteristicAxis(scalesExperiment,scales)
 
-
+        swappedAxisQuat, self.userScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,axis)
+        self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)
+    
 
         print(10*"----")
         print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
         print("initial User scales: {}  ;   quats: {}".format(scales, quats))
-        print("One axis alligned: {}  ;   quats: {}".format(newScales, self.qAllignedQuats))
-        print("New user scales: {}  ;   quats: {}".format(newScales, self.newQuats))
+        # print("One axis alligned: {}  ;   quats: {}".format(newScales, self.qAllignedQuats))
+        print("New user scales: {}  ;   quats: {}".format(self.userScales, self.userQuat))
         print(10*"----")
         
-        angle = EM.absoluteAngleBetweenEllipsoids(quatsExperiment,self.newQuats,'deg')
+    
+        # userVolume = EM.volumeEllipsoid(scales)
+        # experimentVolume = EM.volumeEllipsoid(scalesExperiment)
+        # volumeAccuracy = round(percentage(abs(userVolume-experimentVolume),experimentVolume),2)
+        # print("userVolume = {} [m3]; experimentVolume = {} [m3]".format(userVolume,experimentVolume))
 
+        angle = EM.absoluteAngleBetweenEllipsoids(quatsExperiment,self.userQuat,'deg')
 
-        userVolume = EM.volumeEllipsoid(scales)
-        experimentVolume = EM.volumeEllipsoid(scalesExperiment)
+        userShape = EM.distanceEllipsoid(scales)
+        experimentShape = EM.distanceEllipsoid(scalesExperiment)
 
         percentage = lambda nominator, denominator: 100 * (1 - float(nominator)/float(denominator))
         rotationAccuracy = round(percentage(angle,90.0),2)
-        volumeAccuracy = round(percentage(abs(userVolume-experimentVolume),experimentVolume),2)
+        shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
 
         print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
-        print("userVolume = {} [m3]; experimentVolume = {} [m3]".format(userVolume,experimentVolume))
+        print("userShape = {} [m3]; experimentShape = {} [m3]".format(userShape,experimentShape))
 
-        return volumeAccuracy, rotationAccuracy
+        return shapeAccuracy, rotationAccuracy
 
             
     def _createLogString(self,trial,time,volAcc,rotAcc):
