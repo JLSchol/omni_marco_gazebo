@@ -227,7 +227,7 @@ public:
 				if (node_name == v[i]){
 					state->lock_white = false;
 					lock_state_msg.lock_white = state->lock_white;
-					ROS_INFO_STREAM("in State")
+					ROS_INFO_STREAM("in State");
 		   }
         }
 
