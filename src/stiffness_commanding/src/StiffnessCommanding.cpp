@@ -217,7 +217,7 @@ std::pair<Eigen::Matrix3f, Eigen::Vector3f>
     bool right_handed = checkRightHandednessMatrix(eigen_vectors);
 
     if(right_handed == false)  { // then Shuffle correctEigenPairs
-        std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = correctEigenPairs(eigen_vectors,eigen_values);
+        std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
         // std::pair<Eigen::Matrix3f, Eigen::Vector3f> pair = shuffelEigenPairs(eigen_vectors,eigen_values);
 
         bool check = checkRightHandednessMatrix(pair.first);
