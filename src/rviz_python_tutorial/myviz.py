@@ -34,7 +34,7 @@ class MyViz( QWidget ):
     ## ^^^^^^^^^^^^^^^^^
     ##
     ## Its constructor creates and configures all the component widgets:
-    ## frame, thickness_slider, top_button, and side_button, and adds them
+    ## frame, thickness_slider, top_button, and front_button, and adds them
     ## to layouts.
     def __init__(self):
         QWidget.__init__(self)
@@ -97,7 +97,7 @@ class MyViz( QWidget ):
         ## (from the bottom), and the "hide-docks" buttons, which are
         ## the tall skinny buttons on the left and right sides of the
         ## main render window.
-        self.frame.setToolTip( None )
+        # self.frame.setToolTip( None )
         self.frame.setMenuBar( None )
         self.frame2.setMenuBar( None )
         self.frame.setStatusBar( None )
@@ -110,17 +110,23 @@ class MyViz( QWidget ):
         ## to other manager objects and is generally required to make
         ## any changes in an rviz instance.
         self.manager1 = self.frame.getManager()
-        viewManage1 = self.manager1.getViewManager()
-        viewManage1.setCurrentFrom( viewManage1.getViewAt( 0 ))
+        # self.manager1.getToolManager().removeAll()
+        self.viewManager1 = self.manager1.getViewManager()
+        self.viewManager1.setCurrentFrom( self.viewManager1.getViewAt( 0 ))
 
         self.manager2 = self.frame2.getManager()
+        # self.manager2.getToolManager().removeAll()
         viewManager2 = self.manager2.getViewManager()
         viewManager2.setCurrentFrom( viewManager2.getViewAt( 1 ))
+
         ## Since the config file is part of the source code for this
         ## example, we know that the first display in the list is the
         ## grid we want to control.  Here we just save a reference to
         ## it for later.
         self.grid_display = self.manager1.getRootDisplayGroup().getDisplayAt( 0 )
+        # self.topview = self.manager1.getViewManager().getViewAt( 0 )
+
+        
         
         ## Here we create the layout and other widgets in the usual Qt way.
         layout = QVBoxLayout()
@@ -138,7 +144,7 @@ class MyViz( QWidget ):
         thickness_slider = QSlider( Qt.Horizontal )
         thickness_slider.setTracking( True )
         thickness_slider.setMinimum( 1 )
-        thickness_slider.setMaximum( 1000 )
+        thickness_slider.setMaximum( 100 )
         thickness_slider.valueChanged.connect( self.onThicknessSliderChanged )
         layout.addWidget( thickness_slider )
         
@@ -148,9 +154,9 @@ class MyViz( QWidget ):
         top_button.clicked.connect( self.onTopButtonClick )
         h_layout.addWidget( top_button )
         
-        side_button = QPushButton( "Side View" )
-        side_button.clicked.connect( self.onSideButtonClick )
-        h_layout.addWidget( side_button )
+        front_button = QPushButton( "Front view" )
+        front_button.clicked.connect( self.onSideButtonClick )
+        h_layout.addWidget( front_button )
         
         layout.addLayout( h_layout )
         
@@ -166,15 +172,21 @@ class MyViz( QWidget ):
     ## Display, use the subProp() function to walk down the tree to
     ## find the child you need.
     def onThicknessSliderChanged( self, new_value ):
-        if self.grid_display != None:
-            self.grid_display.subProp( "Line Style" ).subProp( "Line Width" ).setValue( new_value / 1000.0 )
+        # viewManager1.setCurrentFrom( viewManager1.getViewAt( 0 ))
+        if self.viewManager1 != None:
+            print(new_value)
+            print(self.viewManager1.getViewAt( 0 ).subProp("Scale").getValue())
+            self.viewManager1.getViewAt( 0 ).subProp( "Scale" ).setValue( 10*(101 - new_value))
+            self.viewManager1.setCurrentFrom( self.viewManager1.getViewAt( 0 ))
+            # self.viewManager1.getViewAt( 0 ).subProp( "Scale" ).setValue( new_value )
+            # print(self.topView.subProp("Scale").getValue())
 
     ## The view buttons just call switchToView() with the name of a saved view.
     def onTopButtonClick( self ):
-        self.switchToView( "Top View" );
+        self.switchToView( "topView", self.manager1 );
         
     def onSideButtonClick( self ):
-        self.switchToView( "Side View" );
+        self.switchToView( "frontView", self.manager2 );
         
     ## switchToView() works by looping over the views saved in the
     ## ViewManager and looking for one with a matching name.
@@ -182,8 +194,8 @@ class MyViz( QWidget ):
     ## view_man.setCurrentFrom() takes the saved view
     ## instance and copies it to set the current view
     ## controller.
-    def switchToView( self, view_name ):
-        view_man = self.manager.getViewManager()
+    def switchToView( self, view_name, manager ):
+        view_man = manager.getViewManager()
         for i in range( view_man.getNumViews() ):
             if view_man.getViewAt( i ).getName() == view_name:
                 view_man.setCurrentFrom( view_man.getViewAt( i ))
