@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from rospy import Time, init_node, is_shutdown
+from rospy import Time, init_node, is_shutdown, Duration
 from tf2_ros import TransformBroadcaster
 #import messages
 from geometry_msgs.msg import TransformStamped
@@ -78,12 +78,12 @@ class EllipsoidMessage(object):
 
         return ellipsoid_axis_scale
     
-    def getEllipsoidMsg(self,frame_id,marker_ns,marker_id,positions,quaternions,scales,rgba):
+    def getEllipsoidMsg(self,frame_id,marker_ns,marker_id,positions,quaternions,scales,rgba,lifeTime=0):
         marker = Marker()
         marker.header.frame_id = frame_id
         marker.header.stamp = Time.now()
-        marker.ns = marker_ns
-        marker.id = marker_id
+        marker.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
+        marker.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
         marker.type = Marker.SPHERE
         marker.action = Marker.ADD
 
@@ -104,6 +104,46 @@ class EllipsoidMessage(object):
         marker.color.g = rgba[1]
         marker.color.b = rgba[2]
         marker.color.a = rgba[3]
+
+        marker.lifetime = Duration(lifeTime)
+
+        return marker
+        
+    def deleteMarker(self,marker_ns,marker_id):
+        marker = Marker()
+
+        marker.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
+        marker.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
+
+        marker.action = Marker.DELETE
+
+        return marker
+
+
+    def createMarkerText(self,frame_id,marker_ns,marker_id,textString,
+                            positions,height,rgba,lifeTime=0):
+        marker = Marker()
+        marker.header.frame_id = frame_id
+        marker.header.stamp = Time.now()
+        marker.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
+        marker.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
+        marker.type = Marker.TEXT_VIEW_FACING
+        marker.action = Marker.ADD
+
+        marker.text = textString
+
+        marker.pose.position.x = positions[0]
+        marker.pose.position.y = positions[1]
+        marker.pose.position.z = positions[2]
+
+        marker.scale.z = height  
+
+        marker.color.r = rgba[0]
+        marker.color.g = rgba[1]
+        marker.color.b = rgba[2]
+        marker.color.a = rgba[3]
+
+        marker.lifetime = Duration(lifeTime)          
 
         return marker
 
