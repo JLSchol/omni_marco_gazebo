@@ -35,7 +35,8 @@ class SimpleExperiment(object):
         self._omniSub = Subscriber("/omni1_lock_state", LockState, self._phantomCallBack)
         self._eigenSub = Subscriber("/eigen_pair", EigenPairs, self._eigenCallBack)
         self._ellipsPub = Publisher("experiment_ellipsoid", Marker, queue_size=2)
-        self._logPub = Publisher("simple_experiment_logger", String,queue_size=1)
+        self._logPub = Publisher("simple_experiment_logger", String, queue_size=1)
+        self._textVisPUb = Publisher("accuracy_ellipsoid_text", Marker, queue_size=1)
 
     def _getParameters(self):
         lambdaminPar = '/stiffness_commanding/lambda_min'
@@ -77,7 +78,7 @@ class SimpleExperiment(object):
     def run(self):
         # intiialize custom classes
         EI = []
-        EM = []
+        EM = EllipsoidMessage()
 
         # initialize ellipsoid data
         frame_id='wrist_ft_tool_link' #wrist_ft_tool_link
@@ -89,6 +90,7 @@ class SimpleExperiment(object):
         rosRate = Rate(100)
         while not is_shutdown():
             if not self.guiMsg.start_experiment:
+            	EM.deleteMarker(marker_ns,marker_id)
                 print("node launched exp not started")
                 # need to reset certain variables
                 continue
@@ -97,7 +99,7 @@ class SimpleExperiment(object):
             #     print("ellipsoid is fixed, puaze tussen trial")
             #     continue
             # print("while: "str(self.lockStateMsg.lock_white))
-            if ( (self.lockStateMsg.lock_white==True) and (self.lockStateMsg.header != self.prevLockStateMsg.header) ):
+            if (self.lockStateMsg.lock_white==True) and (self.lockStateMsg.header != self.prevLockStateMsg.header):
                 print("lockstate = True")
                 self.userTrialPass = True
 
@@ -110,7 +112,7 @@ class SimpleExperiment(object):
                 self.prevTrialNr = 0
                 # need to check if start experiment has changed
                 EI = ExperimentInfo(self.guiMsg.experiment_number,self.guiMsg.learning)
-                EM = EllipsoidMessage()
+                
                 self.userTrialPass=False
                 print(10*"-----")
                 # print("crach2")
@@ -125,12 +127,22 @@ class SimpleExperiment(object):
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
                                                     self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
-                volumeAcc, rotationAcc = self._getAccuracy(self.prevTrialNr,EI,EM)
-                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,volumeAcc,rotationAcc))
+                shapeAcc, rotationAcc = self._getAccuracy(self.prevTrialNr,EI,EM)
+                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,shapeAcc,rotationAcc))
+
+                markerText = EM.createMarkerText(frame_id,"text",1,
+                								self._createFeedbackTextString(shapeAcc, rotationAcc),
+                								[-0.3,0,0],0.1,[1,1,1,1],2)
+                self._textVisPUb.publish(markerText)
+
+                # briefly delete marker such that it is clear that a new trial starts
+                EM.deleteMarker(marker_ns,marker_id)
+
 
                 # update boolian 
                 self.userTrialPass=False
                 print(10*"-----")
+
 
             scales,quats = EI.getShape(self.trialNr,EI.data)
             ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
@@ -206,7 +218,8 @@ class SimpleExperiment(object):
         
         axis = EM.getCharacteristicAxis(scalesExperiment,scales)
 
-        swappedAxisQuat, self.userScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, self._lambda_min, self._lambda_max,axis)
+        swappedAxisQuat, self.userScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, 
+        														self._lambda_min, self._lambda_max,axis)
         self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)
     
 
@@ -220,7 +233,7 @@ class SimpleExperiment(object):
     
         # userVolume = EM.volumeEllipsoid(scales)
         # experimentVolume = EM.volumeEllipsoid(scalesExperiment)
-        # volumeAccuracy = round(percentage(abs(userVolume-experimentVolume),experimentVolume),2)
+        # shapeAccuracy = round(percentage(abs(userVolume-experimentVolume),experimentVolume),2)
         # print("userVolume = {} [m3]; experimentVolume = {} [m3]".format(userVolume,experimentVolume))
 
         angle = EM.absoluteAngleBetweenEllipsoids(quatsExperiment,self.userQuat,'deg')
@@ -233,7 +246,7 @@ class SimpleExperiment(object):
         shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
 
         print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
-        print("userShape = {} [m3]; experimentShape = {} [m3]".format(userShape,experimentShape))
+        print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
 
         return shapeAccuracy, rotationAccuracy
 
@@ -244,7 +257,9 @@ class SimpleExperiment(object):
         logString = "trial number: {}, time: {} [sec], shape: {} [%], orientation: {} [%]".format(trial,t,volAcc,rotAcc)
         return logString
 
-
+    def _createFeedbackTextString(self,volAcc,rotAcc):
+    	textString = "Shape: {} %\nOrientation: {} %".format(volAcc,rotAcc)
+    	return textString
 
         
     def _guiCallBack(self, message):
