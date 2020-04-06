@@ -3,7 +3,7 @@
 from rospy import Time, init_node, is_shutdown, Duration
 from tf2_ros import TransformBroadcaster
 #import messages
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Point
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout
 from visualization_msgs.msg import Marker
@@ -120,33 +120,62 @@ class EllipsoidMessage(object):
         return marker
 
 
-    def createMarkerText(self,frame_id,marker_ns,marker_id,textString,
-                            positions,height,rgba,lifeTime=0):
-        marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.header.stamp = Time.now()
-        marker.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
-        marker.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
-        marker.type = Marker.TEXT_VIEW_FACING
-        marker.action = Marker.ADD
+    def createMarkerText(self,frame_id,marker_ns,marker_id,textString,positions,height,rgba,lifeTime=0):
+        text = Marker()
+        text.header.frame_id = frame_id
+        text.header.stamp = Time.now()
+        text.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
+        text.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
+        text.type = Marker.TEXT_VIEW_FACING
+        text.action = Marker.ADD
 
-        marker.text = textString
+        text.text = textString
 
-        marker.pose.position.x = positions[0]
-        marker.pose.position.y = positions[1]
-        marker.pose.position.z = positions[2]
+        text.pose.position.x = positions[0]
+        text.pose.position.y = positions[1]
+        text.pose.position.z = positions[2]
 
-        marker.scale.z = height  
+        text.scale.z = height  
 
-        marker.color.r = rgba[0]
-        marker.color.g = rgba[1]
-        marker.color.b = rgba[2]
-        marker.color.a = rgba[3]
+        text.color.r = rgba[0]
+        text.color.g = rgba[1]
+        text.color.b = rgba[2]
+        text.color.a = rgba[3]
 
-        marker.lifetime = Duration(lifeTime)          
+        text.lifetime = Duration(lifeTime)          
 
-        return marker
+        return text
 
+    def getArrowMsg(self,frame_id,marker_ns,marker_id,arrowScales,position,vector):
+        arrow = Marker()
+        arrow.header.frame_id = frame_id
+        arrow.header.stamp = Time.now()
+        arrow.ns = marker_ns # Namespace to place this object in... used in conjunction with id to create a unique name for the object
+        arrow.id = marker_id # object ID useful in conjunction with the namespace for manipulating and deleting the object later
+        arrow.type = Marker.ARROW
+        arrow.action = Marker.ADD
+
+        arrow.scale.x=arrowScales[0]  # shaft diameter
+        arrow.scale.y=arrowScales[1]  # head diameter
+        arrow.scale.z=arrowScales[2]  # length
+
+        arrow.color.a= 1.0
+        arrow.color.r = 1.0
+        arrow.color.g = 1.0
+        arrow.color.b = 1.0
+
+        (start,end)=(Point(),Point())
+        start.x = position[0]
+        start.y = position[1]
+        start.z = position[2]
+        end.x=start.x+vector[0]
+        end.y=start.y+vector[1]
+        end.z=start.z+vector[2]
+        arrow.points.append(start)
+        arrow.points.append(end)
+
+        return arrow
+ 
     def broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):
         br = TransformBroadcaster()
         t = TransformStamped()
@@ -164,6 +193,8 @@ class EllipsoidMessage(object):
         t.transform.rotation.w = quaternion[3]
 
         br.sendTransform(t)
+
+
 
 
     ######################### General Rotation matrix/quat operations  ###################################  

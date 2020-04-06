@@ -23,6 +23,8 @@ class DrawEllipsoid(object):
         self._getParameters()
 
         self._publisher = Publisher(str(self._nodeName+self._outputTopicName), Marker, queue_size=50)
+        self._arrowPub = Publisher(str(self._nodeName+self._arrow_topic_name), Marker, queue_size=1)
+
         self._subscriber = Subscriber(self._inputTopicName, EigenPairs, self._callback)
         
         self._eigenPair = []
@@ -32,6 +34,7 @@ class DrawEllipsoid(object):
         # input output topic
         self._inputTopicName = get_param("~input_topic_name")
         self._outputTopicName = get_param("~output_topic_name")
+        self._arrow_topic_name = get_param("~arrow_topic_name")
         self._nodeName = get_param("~node_name")
         # get wiggle max and min from parameter server
         # Check if available from parameter server!
@@ -78,8 +81,27 @@ class DrawEllipsoid(object):
                                                             ,"ellipsoid",0,[0,0,0],
                                                             quaternion,scales,[1,0.3,1,0.3])
 
+            # publish ellipsod
             self._publisher.publish(ellipsoid)
-            # publish ellipsoid orientation
+
+            # publish principle axis of ellipsoid
+            displayArrow = True
+            if displayArrow == True:
+                marker_id = 1
+                arrowScales = [0.01,0.01,0.01] #shaft diameter, head diameter, head length
+
+                for i in range(3):
+                    v = eigVectors[:,i]
+                    vector1 = v*(scales[i]/2)   # from diameter to radius 
+                    vector2 = -vector1          # mirror vector 1 to get 2* radius (ellips symmetry)
+                    arrow1 = ellipsoidMsgClass.getArrowMsg(self._eigenPair.header.frame_id, "arrows", marker_id, arrowScales, [0,0,0], vector1)
+                    marker_id += 1
+                    arrow2 = ellipsoidMsgClass.getArrowMsg(self._eigenPair.header.frame_id, "arrows", marker_id, arrowScales, [0,0,0], vector2)
+                    marker_id += 1
+                    self._arrowPub.publish(arrow1)
+                    self._arrowPub.publish(arrow2)
+
+            # publish ellipsoid orientation to TF
             ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"Raw_user_ellips")
             # loginfo(10*"---")
 

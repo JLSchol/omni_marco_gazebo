@@ -5,7 +5,7 @@
 <arg name="input_topic_name" default="/eigen_pair"/> 
 <!--Output topics arguments-->
 <arg name="output_topic_name" default="/ellipsoid_visualization"/> <!--need the slash!-->
-
+<arg name="arrow_topic_name" default="/arrow_visualization"/>
 <arg name="node_name" default="draw_ellipsoid"/>
 
 <!--Tf arguments-->  
@@ -20,6 +20,7 @@
     <param name="input_topic_name" value="$(arg input_topic_name)"/>
     <!--Output topics-->
     <param name="output_topic_name" value="$(arg output_topic_name)"/>
+    <param name="arrow_topic_name" value="$(arg arrow_topic_name)"/>
     <param name="node_name" value="$(arg node_name)"/>
     <!--Tf arguments--> 
     <!--<param name="base_frame_name"     value="$(arg base_frame)"/>
