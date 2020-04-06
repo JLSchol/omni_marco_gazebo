@@ -52,7 +52,7 @@ class MyViz( QWidget ):
         ## suppresses that behavior.
         self.frame.setSplashPath( "" )
         self.frame2.setSplashPath( "" )
-
+    
         ## VisualizationFrame.initialize() must be called before
         ## VisualizationFrame.load().  In fact it must be called
         ## before most interactions with RViz classes because it
@@ -65,7 +65,7 @@ class MyViz( QWidget ):
         ## VisualizationFrame reads its data from the config object.
         reader = rviz.YamlConfigReader()
         config = rviz.Config()
-        reader.readFile( config, "test.rviz" )
+        reader.readFile( config, "simple_experiment.rviz" )
         self.frame.load( config )
         self.frame2.load( config )
         """
@@ -116,8 +116,8 @@ class MyViz( QWidget ):
 
         self.manager2 = self.frame2.getManager()
         # self.manager2.getToolManager().removeAll()
-        viewManager2 = self.manager2.getViewManager()
-        viewManager2.setCurrentFrom( viewManager2.getViewAt( 1 ))
+        self.viewManager2 = self.manager2.getViewManager()
+        self.viewManager2.setCurrentFrom( self.viewManager2.getViewAt( 1 ))
 
         ## Since the config file is part of the source code for this
         ## example, we know that the first display in the list is the
@@ -147,7 +147,6 @@ class MyViz( QWidget ):
         thickness_slider.setMaximum( 100 )
         thickness_slider.valueChanged.connect( self.onThicknessSliderChanged )
         layout.addWidget( thickness_slider )
-        
         h_layout = QHBoxLayout()
         
         top_button = QPushButton( "Top View" )
@@ -173,20 +172,21 @@ class MyViz( QWidget ):
     ## find the child you need.
     def onThicknessSliderChanged( self, new_value ):
         # viewManager1.setCurrentFrom( viewManager1.getViewAt( 0 ))
-        if self.viewManager1 != None:
-            print(new_value)
-            print(self.viewManager1.getViewAt( 0 ).subProp("Scale").getValue())
-            self.viewManager1.getViewAt( 0 ).subProp( "Scale" ).setValue( 10*(101 - new_value))
-            self.viewManager1.setCurrentFrom( self.viewManager1.getViewAt( 0 ))
-            # self.viewManager1.getViewAt( 0 ).subProp( "Scale" ).setValue( new_value )
-            # print(self.topView.subProp("Scale").getValue())
+        if self.viewManager1 != None and self.viewManager2 != None:
+
+            for viewMan in [self.viewManager1, self.viewManager2]:
+                # print(new_value)
+                print(viewMan.getViewAt( 0 ).subProp("Distance").getValue())
+                viewMan.getViewAt( 0 ).subProp( "Scale" ).setValue( 10*(101 - new_value))
+                viewMan.setCurrentFrom( viewMan.getViewAt( 0 ))
+
 
     ## The view buttons just call switchToView() with the name of a saved view.
     def onTopButtonClick( self ):
-        self.switchToView( "topView", self.manager1 );
+        self.switchToView( "TopView", self.manager1 );
         
     def onSideButtonClick( self ):
-        self.switchToView( "frontView", self.manager2 );
+        self.switchToView( "FrontView", self.manager2 );
         
     ## switchToView() works by looping over the views saved in the
     ## ViewManager and looking for one with a matching name.
