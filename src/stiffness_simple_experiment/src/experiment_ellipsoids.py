@@ -20,7 +20,7 @@ class ExperimentInfo(object):
 		'3True':self.experiment2DofFrontPractice,
 		'4True':self.experiment2DofTopPractice,
 
-
+		'0False': self.freeForAll,
 
 		}
 		if experiment in switcher:
@@ -48,6 +48,7 @@ class ExperimentInfo(object):
 												minSize, maxSize, minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
+						'practice': False,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
@@ -72,6 +73,7 @@ class ExperimentInfo(object):
 												minSize, maxSize, minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
+						'practice': False,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
@@ -98,6 +100,7 @@ class ExperimentInfo(object):
 												minSize, maxSize, minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
+						'practice': False,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
@@ -124,6 +127,7 @@ class ExperimentInfo(object):
 												minSize, maxSize, minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
+						'practice': False,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
@@ -133,41 +137,112 @@ class ExperimentInfo(object):
 
 
 	def experiment1DofFrontPractice(self):
-		pass
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [6, 4]  
+		# create size list ordered
+		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [0,1,0]
+		# seed to create a pseudo random sequence
+		seed = 5
+
+		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		infoSequence={  'experiment': '1DofFront',
+						'practice': True,
+						'trialNr': range(len(scales)),
+						# tussen 0.0849 - 0.56557
+						'scale': scales,
+						'orientation': orientations
+						}
+		return infoSequence
 
 	def experiment1DofTopPractice(self):
-		pass
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [6, 4]  
+		# create size list ordered
+		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [1,0,0]
+		# seed to create a pseudo random sequence
+		seed = 6
+
+		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		infoSequence={  'experiment': '1DofFront',
+						'practice': True,
+						'trialNr': range(len(scales)),
+						# tussen 0.0849 - 0.56557
+						'scale': scales,
+						'orientation': orientations
+						}
+		return infoSequence
 
 	def experiment2DofFrontPractice(self):
-		pass
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [7, 3]  
+		# verdeling van ellipses
+		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
+		# create size list ordered
+		minSize, maxSize = [0.095, 0.52] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [1,0,1]
+		# rotation axis
+		rotationAxis = [0,1,0]
+		# seed to create a pseudo random sequence
+		seed = 3
+
+		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
+												minSize, maxSize, minAngle, maxAngle, 
+												sizeAxis, rotationAxis,seed)
+		infoSequence={  'experiment': '1DofTop',
+						'practice': True,
+						'trialNr': range(len(scales)),
+						# tussen 0.0849 - 0.56557
+						'scale': scales,
+						'orientation': orientations
+						}
+		return infoSequence
 
 	def experiment2DofTopPractice(self):
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [7, 3]  
+		# verdeling van ellipses
+		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
+		# create size list ordered
+		minSize, maxSize = [0.095, 0.52] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,1,1]
+		# rotation axis
+		rotationAxis = [1,0,0]
+		# seed to create a pseudo random sequence
+		seed = 3
+
+		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
+												minSize, maxSize, minAngle, maxAngle, 
+												sizeAxis, rotationAxis,seed)
+		infoSequence={  'experiment': '1DofTop',
+						'practice': True,
+						'trialNr': range(len(scales)),
+						# tussen 0.0849 - 0.56557
+						'scale': scales,
+						'orientation': orientations
+						}
+		return infoSequence
+
+	def freeForAll(self):
 		pass
 
-	# def experiment3Real(self):
-	# 	infoSequence={  'experiment': '3False',
-	# 					'trialNr': range(0,3),
-	# 					# tussen 0.0849 - 0.56557
-	# 					'scale': [  [0.09,0.09,0.4],[0.4,0.09,0.4],
-	# 					[0.2,0.09,0.4],[0.09,0.09,0.4]],
-	# 					'orientation': [    [0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0],                                    
-	# 					[0.0,0.0,0.0,1.0],[0.0,0.0,0.0,1.0]]
-	# 					}
-	# 	return infoSequence
-
-
-
-
-	# def experiment1Practice(self):
-	# 	infoSequence={  'experiment': '1True',
-	# 					'trialNr': range(0,2),
-	# 					# tussen 0.0849 - 0.56557
-	# 					'scale': [  [0.15,0.09,0.09],[0.2,0.15,0.09],
-	# 								[0.4,0.1,0.1]],
-	# 					'orientation': [    [0.0,0.0,0.0,1.0],[0.3826834, 0.0, 0.0, 0.9238795],
-	# 										[0.0, 0.5, 0.0, 0.8660254]]
-	# 					}
-	# 	return infoSequence
 
 	def getShape(self,trialNr,data):
 		scales = data['scale'][trialNr]
@@ -198,8 +273,6 @@ class ExperimentInfo(object):
 		return randList
 
 
-
-
 	def generateScales(self,minSize, maxSize):
 		pass
 
@@ -215,41 +288,41 @@ class ExperimentInfo(object):
 
 		return newList.tolist()
 
-	# def create1DofSequence(self,smallMedium,mediumLarge,
-	# 					minAngle, maxAngle ,step, amountInRandList, 
-	# 													repetitions):
-		
-	# 	sizes1DOF = [smallMedium, mediumLarge, smallMedium, mediumLarge]
+		# def create1DofSequence(self,smallMedium,mediumLarge,
+		# 					minAngle, maxAngle ,step, amountInRandList, 
+		# 													repetitions):
+			
+		# 	sizes1DOF = [smallMedium, mediumLarge, smallMedium, mediumLarge]
 
-	# 	# Angle1 = EI.generateRandList(minAngle, maxAngle, step, amount) #0,15
-	# 	# Angle2 = EI.generateRandList(minAngle+20, maxAngle+15, step, amount) # 20,30
-	# 	# Angle3 = EI.generateRandList(minAngle+20+15, maxAngle+15+15, step, amount) # 35, 45
-	# 	# angles1DOF = [Angle1[0], Angle1[1], Angle2[0], Angle2[1], Angle3[0], Angle3[1]]
+		# 	# Angle1 = EI.generateRandList(minAngle, maxAngle, step, amount) #0,15
+		# 	# Angle2 = EI.generateRandList(minAngle+20, maxAngle+15, step, amount) # 20,30
+		# 	# Angle3 = EI.generateRandList(minAngle+20+15, maxAngle+15+15, step, amount) # 35, 45
+		# 	# angles1DOF = [Angle1[0], Angle1[1], Angle2[0], Angle2[1], Angle3[0], Angle3[1]]
 
-	# 	angles1DOF = EI.generateRandList(minAngle, maxAngle, step, amountInRandList)
+		# 	angles1DOF = EI.generateRandList(minAngle, maxAngle, step, amountInRandList)
 
-	# 	# shuffle zize and angles in some way
-	# 	# shuffleSeq = EI.generateRandList(0, 5, 1, 6)
-	# 	# shuffleSeq = [int(x) for x in shuffleSeq]
-	# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
-	# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
-
-
-	# 	sizes1DOF = repetitions*sizes1DOF 
-	# 	angles1DOF = repetitions*angles1DOF
-
-	# 	shuffleSeq = self.generateRandList(0, 29, 1, 30)
-	# 	shuffleSeq = [int(x) for x in shuffleSeq]
-	# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
-	# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
+		# 	# shuffle zize and angles in some way
+		# 	# shuffleSeq = EI.generateRandList(0, 5, 1, 6)
+		# 	# shuffleSeq = [int(x) for x in shuffleSeq]
+		# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
+		# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
 
 
-	# 	# # add starting angle and size to list
-	# 	sizes1DOF = [mediumLarge] + sizes1DOF
-	# 	angles1DOF = [0] + angles1DOF
-	# 	print(sizes1DOF)
-	# 	print(angles1DOF)
-	# 	return sizes1DOF, angles1DOF
+		# 	sizes1DOF = repetitions*sizes1DOF 
+		# 	angles1DOF = repetitions*angles1DOF
+
+		# 	shuffleSeq = self.generateRandList(0, 29, 1, 30)
+		# 	shuffleSeq = [int(x) for x in shuffleSeq]
+		# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
+		# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
+
+
+		# 	# # add starting angle and size to list
+		# 	sizes1DOF = [mediumLarge] + sizes1DOF
+		# 	angles1DOF = [0] + angles1DOF
+		# 	print(sizes1DOF)
+		# 	print(angles1DOF)
+		# 	return sizes1DOF, angles1DOF
 
 	def makeAngles(self,start,stop,amount):
 		interval = (float(stop)-start)/amount
