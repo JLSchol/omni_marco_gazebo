@@ -1,10 +1,12 @@
 <launch>
+    <arg name="EE_pose"             default= "1 1 1 -0.5 0.5 0.5 0.5"/>  
     <!-- Node that publishes fake omni -->
     <include file="$(find test_common)/launch/MockOmniPosition.launch">
     </include>
     
     <!-- Node that publishes a fake marco -->
-    <include file="$(find test_common)/launch/MockEEToTF.launch"> 
+    <include file="$(find test_common)/launch/MockEEToTF.launch">
+        <arg name="EE_pose"             default="$(arg EE_pose)"/>  
     </include>
 
 </launch>

@@ -2,6 +2,7 @@
     <!--TF arguments-->
     <arg name="robot_base_frame"          value="base_footprint"/> 
     <arg name="end_effector_frame"          value="wrist_ft_tool_link"/>
+    <arg name="EE_pose"             default= "-0.5 0.5 0.5 -0.5 0.5 0.5 0.5"/>  
 
     <arg name="robot_reference_frame"          value="base_footprint"/> <!-- When changing this change the rotmatrix array -->
     <arg name="omni_frame_name"          value="omni_rotation"/>
@@ -9,6 +10,10 @@
     <!-- base_footprint: name="rot_matrix_array"          default="0 0 -1 -1 0 0 0 1 0" -->
     <!-- wrist_ft_tool_link: name="rot_matrix_array"          default="0 -1 0 0 0 1 -1 0 0" -->
     <arg name="virtual_marker_name"          value="virtual_marker"/> 
+
+    <!--Position of EE-->
+    <!-- pose consist of (position(3) + quaternion(4) =) 7 elements seperated by space-->
+    
     
     <!--Topic Names-->
     <arg name="omni_button_state" value="/omni1_button"/>
@@ -32,7 +37,8 @@
  
     <include file="$(find omni_marco_launcher)/launch/omni_fake_marco.launch">
         <arg name="robot_base_frame"     default="$(arg robot_base_frame)"/>
-        <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/> 
+        <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
+        <arg name="EE_pose"             default="$(arg EE_pose)"/>  
         <arg name="omni_frame_name"     default="$(arg omni_frame_name)"/>
     </include>
 
