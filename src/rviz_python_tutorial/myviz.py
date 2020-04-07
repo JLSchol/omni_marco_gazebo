@@ -1,21 +1,12 @@
 #!/usr/bin/env python
 
-## BEGIN_TUTORIAL
-##
-## Imports
-## ^^^^^^^
-##
+
 ## First we start with the standard ros Python import line:
 import roslib; roslib.load_manifest('rviz_python_tutorial')
 
 ## Then load sys to get sys.argv.
 import sys
 
-## Next import all the Qt bindings into the current namespace, for
-## convenience.  This uses the "python_qt_binding" package which hides
-## differences between PyQt and PySide, and works if at least one of
-## the two is installed.  The RViz Python bindings use
-## python_qt_binding internally, so you should use it here as well.
 from python_qt_binding.QtGui import *
 from python_qt_binding.QtCore import *
 try:
@@ -25,6 +16,8 @@ except ImportError:
 
 ## Finally import the RViz bindings themselves.
 import rviz
+# python 2.7
+from itertools import izip as zip
 
 
 ## The MyViz class is the main container widget.
@@ -39,35 +32,6 @@ class MyViz( QWidget ):
     def __init__(self):
         QWidget.__init__(self)
 
-        ## rviz.VisualizationFrame is the main container widget of the
-        ## regular RViz application, with menus, a toolbar, a status
-        ## bar, and many docked subpanels.  In this example, we
-        ## disable everything so that the only thing visible is the 3D
-        ## render window.
-        self.frame = rviz.VisualizationFrame()
-        self.frame2 = rviz.VisualizationFrame()
-
-        ## The "splash path" is the full path of an image file which
-        ## gets shown during loading.  Setting it to the empty string
-        ## suppresses that behavior.
-        self.frame.setSplashPath( "" )
-        self.frame2.setSplashPath( "" )
-    
-        ## VisualizationFrame.initialize() must be called before
-        ## VisualizationFrame.load().  In fact it must be called
-        ## before most interactions with RViz classes because it
-        ## instantiates and initializes the VisualizationManager,
-        ## which is the central class of RViz.
-        self.frame.initialize()
-        self.frame2.initialize()
-
-        ## The reader reads config file data into the config object.
-        ## VisualizationFrame reads its data from the config object.
-        reader = rviz.YamlConfigReader()
-        config = rviz.Config()
-        reader.readFile( config, "simple_experiment.rviz" )
-        self.frame.load( config )
-        self.frame2.load( config )
         """
         'setAccessibleDescription', 'setAccessibleName', 'setAnimated',  
         'setAutoFillBackground', 'setBackgroundRole', 'setBaseSize', 'setCentralWidget', 'setContentsMargins', 
@@ -83,124 +47,202 @@ class MyViz( QWidget ):
         'setWindowModified', 'setWindowOpacity', 'setWindowRole', 'setWindowState', 'setWindowTitle'
 
         """
-        # self.frame2.setHidden(True)
-        
+
+        ######################################################################################################
+        ##################################  RVIZ SHIT #########################################################
+        ######################################################################################################
+        # get frames from config
+        reader = rviz.YamlConfigReader()
+        config = rviz.Config()
+        reader.readFile( config, "simple_experiment.rviz" )
+        self.topFrame = self.createFrame(config)
+        self.botFrame = self.createFrame(config)
+
+
+        # get visualization manager for each frame
+        self.topManager = self.topFrame.getManager()
+        self.botManager = self.botFrame.getManager()
+
+        # get view manager
+        self.topViewManager = self.topManager.getViewManager()
+        self.botViewManager = self.botManager.getViewManager()
+
+        # get dict with keyNames and numberValues
+        self.views = self.getViewDict(self.topViewManager) # same for both
+
+        # set start views
+        self.setView(self.topViewManager, self.views, "TopView")
+        self.setView(self.botViewManager, self.views, "FrontView15")
+
+
+        ######################################################################################################
+        ##################################  GUI SHIT #########################################################
+        ######################################################################################################
+
+        # initialize some params
+        buttonNames = ["front","front 15","front 30","front 45","top 30","top 15","top","front 3D","top 3D","left"]
+        buttonCBs = [self.front, self.front15, self.front30, self.front45, 
+                    self.top30, self.top15, self.top, self.front3D, self.top3D, self.left]
+
+
+        # Overal structure of layout
+        self.layout = QVBoxLayout()  
+
+        # TOP SUBLAYOUT
+        topSubLayout = QVBoxLayout()
+        # add rviz frame to top sub layout
+        topSubLayout.addWidget(self.topFrame)
+        # add button row to sub layout
+        topButtonLayout, self.topRefs = self.createButtonRowLayout(buttonNames, buttonCBs)
+        topSubLayout.addLayout(topButtonLayout)
+
+        # BOT SUBLAYOUT
+        botSubLayout = QVBoxLayout()
+        # add rviz frame to bot sub layout
+        botSubLayout.addWidget(self.botFrame)
+        # add button row to sub layout
+        # need to add view manageger to 
+        botButtonLayout, self.botRefs = self.createButtonRowLayout(buttonNames, buttonCBs)
+        botSubLayout.addLayout(botButtonLayout)
+        # find sender object
+        # print(10*"------------")
+        print(botButtonLayout.children()) #0x7f848856fb00>
+        # print(10*"------------")
+        # SLIDER WIDGET
+        viewDistSlider = self.createHorSlider(50, 250, self.onSliderChange)
+
+
+        # add everything to layout and set for visualization
+        self.layout.addLayout(topSubLayout)
+        self.layout.addLayout(botSubLayout)
+        self.layout.addWidget(viewDistSlider)
+        self.setLayout( self.layout )
+
+
+
+################################ RVIZ HELPER FUNCTIONS ################################
+    def createFrame(self, configObj):
+        # initialize
+        frame = rviz.VisualizationFrame()
+        frame.setSplashPath( "" )
+        frame.initialize()
+        frame.load(configObj)
         ## You can also store any other application data you like in
         ## the config object.  Here we read the window title from the
         ## map key called "Title", which has been added by hand to the
         ## config file.
-        self.setWindowTitle( config.mapGetChild( "Title" ).getValue() )
+        # self.setWindowTitle( config.mapGetChild( "Title" ).getValue() )
+        # settings
+        frame.setMenuBar( None )
+        frame.setStatusBar( None )
+        frame.setHideButtonVisibility( False )
+        return frame
 
-        # self.frame.setFullScreen( True )
+    def getViewDict(self,viewManager):
+        # self.views = {
+        #     "FrontView":0   ,"FrontView15":1,
+        #     "FrontView30":2 ,"FrontView45":3,
+        #     "TopView30":4   ,"TopView15":5,
+        #     "TopView":6     ,"LeftView":7,
+        #     "3DViewFront":8 ,"3DViewTop":9
+        # }
+        valueIndex = range(viewManager.getNumViews())
+        keyNames = [viewManager.getViewAt(index).getName() for index in valueIndex]
+        viewDict = {name: index for name, index in zip(keyNames,valueIndex)}
+        return viewDict
 
-        ## Here we disable the menu bar (from the top), status bar
-        ## (from the bottom), and the "hide-docks" buttons, which are
-        ## the tall skinny buttons on the left and right sides of the
-        ## main render window.
-        # self.frame.setToolTip( None )
-        self.frame.setMenuBar( None )
-        self.frame2.setMenuBar( None )
-        self.frame.setStatusBar( None )
-        self.frame2.setStatusBar( None )
-        self.frame.setHideButtonVisibility( False )
-        self.frame2.setHideButtonVisibility( False )
+    def setView(self,viewManager,viewDict,name):
+        number = viewDict[name]
+        viewManager.setCurrentFrom(viewManager.getViewAt(number))
 
-        ## frame.getManager() returns the VisualizationManager
-        ## instance, which is a very central class.  It has pointers
-        ## to other manager objects and is generally required to make
-        ## any changes in an rviz instance.
-        self.manager1 = self.frame.getManager()
-        # self.manager1.getToolManager().removeAll()
-        self.viewManager1 = self.manager1.getViewManager()
-        self.viewManager1.setCurrentFrom( self.viewManager1.getViewAt( 0 ))
+    def switchToView( self, index, manager ):
+        viewManager = manager.getViewManager()
+        viewManager.setCurrentFrom( viewManager.getViewAt(index))
 
-        self.manager2 = self.frame2.getManager()
-        # self.manager2.getToolManager().removeAll()
-        self.viewManager2 = self.manager2.getViewManager()
-        self.viewManager2.setCurrentFrom( self.viewManager2.getViewAt( 1 ))
+################################ LAYOUT FUNCTIONS ################################
+    def createButtonRowLayout(self,buttonNames,onClickList):
+        butLayout = QHBoxLayout()
+        refList = []
+        for i,name in enumerate(buttonNames):
+            but = QPushButton(name)
+            but.clicked.connect(onClickList[i])
+            print(10*"------------")
+            butLayout.addWidget(but)
+            refList.append(but)
+        return butLayout, refList
 
-        ## Since the config file is part of the source code for this
-        ## example, we know that the first display in the list is the
-        ## grid we want to control.  Here we just save a reference to
-        ## it for later.
-        self.grid_display = self.manager1.getRootDisplayGroup().getDisplayAt( 0 )
-        # self.topview = self.manager1.getViewManager().getViewAt( 0 )
+    def createHorSlider(self,minVal,maxVal,eventCB):
+        slider = QSlider(Qt.Horizontal)
+        slider.setTracking(True)
+        slider.setMinimum(minVal)
+        slider.setMaximum(maxVal)
+        slider.valueChanged.connect(eventCB)
+        return slider
 
-        
-        
-        ## Here we create the layout and other widgets in the usual Qt way.
-        layout = QVBoxLayout()
+################################ BUTTON CALLBACKS AND OTHER GUI EVENTS ################################
+    def onSliderChange( self, new_value ):
+        # topViewManager.setCurrentFrom( topViewManager.getViewAt( 0 ))
+        if self.topViewManager != None and self.botViewManager != None:
+            for viewMan in [self.topViewManager, self.botViewManager]:
+                print(viewMan.getCurrent().subProp("Distance").getValue())
+                viewMan.getCurrent().subProp( "Distance" ).setValue( new_value/100.0)
+                viewMan.setCurrentFrom( viewMan.getCurrent())
 
-
-        h_views = QVBoxLayout()
-        h_views.addWidget(self.frame)
-        h_views.addWidget(self.frame2)
-        layout.addLayout(h_views)
-
-        # view2 = QVBoxLayout()
-        # view2.addWidget( self.frame2 )
-        # layout.addWidget(view2)
-        
-        thickness_slider = QSlider( Qt.Horizontal )
-        thickness_slider.setTracking( True )
-        thickness_slider.setMinimum( 1 )
-        thickness_slider.setMaximum( 100 )
-        thickness_slider.valueChanged.connect( self.onThicknessSliderChanged )
-        layout.addWidget( thickness_slider )
-        h_layout = QHBoxLayout()
-        
-        top_button = QPushButton( "Top View" )
-        top_button.clicked.connect( self.onTopButtonClick )
-        h_layout.addWidget( top_button )
-        
-        front_button = QPushButton( "Front view" )
-        front_button.clicked.connect( self.onSideButtonClick )
-        h_layout.addWidget( front_button )
-        
-        layout.addLayout( h_layout )
-        
-        self.setLayout( layout )
-
-    ## Handle GUI events
-    ## ^^^^^^^^^^^^^^^^^
-    ##
-    ## After the constructor, for this example the class just needs to
-    ## respond to GUI events.  Here is the slider callback.
-    ## rviz.Display is a subclass of rviz.Property.  Each Property can
-    ## have sub-properties, forming a tree.  To change a Property of a
-    ## Display, use the subProp() function to walk down the tree to
-    ## find the child you need.
-    def onThicknessSliderChanged( self, new_value ):
-        # viewManager1.setCurrentFrom( viewManager1.getViewAt( 0 ))
-        if self.viewManager1 != None and self.viewManager2 != None:
-
-            for viewMan in [self.viewManager1, self.viewManager2]:
-                # print(new_value)
-                print(viewMan.getViewAt( 0 ).subProp("Distance").getValue())
-                viewMan.getViewAt( 0 ).subProp( "Scale" ).setValue( 10*(101 - new_value))
-                viewMan.setCurrentFrom( viewMan.getViewAt( 0 ))
+    def getManager(self,iets):
+        botRow = True
+        if botrow:
+            return self.botManager
+        else:
+            return self.topManager
 
 
-    ## The view buttons just call switchToView() with the name of a saved view.
-    def onTopButtonClick( self ):
-        self.switchToView( "TopView", self.manager1 );
-        
-    def onSideButtonClick( self ):
-        self.switchToView( "FrontView", self.manager2 );
-        
-    ## switchToView() works by looping over the views saved in the
-    ## ViewManager and looking for one with a matching name.
-    ##
-    ## view_man.setCurrentFrom() takes the saved view
-    ## instance and copies it to set the current view
-    ## controller.
-    def switchToView( self, view_name, manager ):
-        view_man = manager.getViewManager()
-        for i in range( view_man.getNumViews() ):
-            if view_man.getViewAt( i ).getName() == view_name:
-                view_man.setCurrentFrom( view_man.getViewAt( i ))
-                return
-        print( "Did not find view named %s." % view_name )
+    def front( self ):
+        view = "FrontView"
+        manager = self.topManager
+        if self.layout.sender() in self.botRefs:
+            manager = self.botManager
+
+        # print(self.layout.sender())
+        # print(self.layout.parent())
+        # print(self.layout.findChildren())
+        # print(self.layout.children())
+        # print(10*"------")
+        # manager = self.getManager(iets)
+
+        self.switchToView( self.views[view], manager );
+    def front15( self ):
+        view = "FrontView15"
+        self.switchToView( self.views[view], self.topManager );
+    def front30( self ):
+        view = "FrontView30"
+        self.switchToView( self.views[view], self.topManager );
+    def front45( self ):
+        view = "FrontView45"
+        self.switchToView( self.views[view], self.topManager );
+    def front3D( self ):
+        view = "3DViewFront"
+        self.switchToView( self.views[view], self.topManager );
+
+    def top( self ):
+        view = "TopView"
+        self.switchToView( self.views[view], self.topManager );
+    def top15( self ):
+        view = "TopView15"
+        self.switchToView( self.views[view], self.topManager );
+    def top30( self ):
+        view = "TopView30"
+        self.switchToView( self.views[view], self.topManager );
+    def top3D( self ):
+        view = "3DViewTop"
+        self.switchToView( self.views[view], self.topManager );
+
+    def left( self ):
+        view = "LeftView"
+        self.switchToView( self.views[view], self.topManager ); 
+
+
+
+
 
 ## Start the Application
 ## ^^^^^^^^^^^^^^^^^^^^^

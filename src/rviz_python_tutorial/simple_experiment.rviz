@@ -344,7 +344,7 @@ Visualization Manager:
         Focal Shape Fixed Size: true
         Focal Shape Size: 0.0500000007
         Invert Z Axis: false
-        Name: 3DviewTop
+        Name: 3DViewTop
         Near Clip Distance: 0.00999999978
         Pitch: 0.785250008
         Target Frame: wrist_ft_tool_link
