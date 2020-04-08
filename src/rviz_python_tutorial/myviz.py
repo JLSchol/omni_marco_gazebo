@@ -188,57 +188,46 @@ class MyViz( QWidget ):
                 viewMan.getCurrent().subProp( "Distance" ).setValue( new_value/100.0)
                 viewMan.setCurrentFrom( viewMan.getCurrent())
 
-    def getManager(self,iets):
-        botRow = True
-        if botrow:
-            return self.botManager
-        else:
-            return self.topManager
+    def getManager(self):
+        manager = self.topManager
+        if self.layout.sender() in self.botRefs:
+            manager = self.botManager
+        return manager
+        
 
 
     def front( self ):
         view = "FrontView"
-        manager = self.topManager
-        if self.layout.sender() in self.botRefs:
-            manager = self.botManager
-
-        # print(self.layout.sender())
-        # print(self.layout.parent())
-        # print(self.layout.findChildren())
-        # print(self.layout.children())
-        # print(10*"------")
-        # manager = self.getManager(iets)
-
-        self.switchToView( self.views[view], manager );
+        self.switchToView( self.views[view], self.getManager() );
     def front15( self ):
         view = "FrontView15"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def front30( self ):
         view = "FrontView30"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def front45( self ):
         view = "FrontView45"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def front3D( self ):
         view = "3DViewFront"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
 
     def top( self ):
         view = "TopView"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def top15( self ):
         view = "TopView15"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def top30( self ):
         view = "TopView30"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
     def top3D( self ):
         view = "3DViewTop"
-        self.switchToView( self.views[view], self.topManager );
+        self.switchToView( self.views[view], self.getManager() );
 
     def left( self ):
         view = "LeftView"
-        self.switchToView( self.views[view], self.topManager ); 
+        self.switchToView( self.views[view], self.getManager() ); 
 
 
 

@@ -36,7 +36,7 @@ class SimpleExperiment(object):
         self._eigenSub = Subscriber("/eigen_pair", EigenPairs, self._eigenCallBack)
         self._ellipsPub = Publisher("experiment_ellipsoid", Marker, queue_size=2)
         self._logPub = Publisher("simple_experiment_logger", String, queue_size=1)
-        self._textVisPUb = Publisher("accuracy_ellipsoid_text", Marker, queue_size=1)
+        self._textVisPUb = Publisher("accuracy_ellipsoid_text", Marker, queue_size=2)
 
     def _getParameters(self):
         lambdaminPar = '/stiffness_commanding/lambda_min'
@@ -130,14 +130,14 @@ class SimpleExperiment(object):
                 shapeAcc, rotationAcc = self._getAccuracy(self.prevTrialNr,EI,EM)
                 self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,shapeAcc,rotationAcc))
 
-                markerText = EM.createMarkerText(frame_id,"text",1,
-                								self._createFeedbackTextString(shapeAcc, rotationAcc),
-                								[-0.3,0,0],0.1,[1,1,1,1],2)
-                self._textVisPUb.publish(markerText)
+                shapeText, orientationText = self._getMarkerTexts(shapeAcc, rotationAcc, EM, frame_id)
+
+                # self._textVisPUb.publish(markerText)
+                self._textVisPUb.publish(shapeText)
+                self._textVisPUb.publish(orientationText)
 
                 # briefly delete marker such that it is clear that a new trial starts
                 EM.deleteMarker(marker_ns,marker_id)
-
 
                 # update boolian 
                 self.userTrialPass=False
@@ -252,16 +252,58 @@ class SimpleExperiment(object):
 
             
     def _createLogString(self,trial,time,volAcc,rotAcc):
-        
         t = round(time.to_sec(),2)
         logString = "trial number: {}, time: {} [sec], shape: {} [%], orientation: {} [%]".format(trial,t,volAcc,rotAcc)
         return logString
 
-    def _createFeedbackTextString(self,volAcc,rotAcc):
-    	textString = "Shape: {} %\nOrientation: {} %".format(volAcc,rotAcc)
-    	return textString
+    # def _createFeedbackTextString(self,volAcc,rotAcc):
+    # 	textString = "Shape: {} %\nOrientation: {} %".format(volAcc,rotAcc)
+    # 	return textString
+    def _feedBackText(self, identifier, value):
+        text = "{}: {} %".format(identifier,value)
+        return text
 
-        
+    def _getMarkerTexts(self,shapeAcc,rotationAcc,EM,frame_id):
+        marker_ns = "text"
+
+        textPosSh = [-0.3,-.25,-0.6]
+        textHeightSH = 0.1
+        idSh = 1
+        rgbSh = self._getColorText(shapeAcc)
+        shapeStr = self._feedBackText("Shape",shapeAcc)
+
+        coeff = 0.88
+
+        textposOr = [textPosSh[0]+1.5*textHeightSH, textPosSh[1]+1.5*textHeightSH, textPosSh[2]-0.05]
+        textHeightOr = textHeightSH*coeff # because this text is closer to the camera make smaller
+        idOr = 2
+        rgbOr = self._getColorText(rotationAcc)
+        orientationsStr = self._feedBackText("Orientation",rotationAcc)
+
+        lifeTime = 2 # sec
+
+        shapeText = EM.createMarkerText(frame_id,marker_ns,idSh,
+                                        shapeStr,
+                                        textPosSh,textHeightSH,rgbSh,lifeTime)
+
+        orientationText = EM.createMarkerText(frame_id,marker_ns,idOr,
+                                        orientationsStr,
+                                        textposOr,textHeightOr,rgbOr,lifeTime)
+        return shapeText, orientationText
+
+    def _getColorText(self,acc):
+        color = []
+        if acc >= 90.0:
+            color = [0.25,0.74,0.25,1] # 64, 191, 64 green
+        elif acc >= 80.0 and acc < 90:
+        # elif 90.0 < acc <= 80:
+            color = [1,0.457,0.102,1] # 255, 117, 26 orange
+        else:
+            color = [1,0.3,0.3,1]  # 255, 77, 77 red
+        return color
+
+
+
     def _guiCallBack(self, message):
         self.guiMsg = message
         self.newGuiCommand = True

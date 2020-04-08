@@ -130,7 +130,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2
+      Distance: 1.25
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -151,7 +151,7 @@ Visualization Manager:
       Yaw: 2.96650004
     Saved:
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -171,7 +171,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -191,7 +191,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -211,7 +211,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -231,7 +231,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -251,7 +251,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -271,7 +271,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -291,7 +291,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 3.14100003
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -311,7 +311,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 1.57050002
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -331,7 +331,7 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 2.96650004
       - Class: rviz/Orbit
-        Distance: 2
+        Distance: 1.25
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -346,7 +346,7 @@ Visualization Manager:
         Invert Z Axis: false
         Name: 3DViewTop
         Near Clip Distance: 0.00999999978
-        Pitch: 0.785250008
+        Pitch: 1.30875003
         Target Frame: wrist_ft_tool_link
         Value: Orbit (rviz)
         Yaw: 2.96650004
