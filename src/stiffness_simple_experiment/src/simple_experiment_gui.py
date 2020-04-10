@@ -266,10 +266,15 @@ class GuiWindow(Frame):
 			print("{} is not a existing directory.\nSpecify correct path".format(self.saveDir.get()))
 			return
 		bashFile = "rosbag_record.sh"
-		bagName = "my_test_bag"
+		# fix this part to part{nr}_Exp{nr}_{type}.bag
+		# bagName = "my_test_bag"
+		self.fileName.set(self.generateFileName()) # set variable
+		bagName = self.fileName.get()
+		# fix the topics that are recorded
 		topics = "simple_experiment_logger hoi"
 		# ./rosbag_record 	saveDir bagName logNodeName topic1 	topic2 	etc
 		# $0 				$1		$2 		$3 			$3		$3 		etc
+		# check if self.saveDir and self.fileName are empty
 		bashCommand = self.pathToPkg+bashFile+" "+self.saveDir.get()+" "+bagName+" "+self.loggerNodeName+" "+topics
 		subprocess.call(bashCommand, shell=True)
 		print("Logger started")

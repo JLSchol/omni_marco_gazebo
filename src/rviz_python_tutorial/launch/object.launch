@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+  <param name="robot_description" textfile="$(find rviz_python_tutorial)/urdf/r2d2.xml" />
+</launch>
+

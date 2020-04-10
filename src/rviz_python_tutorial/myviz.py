@@ -69,6 +69,14 @@ class MyViz( QWidget ):
 
         # get dict with keyNames and numberValues
         self.views = self.getViewDict(self.topViewManager) # same for both
+        # print(self.views)
+        # self.views = {
+        #     "FrontView":0   ,"FrontView15":1,
+        #     "FrontView30":2 ,"FrontView45":3,
+        #     "TopView30":4   ,"TopView15":5,
+        #     "TopView":6     ,"LeftView":7,
+        #     "3DViewFront":8 ,"3DViewTop":9
+        # }
 
         # set start views
         self.setView(self.topViewManager, self.views, "TopView")
@@ -139,13 +147,6 @@ class MyViz( QWidget ):
         return frame
 
     def getViewDict(self,viewManager):
-        # self.views = {
-        #     "FrontView":0   ,"FrontView15":1,
-        #     "FrontView30":2 ,"FrontView45":3,
-        #     "TopView30":4   ,"TopView15":5,
-        #     "TopView":6     ,"LeftView":7,
-        #     "3DViewFront":8 ,"3DViewTop":9
-        # }
         valueIndex = range(viewManager.getNumViews())
         keyNames = [viewManager.getViewAt(index).getName() for index in valueIndex]
         viewDict = {name: index for name, index in zip(keyNames,valueIndex)}
@@ -166,7 +167,7 @@ class MyViz( QWidget ):
         for i,name in enumerate(buttonNames):
             but = QPushButton(name)
             but.clicked.connect(onClickList[i])
-            print(10*"------------")
+            # print(10*"------------")
             butLayout.addWidget(but)
             refList.append(but)
         return butLayout, refList
@@ -184,7 +185,6 @@ class MyViz( QWidget ):
         # topViewManager.setCurrentFrom( topViewManager.getViewAt( 0 ))
         if self.topViewManager != None and self.botViewManager != None:
             for viewMan in [self.topViewManager, self.botViewManager]:
-                print(viewMan.getCurrent().subProp("Distance").getValue())
                 viewMan.getCurrent().subProp( "Distance" ).setValue( new_value/100.0)
                 viewMan.setCurrentFrom( viewMan.getCurrent())
 
