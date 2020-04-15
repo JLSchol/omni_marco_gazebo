@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!--Only launches the urdf to the parameter server (such that rviz can find it...)-->
+    <include file="$(find stiffness_simple_experiment)/launch/r2d2.launch"/>
+    <!--Launch the rviz gui-->
+    <node name="rviz_experiment_gui" pkg="stiffness_simple_experiment" type="rviz_experiment_gui.py"/>
+</launch>
+    

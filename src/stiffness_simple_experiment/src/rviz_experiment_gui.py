@@ -8,6 +8,8 @@ import roslib;
 ## Then load sys to get sys.argv.
 import sys
 
+from rospy import init_node, get_param
+from rospkg import RosPack 
 from python_qt_binding.QtGui import *
 from python_qt_binding.QtCore import *
 try:
@@ -33,6 +35,8 @@ class MyViz( QWidget ):
     def __init__(self):
         QWidget.__init__(self)
 
+        init_node("rviz_experiment_gui")
+
         """
         'setAccessibleDescription', 'setAccessibleName', 'setAnimated',  
         'setAutoFillBackground', 'setBackgroundRole', 'setBaseSize', 'setCentralWidget', 'setContentsMargins', 
@@ -54,7 +58,11 @@ class MyViz( QWidget ):
         # get frames from config
         reader = rviz.YamlConfigReader()
         config = rviz.Config()
-        reader.readFile( config, "../rviz_experiment_config.rviz" )
+        rp = RosPack()
+        pathToPkg = rp.get_path("stiffness_simple_experiment")
+        pathToConfig = "/rviz_experiment_config.rviz"
+        absPathToConfig = pathToPkg + pathToConfig
+        reader.readFile(config, absPathToConfig)
         self.topFrame = self.createFrame(config)
         self.botFrame = self.createFrame(config)
 

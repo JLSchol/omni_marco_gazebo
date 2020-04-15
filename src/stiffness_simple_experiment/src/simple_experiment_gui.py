@@ -28,6 +28,7 @@ class GuiWindow(Frame):
 		self.gender = StringVar()
 		self.participantAge = StringVar(self)
 		self.experience = StringVar(self)
+		self.hand = StringVar()
 		self.experimentInfo = StringVar(self)
 		self.experimentNumber = IntVar(self)
 		self.learning = IntVar(self)
@@ -93,14 +94,17 @@ class GuiWindow(Frame):
 		######## ROW 1 ########
 		launchStiffness = Button(self.master, text="Launch stiffness pkg", command=partial(self.launchStiffnessCB, arg='hoi'))
 		launchStiffness.place(relx=col1,rely=row1,relwidth=bw,relheight=bh)
+		launchExp = Button(self.master, text="Launch experiment", command=self.launchExperimentCB)
+		launchExp.place(relx=col1,rely=row1+1.5*bh,relwidth=bw,relheight=bh)
+		launchRviz = Button(self.master, text="Launch rviz gui", command=self.launchRvizCB)
+		launchRviz.place(relx=col1,rely=row1+3*bh,relwidth=bw,relheight=bh)
+
 		killStiffness = Button(self.master, text="Kill stiffness pkg", command=self.killStiffnessCB)
 		killStiffness.place(relx=col2,rely=row1,relwidth=bw,relheight=bh)
-		launchExp = Button(self.master, text="Launch experiment", command=self.launchExperimentCB)
-		launchExp.place(relx=col1,rely=row1+2*bh,relwidth=bw,relheight=bh)
-
-
 		killExp = Button(self.master, text="Kill experiment", command=self.killExperimentCB)
-		killExp.place(relx=col2,rely=row1+2*bh,relwidth=bw,relheight=bh)
+		killExp.place(relx=col2,rely=row1+1.5*bh,relwidth=bw,relheight=bh)
+		killRviz = Button(self.master, text="Kill rviz gui", command=self.killRvizCB)
+		killRviz.place(relx=col2,rely=row1+3*bh,relwidth=bw,relheight=bh)
 
 		self.loggerWindow = Text(self.master, yscrollcommand=True)
 		self.loggerWindow.place(relx=col2+bw+0.05,rely=row1,relwidth=0.325,relheight=0.45)
@@ -129,9 +133,9 @@ class GuiWindow(Frame):
 
 
 		prevTrial = Button(self.master, text="previous trial", command= lambda: self.trialCB(-1))
-		prevTrial.place(relx=col1,rely=(row2+2*bh),relwidth=bw,relheight=bh)
+		prevTrial.place(relx=col1,rely=(row2+1.5*bh),relwidth=bw,relheight=bh)
 		nextTrial = Button(self.master, text="next trial", command=lambda: self.trialCB(1))
-		nextTrial.place(relx=col2,rely=(row2+2*bh),relwidth=bw,relheight=bh)
+		nextTrial.place(relx=col2,rely=(row2+1.5*bh),relwidth=bw,relheight=bh)
 
 
 		######## ROW 3 ########
@@ -143,6 +147,8 @@ class GuiWindow(Frame):
 		labelUsrAge.place(relx=col1,rely=row3+2*bh,relwidth=0.15,relheight=bh)
 		labelUsrExp = Label(self.master, text='Experience')
 		labelUsrExp.place(relx=col1,rely=row3+3*bh,relwidth=0.15,relheight=bh)
+		labelUsrHand = Label(self.master, text='Handedness')
+		labelUsrHand.place(relx=col1,rely=row3+4*bh,relwidth=0.15,relheight=bh)
 
 		entryPartNr = Entry(self.master, bg='white', textvariable=self.participantNumber)
 		self.participantNumber.trace('w',self.partNrCB)
@@ -158,6 +164,10 @@ class GuiWindow(Frame):
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
 		saveParticipantButton = Button(self.master, text="save info", command=self.saveParticipantInfoCB)
 		saveParticipantButton.place(relx=col1,rely=row3+4*bh,relwidth=bw,relheight=bh)
+
+		comboOptionHand = ttk.Combobox(self.master,values=['right','left'] ,textvariable=self.hand)
+		self.hand.trace('w',self.saveHandCB)
+		comboOptionHand.place(relx=(col1+bw),rely=row3+4*bh,relwidth=0.1,relheight=bh)
 
 
 		self.expInfoText = Text(self.master, yscrollcommand=True)
@@ -202,16 +212,30 @@ class GuiWindow(Frame):
 		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
 		launch.start()
 
+	def launchRvizCB(self):
+		print("roslaunch stiffness_launch rviz_experiment_gui.launch")
+		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+		roslaunch.configure_logging(uuid)
+		
+		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/rviz_experiment_gui.launch"
+		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
+		launch.start()
+
 	def killStiffnessCB(self):
 		bashFile = "kill_nodes.sh"
 		nodes = "draw_ellipsoid haptic_device_rotation mock_End_Effector omni1 omni_2_marker omni_feedback_force stiffness_commanding"
 		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
 
-
 	def killExperimentCB(self):
 		bashFile = "kill_nodes.sh"
 		nodes = "simple_experiment"
+		bashCommand = self.pathToPkg+bashFile+" "+nodes
+		subprocess.call(bashCommand, shell=True)
+
+	def killRvizCB(self):
+		bashFile = "kill_nodes.sh"
+		nodes = "rviz_experiment_gui"
 		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
 
@@ -295,6 +319,8 @@ class GuiWindow(Frame):
 		print(self.gender.get())
 	def saveExperianceCB(self, *args):
 		print(self.experience.get())
+	def saveHandCB(self, *args):
+		print(self.hand.get())
 	def saveFileNameCB(self, *args):
 		print(self.fileName.get())
 
@@ -360,7 +386,8 @@ class GuiWindow(Frame):
 		participantInfo = {'number': self.participantNumber.get(),
 							'gender': self.gender.get(),
 							'age': self.participantAge.get(),
-							'experience': self.experience.get()}
+							'experience': self.experience.get(),
+							'hand': self.hand.get()}
 		return participantInfo
 
 
@@ -370,7 +397,6 @@ class GuiWindow(Frame):
 
 if __name__ == "__main__":
 	root = Tk()
-
 
 	gui = GuiWindow(root)
 

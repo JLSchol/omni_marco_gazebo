@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
-<!--Only launches the urdf to the parameter server (such that rviz can find it...)-->
+  <!--Only launches the urdf to the parameter server (such that rviz can find it...)-->
   <param name="robot_description" textfile="$(find stiffness_simple_experiment)/urdf/r2d2.xml" />
 </launch>
 
