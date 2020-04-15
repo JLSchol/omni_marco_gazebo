@@ -88,25 +88,41 @@ class SimpleExperiment(object):
         rgba=[0.95,0.95,0.05,0.2]
         
         rosRate = Rate(100)
+        counter = 0
         while not is_shutdown():
+            # If experiment is not yet started, stay in this loop
             if not self.guiMsg.start_experiment:
             	EM.deleteMarker(marker_ns,marker_id)
-                print("node launched exp not started")
+                if counter%200 == 0: # every 200th loop
+                    print("node launched exp not started...")
+                counter+=1
+                rosRate.sleep()
                 # need to reset certain variables
                 continue
 
-            # if self.lockStateMsg.lock_white:
-            #     print("ellipsoid is fixed, puaze tussen trial")
-            #     continue
-            # print("while: "str(self.lockStateMsg.lock_white))
+            # if trial number exceeds total trials, the experiment is finished 
+            # Stay in this loop
+            # EI = ExperimentInfo(self.guiMsg.experiment_number,self.guiMsg.learning)
+            if EI != []:
+                # print(EI)
+                if (len(EI.data['trialNr']) < self.trialNr + 1):        # self.trialNr start at 0 therefore +1
+                    EM.deleteMarker(marker_ns,marker_id)
+                    finishText = EM.createMarkerText(frame_id,"text",3,"Experiment Finished\n\nGood Job!",[0,0,0],0.1,[1,1,1,1],3)
+                    self._textVisPUb.publish(finishText)
+                    counter+=1
+                    rosRate.sleep()
+                    continue
+
+            # If buttonpress and not start of node, user clicked button to advance to next trial
             if (self.lockStateMsg.lock_white==True) and (self.lockStateMsg.header != self.prevLockStateMsg.header):
                 print("lockstate = True")
                 self.userTrialPass = True
 
-            # print("while lock: "+ str(self.lockStateMsg.lock_white))
-            # print("while :"+str(self.userTrialPass))
+            # if prevtrialnumber is not yet a number, experiment has not yet started
+            # Create starting point for time 
             if not isinstance(self.prevTrialNr,int):
-                print('in first loop')
+                print(10*"-----")
+                print('Experiment started, first trial')
                 # _checkGuiMsg and initialization and 
                 self.startTimeTrial = Time.now()
                 self.prevTrialNr = 0
@@ -119,9 +135,9 @@ class SimpleExperiment(object):
 
             # other loops check for trial pass and update
             elif self._newTrial(self.guiMsg):
-                print('in NEWTRIAL loop')
+                print('in next trial loop')
                 # Do stuff to update trial properties
-                # update trial completion times
+                # get trial time, refresh starting time of trial
                 self.trialTime, self.startTimeTrial = self._getUpdatedTrialTimes(
                                                                             self.startTimeTrial)
                 # update trial number
@@ -136,7 +152,7 @@ class SimpleExperiment(object):
                 self._textVisPUb.publish(shapeText)
                 self._textVisPUb.publish(orientationText)
 
-                # briefly delete marker such that it is clear that a new trial starts
+                # briefly delete marker such that it is clear that a new trial starts ### does not work...
                 EM.deleteMarker(marker_ns,marker_id)
 
                 # update boolian 
@@ -144,23 +160,29 @@ class SimpleExperiment(object):
                 print(10*"-----")
 
 
-            scales,quats = EI.getShape(self.trialNr,EI.data)
-            ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
-                                                positions,quats,scales,rgba)
+            # if trialnr is smaller than total trials, the experiment publish the experiment ellipsoids
+            if len(EI.data['trialNr']) >= self.trialNr+1: # self.trialNr start at 0 therefore +1
+                scales,quats = EI.getShape(self.trialNr,EI.data)
+                ellipsoid = EM.getEllipsoidMsg(frame_id,marker_ns,marker_id,
+                                                    positions,quats,scales,rgba)
 
+                EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
+                self._ellipsPub.publish(ellipsoid)  
+            # elif len(EI.data['trialNr']) <= self.trialNr + 1: # self.trialNr start at 0 therefore +1
+            #     EM.deleteMarker(marker_ns,marker_id)
+            # else:
+            #     print("something went wrong")
+
+            # always puvblish user ellipsoid
             EM.broadcastEllipsoidAxis(positions,self.originalUserQuat,frame_id,'original_user_ellips')
             # EM.broadcastEllipsoidAxis(positions,self.qAllignedQuats,frame_id,'minmax_axis_alligned')
             EM.broadcastEllipsoidAxis(positions,self.userQuat,frame_id,'corrected_user_ellips')
-            EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
-
-
-            self._ellipsPub.publish(ellipsoid)  
             
             self.userTrialPass=False
             # shutdown node from gui command
             # if self.guiMsg.start_experiment == False:
             #     signal_shutdown("User requisted shutdown")
-
+            counter += 1
             rosRate.sleep()
          
     def _firstLoop(self):
@@ -259,28 +281,37 @@ class SimpleExperiment(object):
     # def _createFeedbackTextString(self,volAcc,rotAcc):
     # 	textString = "Shape: {} %\nOrientation: {} %".format(volAcc,rotAcc)
     # 	return textString
-    def _feedBackText(self, identifier, value):
-        text = "{}: {} %".format(identifier,value)
+    def _feedBackText(self, identifier, value, newLine=True):
+        if newLine:
+            text = "\n\n{}: {} %".format(identifier,value)
+        elif not newLine:
+            text = "{}: {} %".format(identifier,value)
+        else:
+            print("{} is not a valid 3th input argument. Try 'True' or 'False'".format(newLine))
         return text
 
     def _getMarkerTexts(self,shapeAcc,rotationAcc,EM,frame_id):
         marker_ns = "text"
 
-        textPosSh = [-0.3,-.25,-0.6]
+        textPosSh = [-0.3,-0.25,-0.6]
+        # textPosOr = [-0.3,-0.25,-0.6]
+        textPosOr = [textPosSh[0]+0.01, textPosSh[1]+0.01, textPosSh[2]]
+
+        # textPosOr = [-0.3,0,-0.6]
         textHeightSH = 0.1
         idSh = 1
         rgbSh = self._getColorText(shapeAcc)
-        shapeStr = self._feedBackText("Shape",shapeAcc)
+        shapeStr = self._feedBackText("Shape",shapeAcc,False)
 
         coeff = 0.88
 
-        textposOr = [textPosSh[0]+1.5*textHeightSH, textPosSh[1]+1.5*textHeightSH, textPosSh[2]-0.05]
+        # textPosOr = [textPosSh[0]+1.5*textHeightSH, textPosSh[1]+1.5*textHeightSH, textPosSh[2]-0.05]
         textHeightOr = textHeightSH*coeff # because this text is closer to the camera make smaller
         idOr = 2
         rgbOr = self._getColorText(rotationAcc)
-        orientationsStr = self._feedBackText("Orientation",rotationAcc)
+        orientationsStr = self._feedBackText("Orientation",rotationAcc,True)
 
-        lifeTime = 2 # sec
+        lifeTime = 3 # sec
 
         shapeText = EM.createMarkerText(frame_id,marker_ns,idSh,
                                         shapeStr,
@@ -288,7 +319,7 @@ class SimpleExperiment(object):
 
         orientationText = EM.createMarkerText(frame_id,marker_ns,idOr,
                                         orientationsStr,
-                                        textposOr,textHeightOr,rgbOr,lifeTime)
+                                        textPosOr,textHeightSH,rgbOr,lifeTime)
         return shapeText, orientationText
 
     def _getColorText(self,acc):

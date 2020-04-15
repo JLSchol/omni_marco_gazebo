@@ -384,7 +384,7 @@ Visualization Manager:
         Invert Z Axis: false
         Name: TopView
         Near Clip Distance: 0.00999999978
-        Pitch: 1.56979632
+        Pitch: 1.56979632 # 1.56979632 #1.49079632
         Target Frame: wrist_ft_tool_link
         Value: Orbit (rviz)
         Yaw: 3.14100003
@@ -404,10 +404,14 @@ Visualization Manager:
         Invert Z Axis: false
         Name: LeftView
         Near Clip Distance: 0.00999999978
-        Pitch: 0
+        Pitch: 1.49079632 # 1.56979632 #1.49079632
         Target Frame: wrist_ft_tool_link
         Value: Orbit (rviz)
-        Yaw: 1.57050002
+        Yaw: 3.14100003
+        # Pitch: 0
+        # Target Frame: wrist_ft_tool_link
+        # Value: Orbit (rviz)
+        # Yaw: 1.57050002
       - Class: rviz/Orbit
         Distance: 1.25
         Enable Stereo Rendering:
