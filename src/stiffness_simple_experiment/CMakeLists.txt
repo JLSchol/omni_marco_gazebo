@@ -8,6 +8,7 @@ project(stiffness_simple_experiment)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  rviz
   message_generation
   # geometry_msgs
   std_msgs
@@ -156,6 +157,12 @@ include_directories(
 #############
 ## Install ##
 #############
+# install(FILES
+#   config.myviz
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+# install(PROGRAMS myviz.py
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
