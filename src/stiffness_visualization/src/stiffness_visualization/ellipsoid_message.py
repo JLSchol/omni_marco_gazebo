@@ -366,7 +366,7 @@ class EllipsoidMessage(object):
         # along largest (long) axis or smalles (short) axis
         # get user scales:
         userScales = self.getEllipsoidScales(userEigVal, lambda_min, lambda_max)
-        print("userScales: {}, expScales: {}".format(userScales,expScales))
+        # print("userScales: {}, expScales: {}".format(userScales,expScales))
         shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec,axis)
         newUserVal, newUserVec = self.shuffleEig(userEigVal, userEigVec, shuffleSeq)
         newUserScales = self.shuffleList(userScales,shuffleSeq)
@@ -378,7 +378,7 @@ class EllipsoidMessage(object):
     def closestQuaternionProjection(self,q,qTarget,scales,axis='long'):
         # get indices from long and short axis other2
         longOrShortIndex, other1Index, other2Index = self._getAxisIndicesOfEllipses(scales,axis)
-        print("short or long?: {} at: {}, other1Index: {}, small_2: {}".format(axis,longOrShortIndex,other1Index,other2Index))
+        # print("short or long?: {} at: {}, other1Index: {}, small_2: {}".format(axis,longOrShortIndex,other1Index,other2Index))
 
         # Check if axis is not pointing the opposite way (180 deg)
         qCorrected = self._flipAxis180Degrees(q,qTarget,longOrShortIndex)
@@ -405,7 +405,7 @@ class EllipsoidMessage(object):
 
         for iterator,otherAxisIndex in enumerate([other1Index,other2Index]):
             if not self._isAxisAlligned(qRoted[iterator],qTarget,longOrShortIndex,otherAxisIndex):
-                print("nog steeds niet alligned probeer wat anders")
+                print("nog steeds niet alligned,\nGEEN IDEE HOE\nFOK HET\nschrap de trial")
 
         # find angle in de middle of the two found rotations
         qExpNew = self.slerp(qRoted[0],qRoted[1],[0.5])[0]
@@ -464,7 +464,7 @@ class EllipsoidMessage(object):
         dotProduct = np.dot(VProjectedUnit,VTarget)
         threshold = 0.93
         if round(dotProduct,2) < threshold:
-            print("projection is not alligned as: dotProduct={} < threshold={}".format(round(dotProduct,2),threshold))
+            # print("projection is not alligned as: dotProduct={} < threshold={}".format(round(dotProduct,2),threshold))
             return False
         else:
             return True
@@ -497,7 +497,7 @@ class EllipsoidMessage(object):
 
         # check if shuffle is necessary 
         if shuffleImaxOrMin == shuffleVmaxOrMin:
-            print("specified principial axis are alligned, no shuffle needed")
+            # print("specified principial axis are alligned, no shuffle needed")
             shuffleSequence = [0,1,2]
             print("shuffleSequence is {}".format(shuffleSequence))
             return shuffleSequence
@@ -526,18 +526,18 @@ class EllipsoidMessage(object):
         shuffleIRemain = 3 - shuffleImaxOrMin - shuffleIRandom
         shuffleVRemain = 3 - shuffleVmaxOrMin - shuffleVRandom
         shuffleSequence[shuffleIRemain] = shuffleVRemain # [remainginValue,maxOrMinValue,randomValue] (on remaining index)
-        print("shuffleSequence is {}".format(shuffleSequence))
+        # print("shuffleSequence is {}".format(shuffleSequence))
 
         # Check if found sequence provides an actual rotation matrix, otherwise swap 
         shuffledValues, shuffledVectors = self.shuffleEig(eigValues, eigVectors, shuffleSequence)
         validRotation = self.checkRightHandedNessMatrix(shuffledVectors)
-        print("validRotation? {}".format(validRotation))
+        # print("validRotation? {}".format(validRotation))
 
         if not validRotation:
             # swap the guessed and remaining index value pair in the shuffle sequence to achieve a valid rotations
             shuffleSequence[shuffleIRemain] = shuffleVRandom
             shuffleSequence[shuffleIRandom] = shuffleVRemain
-            print("new shuffleSequence is {}".format(shuffleSequence))
+            # print("new shuffleSequence is {}".format(shuffleSequence))
 
         return shuffleSequence
 
@@ -646,13 +646,13 @@ class EllipsoidMessage(object):
     def closestQuaternion(self,q,qTarget,expScales):
         # method did not work for orientation problem
         qr = self.relativeRotationQuat(q,qTarget)
-        print("qr1: {}".format(qr))
+        # print("qr1: {}".format(qr))
         maxIndex = expScales.index(max(expScales))
         zeroList = [True,True,True,False] # -> [0,0,0,w]
         zeroList[maxIndex] = False # -> [0,0,z,w]
-        print(zeroList)
+        # print(zeroList)
         qr = self.zeroQuaternion(qr,zeroList) # -> [0,0,z,w]
-        print("qr2: {}".format(qr))
+        # print("qr2: {}".format(qr))
         # corrected = quaternion_multiply(correction,q)
         qexp = quaternion_multiply(q,qr)
         # qexp = quaternion_multiply(q,self.inverseQuat(qr))
@@ -683,7 +683,7 @@ class EllipsoidMessage(object):
         elif absRad>=threeQuarter and absRad<=whole:
             correction = whole
         else:
-            print("abs({}) is larger than 2 PI".format(radian))
+            # print("abs({}) is larger than 2 PI".format(radian))
 
         # print("sign: {}, correction: {}".format(sign,correction))
         newRad = radian + sign*correction

@@ -115,7 +115,7 @@ class SimpleExperiment(object):
 
             # If buttonpress and not start of node, user clicked button to advance to next trial
             if (self.lockStateMsg.lock_white==True) and (self.lockStateMsg.header != self.prevLockStateMsg.header):
-                print("lockstate = True")
+                # print("User advanced to next trial")
                 self.userTrialPass = True
 
             # if prevtrialnumber is not yet a number, experiment has not yet started
@@ -135,7 +135,7 @@ class SimpleExperiment(object):
 
             # other loops check for trial pass and update
             elif self._newTrial(self.guiMsg):
-                print('in next trial loop')
+                print('in new trial loop')
                 # Do stuff to update trial properties
                 # get trial time, refresh starting time of trial
                 self.trialTime, self.startTimeTrial = self._getUpdatedTrialTimes(
@@ -195,7 +195,7 @@ class SimpleExperiment(object):
 
     def _newTrial(self,guiMsg):
         if self.userTrialPass==True:
-            print("new trial from user pass")
+            print("new trial from user")
             return True
         elif self.newGuiCommand == True and guiMsg.trial_change!=0:
             print('new trial from gui')
@@ -245,12 +245,12 @@ class SimpleExperiment(object):
         self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)
     
 
-        print(10*"----")
-        print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
-        print("initial User scales: {}  ;   quats: {}".format(scales, quats))
-        # print("One axis alligned: {}  ;   quats: {}".format(newScales, self.qAllignedQuats))
-        print("New user scales: {}  ;   quats: {}".format(self.userScales, self.userQuat))
-        print(10*"----")
+        # print(10*"----")
+        # print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
+        # print("initial User scales: {}  ;   quats: {}".format(scales, quats))
+        # # print("One axis alligned: {}  ;   quats: {}".format(newScales, self.qAllignedQuats))
+        # print("New user scales: {}  ;   quats: {}".format(self.userScales, self.userQuat))
+        # print(10*"----")
         
     
         # userVolume = EM.volumeEllipsoid(scales)
@@ -267,8 +267,8 @@ class SimpleExperiment(object):
         rotationAccuracy = round(percentage(angle,90.0),2)
         shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
 
-        print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
-        print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
+        # print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
+        # print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
 
         return shapeAccuracy, rotationAccuracy
 
