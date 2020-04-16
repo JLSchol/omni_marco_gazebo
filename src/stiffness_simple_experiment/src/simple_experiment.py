@@ -94,7 +94,7 @@ class SimpleExperiment(object):
             if not self.guiMsg.start_experiment:
             	EM.deleteMarker(marker_ns,marker_id)
                 if counter%200 == 0: # every 200th loop
-                    print("node launched exp not started...")
+                    print("node launched exp not started or pauzed...")
                 counter+=1
                 rosRate.sleep()
                 # need to reset certain variables

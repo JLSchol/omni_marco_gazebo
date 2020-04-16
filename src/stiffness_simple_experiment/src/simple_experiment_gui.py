@@ -8,6 +8,7 @@ import yaml
 import roslaunch
 from time import strftime
 import unicodedata
+import inspect
 
 
 from Tkinter import * 
@@ -23,27 +24,22 @@ class GuiWindow(Frame):
 		Frame.__init__(self,master)
 		self.master = master
 
+		# GUI VARIABLES 
 		# traced button variables from gui
-		self.participantNumber = StringVar(self)
-		self.gender = StringVar()
-		self.participantAge = StringVar(self)
-		self.experience = StringVar(self)
-		self.hand = StringVar()
-		self.experimentInfo = StringVar(self)
 		self.experimentNumber = IntVar(self)
 		self.learning = IntVar(self)
 
-		# other variables from gui
+		self.participantNumber = StringVar(self)
+		self.gender = StringVar(self)
+		self.participantAge = StringVar(self)
+		self.experience = StringVar(self)
+		self.hand = StringVar(self)
+
 		self.pathToPkg, self.pathToPkgData, self.absPaths = self.getPaths()
-		self.saveDir = StringVar()
+		self.saveDir = StringVar(self)
 		self.fileName = StringVar(self, value=self.generateFileName())
-		# self.savePath = StringVar(self, value=pathToPkg)
 
-		# intialize esthetics and button
-		self.initializeWindow()
-
-        # Initialize ROS 
-        # ros variables
+		# ROS VARIABLE AND INITIALIZATIONS
 		self.guiMsg = []
 		self.logString	= []
 		self.loggerNodeName = "experiment_log"
@@ -52,26 +48,13 @@ class GuiWindow(Frame):
 		self._guiSub = Subscriber('simple_experiment_logger',String, self._guiLoggerCB)
 		self._initializePublishers()
 
+		# intialize layout and buttons
+		self.initializeWindow()
 
-	def _initializeGuiCommands(self):
-		self.guiMsg = gui_command()
-		self.guiMsg.header.stamp = Time.now()
-		# self.guiMsg.start_stiffness = False
-		self.guiMsg.start_experiment = False
-		self.guiMsg.trial_change = 0
 
-	def _initializePublishers(self):
-		self.stiffnessPub = Publisher('start_stiffness',Bool, latch=False, queue_size=1) # to stiffness code
-		self.guiPub = Publisher('gui_commands',gui_command, latch=False, queue_size=1) # to experiment
-		self.loggerPub= Publisher('rosbag_log',Bool, queue_size=1)
-		# self.guiMsg.experiment_number = False
-		# self.guiMsg.learning = False
-		# self.guiMsg.trial =  +1 or -1
-
-	def _guiLoggerCB(self,message):
-		self.logString = message
-		self.loggerWindow.insert(END, str(self.logString) + "\n")
-
+	################################################################################################################
+	############################################# LAYOUT, BUTTONS AND WIDGETS ######################################
+	################################################################################################################
 	def initializeWindow(self):
 		# Frame
 		w=900
@@ -91,7 +74,7 @@ class GuiWindow(Frame):
 		bw = 0.15
 		bh = 0.05
 
-		######## ROW 1 ########
+		######################################################## ROW 1 ########################################################
 		launchStiffness = Button(self.master, text="Launch stiffness pkg", command=partial(self.launchStiffnessCB, arg='hoi'))
 		launchStiffness.place(relx=col1,rely=row1,relwidth=bw,relheight=bh)
 		launchExp = Button(self.master, text="Launch experiment", command=self.launchExperimentCB)
@@ -106,29 +89,24 @@ class GuiWindow(Frame):
 		killRviz = Button(self.master, text="Kill rviz gui", command=self.killRvizCB)
 		killRviz.place(relx=col2,rely=row1+3*bh,relwidth=bw,relheight=bh)
 
-		self.loggerWindow = Text(self.master, yscrollcommand=True)
-		self.loggerWindow.place(relx=col2+bw+0.05,rely=row1,relwidth=0.325,relheight=0.45)
+		self.expInfoText = Text(self.master, yscrollcommand=True)
+		self.expInfoText.place(relx=col2+bw+0.05,rely=row1,relwidth=0.325,relheight=0.45)
 
-		######## ROW 2 ########
-		exp1 = Button(self.master, text="Start experiment", command= lambda: self.startExperimentCB(1))
+
+
+
+		######################################################## ROW 2 ########################################################
+		exp1 = Button(self.master, text="Start experiment", command= lambda: self.startExperimentCB(self.experimentNumber.get()))
 		exp1.place(relx=col1,rely=row2,relwidth=bw,relheight=bh)
-		comboBoxExpNr = ttk.Combobox(self.master,values=[1,2,3,4,5] ,textvariable=self.experimentNumber)
-		self.experimentNumber.trace('w',self.saveExperimentNrCB)
+		comboBoxExpNr = ttk.Combobox(self.master,values=[1,2,3,4] ,textvariable=self.experimentNumber)
+		self.experimentNumber.trace('w',self.experimentNrCB)
 		comboBoxExpNr.place(relx=(col1+bw),rely=row2,relwidth=0.1,relheight=bh)
 
-		# exp2 = Button(self.master, text="Start experiment 2", command=lambda: self.startExperimentCB(2))
-		# exp2.place(relx=col1,rely=(row2+0.1),relwidth=bw,relheight=bh)
-		# exp3 = Button(self.master, text="Start experiment 3", command=lambda: self.startExperimentCB(3))
-		# exp3.place(relx=col1,rely=(row2+0.2),relwidth=bw,relheight=bh)
-		# pauseExp = Button(self.master, text="Pauze experiment", command=self.pauseExperimentCB)
-		# pauseExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
-		# stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
-		# stopExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
 
 		checkBoxLearning = Checkbutton(self.master, text="practice?", variable=self.learning)
 		self.learning.trace('w', self.LearningPhaseCB)
 		checkBoxLearning.place(relx=(col1+bw+0.1),rely=row2,relwidth=0.1,relheight=bh)
-		stopExp = Button(self.master, text="Stop experiment", command=self.stopExperimentCB)
+		stopExp = Button(self.master, text="Pause experiment", command=self.pauseExperimentCB)
 		stopExp.place(relx=col2,rely=row2,relwidth=bw,relheight=bh)
 
 
@@ -138,7 +116,7 @@ class GuiWindow(Frame):
 		nextTrial.place(relx=col2,rely=(row2+1.5*bh),relwidth=bw,relheight=bh)
 
 
-		######## ROW 3 ########
+		######################################################## ROW 3 ########################################################
 		labelUsrinfo = Label(self.master, text='Participant nr')
 		labelUsrinfo.place(relx=col1,rely=row3,relwidth=0.15,relheight=bh)
 		labelUsrGender = Label(self.master, text='Gender')
@@ -154,72 +132,97 @@ class GuiWindow(Frame):
 		self.participantNumber.trace('w',self.partNrCB)
 		entryPartNr.place(relx=(bw +col1),rely=row3,relwidth=0.1,relheight=bh)
 		comboOptionGender = ttk.Combobox(self.master,values=['male','female','other'] ,textvariable=self.gender)
-		self.gender.trace('w',self.saveGenderCB)
+		self.gender.trace('w',self.genderCB)
 		comboOptionGender.place(relx=(col1+bw),rely=row3+bh,relwidth=0.1,relheight=bh)
 		entryPartAge = Entry(self.master, bg='white', textvariable=self.participantAge)
 		self.participantAge.trace('w',self.partAgeCB)
 		entryPartAge.place(relx=(bw +col1),rely=row3+2*bh,relwidth=0.1,relheight=bh)
 		comboOptionExp = ttk.Combobox(self.master,values=['none','some','experienced'] ,textvariable=self.experience)
-		self.experience.trace('w',self.saveExperianceCB)
+		self.experience.trace('w',self.experianceCB)
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
 		saveParticipantButton = Button(self.master, text="save info", command=self.saveParticipantInfoCB)
-		saveParticipantButton.place(relx=col1,rely=row3+4*bh,relwidth=bw,relheight=bh)
+		saveParticipantButton.place(relx=col1,rely=row3+5*bh,relwidth=bw,relheight=bh)
 
 		comboOptionHand = ttk.Combobox(self.master,values=['right','left'] ,textvariable=self.hand)
-		self.hand.trace('w',self.saveHandCB)
+		self.hand.trace('w',self.handCB)
 		comboOptionHand.place(relx=(col1+bw),rely=row3+4*bh,relwidth=0.1,relheight=bh)
 
 
-		self.expInfoText = Text(self.master, yscrollcommand=True)
-		self.expInfoText.place(relx=col2,rely=row3,relwidth=0.525,relheight=0.2)
-		saveExpNotesButton = Button(self.master, text="save notes/logger", command=self.saveExperimentNotesCB)
+
+		self.loggerWindow = Text(self.master, yscrollcommand=True)
+		self.loggerWindow.place(relx=col2,rely=row3,relwidth=0.525,relheight=0.2)
+
+		saveExpNotesButton = Button(self.master, text="save notes/logger", command=self.saveExperimentNotesAndLoggerCB)
 		saveExpNotesButton.place(relx=col2,rely=row3+0.2,relwidth=bw,relheight=bh)
 
 
-		######## ROW 4 ########
+		######################################################## ROW 4 ########################################################
 		startLog = Button(self.master, text="Start logger", command=self.startLoggerCB)
 		startLog.place(relx=col1,rely=row4,relwidth=bw,relheight=bh)
 
 		comboOptionPath = ttk.Combobox(self.master,values=self.absPaths ,textvariable=self.saveDir, 
 										postcommand=lambda: comboOptionPath.configure(values=self.absPaths))
-		self.saveDir.trace('w',self.savePathCB)
+		self.saveDir.trace('w',self.pathCB)
 		comboOptionPath.place(relx=(col1+bw),rely=row4,relwidth=0.4,relheight=bh)
 
 		entryFileName = Entry(self.master, bg='white', textvariable=self.fileName)
-		self.fileName.trace('w',self.saveFileNameCB)
+		self.fileName.trace('w',self.fileNameCB)
 		entryFileName.place(relx=(col1+bw+0.4),rely=row4,relwidth=0.2,relheight=bh)
 
 		stopLog = Button(self.master, text="Stop logger", command=self.stopLoggerCB)
 		stopLog.place(relx=col3,rely=row4,relwidth=bw,relheight=bh)
 
 
+	################################################################################################################
+	############################################  ROS PUB,INIT AND SUB CB   #####################################
+	################################################################################################################
+	def _initializeGuiCommands(self):
+		self.guiMsg = gui_command()
+		self.guiMsg.header.stamp = Time.now()
+		# self.guiMsg.start_stiffness = False
+		self.guiMsg.start_experiment = False
+		self.guiMsg.trial_change = 0
+
+	def _initializePublishers(self):
+		# self.stiffnessPub = Publisher('start_stiffness',Bool, latch=False, queue_size=1) # to stiffness code
+		self.guiPub = Publisher('gui_commands',gui_command, latch=False, queue_size=1) # to experiment
+		# self.loggerPub= Publisher('rosbag_log',Bool, queue_size=1)
+
+
+	def _guiLoggerCB(self,message):
+		self.logString = message
+		self.loggerWindow.insert(END, str(self.logString) + "\n")
+
+
+	################################################################################################################
+	############################ GUI BUTTON CALLBACKS AND OTHER EVENT FUNCTIONS#######################
+	################################################################################################################
+
+	######################################################## ROW 1 ########################################################
+	def _startRosLaunch(self, filePath):
+		try:
+			uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+			roslaunch.configure_logging(uuid)
+			launch = roslaunch.parent.ROSLaunchParent(uuid, [filePath])
+			launch.start()
+			print("{} is launched".format(filePath))
+		except:
+			print("Er launched iets NIET wat wel de bedoeling is o.O\n{}".format(filePath))
+			raise
+
 
 	def launchStiffnessCB(self, arg):
-		print("roslaunch stiffness_launch omni_simple_marco.launch")
-		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-		roslaunch.configure_logging(uuid)
+		filePath = "/home/jasper/omni_marco_gazebo/src/stiffness_launch/launch/omni_simple_marco.launch"
+		self._startRosLaunch(filePath)
 
-		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_launch/launch/omni_simple_marco.launch"
-		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
-		launch.start()
 
 	def launchExperimentCB(self):
-		print("roslaunch stiffness_launch omni_simple_marco.launch")
-		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-		roslaunch.configure_logging(uuid)
-		
-		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/simple_experiment.launch"
-		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
-		launch.start()
+		filePath = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/simple_experiment.launch"
+		self._startRosLaunch(filePath)
 
 	def launchRvizCB(self):
-		print("roslaunch stiffness_launch rviz_experiment_gui.launch")
-		uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
-		roslaunch.configure_logging(uuid)
-		
-		file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/rviz_experiment_gui.launch"
-		launch = roslaunch.parent.ROSLaunchParent(uuid, [file_path])
-		launch.start()
+		filePath = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/launch/rviz_experiment_gui.launch"
+		self._startRosLaunch(filePath)
 
 	def killStiffnessCB(self):
 		bashFile = "kill_nodes.sh"
@@ -233,34 +236,38 @@ class GuiWindow(Frame):
 		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
 
-	def killRvizCB(self):
+	def killRvizCB(self): # need to manually close window
 		bashFile = "kill_nodes.sh"
 		nodes = "rviz_experiment_gui"
 		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
 
+	######################################################## ROW 2 ########################################################
 	def startExperimentCB(self,number):
-		print("Start experiment {}".format(number))
+		print("Start experiment {}, practice: {}".format(number,self.learning.get()))
 		self.guiMsg.start_experiment = True
 		self.guiPub.publish(self.guiMsg)
 
-	def saveExperimentNrCB(self,*args):
-		print(self.experimentNumber.get())
-		self.guiMsg.experiment_number = self.experimentNumber.get()
+	def experimentNrCB(self,*args):
+		nr = self.experimentNumber.get()
+		print("set experiment number to {}".format(nr))
+		self.guiMsg.experiment_number = nr
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
-		# self.saveFileNameCB() # prints
+		# self.fileNameCB() # prints
 
 	def LearningPhaseCB(self,*args):
-		print(self.learning.get())
-		self.guiMsg.learning = self.learning.get()
+		learning = self.learning.get()
+		print("set learning to {}".format(learning))
+		self.guiMsg.learning = learning
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
-		# self.saveFileNameCB() # prints
+		# self.fileNameCB() # prints
 
-	def stopExperimentCB(self):
-		print("STOPPPPP")
+	def pauseExperimentCB(self):
 		self.guiMsg.start_experiment = False
+		print("Trying to pause experiment")
+		print("publish: {} to experiment node".format(False))
 		self.guiPub.publish(self.guiMsg)
 
 
@@ -271,17 +278,69 @@ class GuiWindow(Frame):
 		self.guiMsg.trial_change = 0
 		# self.guiPub.publish(self.guiMsg)
 
-
+	######################################################## ROW 3 ########################################################
 	def partNrCB(self,*args):
-		print(self.participantNumber.get())
 		#update filename path
 		self.fileName.set(self.generateFileName()) # set variable
+		self.saveDir.set(self.getDumpPath())
+		print("update fileName with partNr {} to {}".format(self.participantNumber.get(),self.fileName.get()))
+		print("update dirPath to {}".format(self.saveDir.get()))
 
-
+	def genderCB(self, *args):
+		print("updated gender to {}".format(self.gender.get()))
 	def partAgeCB(self,*args):
-		print(self.participantAge.get())
+		print("updated age to {}".format(self.participantAge.get()))
+	def experianceCB(self, *args):
+		print("updated experiance to {}".format(self.experience.get()))
+	def handCB(self, *args):
+		print("updated handedness to {}".format(self.hand.get()))
+	def saveParticipantInfoCB(self):
+		dirName = "part_"+ str(self.participantNumber.get())
+		dumpPath = self.pathToPkgData+'/'+dirName
+		fileName = "part_"+str(self.participantNumber.get())+"_info.yaml"
+		filePath = dumpPath+'/'+fileName
+		try:
+			os.mkdir(dumpPath)
+			print("file {} is saved in directory {}".format(fileName,dirName))
+
+		except OSError as e:
+		    if e.errno == errno.EEXIST:
+		        print("directiory: {} already exists and file: {} is saved as: {}".format(dirName,fileName,dumpPath))
+		    else:
+		        raise
+
+		infoDict = self.generateParticipantInfoDict()
+
+		with open(filePath,'w') as outfile:
+			yaml.dump(infoDict,outfile)
+		# set and update combobox
+		self.saveDir.set(dumpPath)
+		self.absPaths.append(dumpPath)
 
 
+
+	def saveExperimentNotesAndLoggerCB(self):
+		dumpPath = self.saveDir.get()
+		if not dumpPath:
+			print("specify path to dump file")
+			return
+		fileName = self.fileName.get()
+		pathToFile = dumpPath+'/'+fileName+'.txt'
+
+		expText= self.expInfoText.get(1.0,END)
+		logText= self.loggerWindow.get(1.0,END)
+		try: 
+			with open(pathToFile,'w') as outfile:
+				outfile.write(expText)
+				outfile.write(logText)
+			print("file: {} saved in {}".format(fileName,dumpPath))
+			# clear
+			self.loggerWindow.delete('1.0', END)
+			self.expInfoText.delete('1.0', END)
+		except EnvironmentError:
+			print("WHOOPS!\nOp een of andere duistere reden can er niet naar: \n{} geschreven worden".format(pathToFile))
+
+	######################################################## ROW 4 ######################################################## 
 	def startLoggerCB(self, pik='pik'):
 		if len(self.saveDir.get()) == 0:
 			print("no directory specified!!! \nspecify directory and try again")
@@ -303,6 +362,11 @@ class GuiWindow(Frame):
 		subprocess.call(bashCommand, shell=True)
 		print("Logger started")
 
+	def pathCB(self, *args):
+		print("updated save Dir to {}".format(self.saveDir.get()))
+	def fileNameCB(self, *args):
+		print("updated file name to {}".format(self.fileName.get()))
+
 
 	def stopLoggerCB(self):
 		bashFile = "kill_nodes.sh"
@@ -310,58 +374,15 @@ class GuiWindow(Frame):
 		bashCommand = self.pathToPkg+bashFile+" "+nodes
 		subprocess.call(bashCommand, shell=True)
 
-	def saveRosbagsCB(self,name,location):
-		pass
-
-	def savePathCB(self, *args):
-		print(self.saveDir.get())
-	def saveGenderCB(self, *args):
-		print(self.gender.get())
-	def saveExperianceCB(self, *args):
-		print(self.experience.get())
-	def saveHandCB(self, *args):
-		print(self.hand.get())
-	def saveFileNameCB(self, *args):
-		print(self.fileName.get())
 
 
-	def saveParticipantInfoCB(self):
-		dirName = "part_"+ str(self.participantNumber.get())
-		dumpPath = self.pathToPkgData+'/'+dirName
-		fileName = "part_"+str(self.participantNumber.get())+"_info.yaml"
-		filePath = dumpPath+'/'+fileName
-		try:
-			os.mkdir(dumpPath)
-			print("directiory: {} is created".format(dirName))
-		except OSError as e:
-		    if e.errno == errno.EEXIST:
-		        print("directiory: {} already exists and file: {} is saved in: {}".format(dirName,fileName,dumpPath))
-		    else:
-		        raise
-
-		infoDict = self.generateParticipantInfoDict()
-
-		with open(filePath,'w') as outfile:
-			yaml.dump(infoDict,outfile)
-		# set and update combobox
-		self.saveDir.set(dumpPath)
-		self.absPaths.append(dumpPath)
-
-	def saveExperimentNotesCB(self):
-		dumpPath = self.saveDir.get()
-		if not dumpPath:
-			print("specify path to dump file")
-			return
-		fileName = self.fileName.get()
-
-		expText= self.expInfoText.get(1.0,END)
-		logText= self.loggerWindow.get(1.0,END)
-		with open(dumpPath+'/'+fileName+'.txt','w') as outfile:
-			outfile.write(expText)
-			outfile.write(logText)
-		print("file: {} saved in {}".format(fileName,dumpPath))
-
-
+	########################################################
+	# OTHER HELPER FUNCTIONS
+	########################################################
+	def getDumpPath(self):
+		dirName = dirName = "part_"+ str(self.participantNumber.get())
+		dirPath = self.pathToPkgData+'/'+dirName
+		return dirPath
 
 	def generateFileName(self):
 		trial = "Real"
@@ -392,7 +413,9 @@ class GuiWindow(Frame):
 
 
 
-
+########################################################
+# MAINLOOP
+########################################################
 
 
 if __name__ == "__main__":
