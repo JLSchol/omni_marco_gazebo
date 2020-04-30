@@ -102,7 +102,7 @@ class DrawEllipsoid(object):
                     self._arrowPub.publish(arrow2)
 
             # publish ellipsoid orientation to TF
-            ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"Raw_user_ellips")
+            # ellipsoidMsgClass.broadcastEllipsoidAxis([0,0,0],quaternion,self._eigenPair.header.frame_id,"Raw_user_ellips")
             # loginfo(10*"---")
 
 
