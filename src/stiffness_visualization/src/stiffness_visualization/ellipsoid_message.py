@@ -30,7 +30,7 @@ class EllipsoidMessage(object):
         for pair in eigenPairMsg.pairs:
             matrix.append(pair.eigen_vector)
             vector.append(pair.eigen_value)
-            
+
         matrix = transpose(array(matrix))
         vector = array(vector)
 
@@ -70,14 +70,14 @@ class EllipsoidMessage(object):
                 lambda_ = lambdaMin
             elif lambda_>= lambdaMax:
                 lambda_ = lambdaMax
-            
+
             # scale the axis of the ellipsoid
             #2 = diameter is two time the radius
             #sqrt(2) = is term from the eigendecomposition?
             ellipsoid_axis_scale.append(2.0*sqrt(2.0)*lambda_)
 
         return ellipsoid_axis_scale
-    
+
     def getEllipsoidMsg(self,frame_id,marker_ns,marker_id,positions,quaternions,scales,rgba,lifeTime=0):
         marker = Marker()
         marker.header.frame_id = frame_id
@@ -175,7 +175,7 @@ class EllipsoidMessage(object):
         arrow.points.append(end)
 
         return arrow
- 
+
     def broadcastEllipsoidAxis(self,position,quaternion,parentID,childID):
         br = TransformBroadcaster()
         t = TransformStamped()
@@ -210,8 +210,16 @@ class EllipsoidMessage(object):
         return quaternions
 
     def matrixFromQuat(self,q):
+        # only take the rotation opart of full matrix
         T = quaternion_matrix(q)
         return T[0:3,0:3]
+    def quatFromMatrix(self,R):
+        # make full transformation matix 
+        newRow = np.array([0,0,0])
+        newCol = np.array([0,0,0,1])
+        T = np.column_stack([np.row_stack([R,newRow]),newCol])
+        q = quaternion_from_matrix(T)
+        return q
 
     def checkRightHandedNessMatrix(self,matrix):
         v1 = []
@@ -249,13 +257,25 @@ class EllipsoidMessage(object):
         qInv[3] = -quat[3]
         return qInv
 
+    def rotateVector(self, q, v):
+        vr = [0,0,0]
+        vr[0] =  (v[0]*q[3]*q[3] + 2*v[2]*q[3]*q[1] - 2*v[1]*q[3]*q[2] + v[0]*q[0]*q[0] + 
+        2*v[1]*q[0]*q[1] + 2*v[2]*q[0]*q[2] - v[0]*q[1]*q[1] - v[0]*q[2]*q[2])
+
+        vr[1] =  (v[1]*q[3]*q[3] - 2*v[2]*q[3]*q[0] + 2*v[0]*q[3]*q[2] - v[1]*q[0]*q[0] + 
+        2*v[0]*q[0]*q[1] + v[1]*q[1]*q[1] + 2*v[2]*q[1]*q[2] - v[1]*q[2]*q[2])
+
+        vr[2] =  (v[2]*q[3]*q[3] + 2*v[1]*q[3]*q[0] - 2*v[0]*q[3]*q[1] - v[2]*q[0]*q[0] + 
+        2*v[0]*q[0]*q[2] - v[2]*q[1]*q[1] + 2*v[1]*q[1]*q[2] + v[2]*q[2]*q[2])
+        return vr;
+
     def relativeRotationQuat(self,q1,q2):
         # from q1 to q2
         q1Inv = self.inverseQuat(q1)
         qr = quaternion_multiply(q2,q1Inv)
         return qr
 
-    def rotateQuatOverOneAxis(self,quat,axis,angle):
+    def rotateQuatOverOneAxis(self,quat,axis,angle): # badly written only applble in my specif case
         # can only be used for rotation over single x OR y OR Z axis, not combined axis
         # rotates quat [x,y,z,w] over axis [1,0,0](xaxis) with angle in rad
         qRot = quaternion_from_euler(axis[0]*angle,axis[1]*angle,axis[2]*angle)
@@ -273,18 +293,18 @@ class EllipsoidMessage(object):
         if dot < 0.0:
             v1 = -v1
             dot = -dot
-        
+
         DOT_THRESHOLD = 0.9995
         if dot > DOT_THRESHOLD:
             result = v0[np.newaxis,:] + t_array[:,np.newaxis] * (v1 - v0)[np.newaxis,:]
             return (result.T / np.linalg.norm(result, axis=1)).T
-        
+
         theta_0 = np.arccos(dot)
         sin_theta_0 = np.sin(theta_0)
 
         theta = theta_0 * t_array
         sin_theta = np.sin(theta)
-        
+
         s0 = np.cos(theta) - dot * sin_theta / sin_theta_0
         s1 = sin_theta / sin_theta_0
         return (s0[:,np.newaxis] * v0[np.newaxis,:]) + (s1[:,np.newaxis] * v1[np.newaxis,:])
@@ -317,15 +337,17 @@ class EllipsoidMessage(object):
 
         axis = []
         if len(minListExp) == 2 and len(minListUser) == 2: # werkt long
-            # print("beiden Sigaar") 
+            print("beiden Sigaar") 
             axis = 'long'
         elif len(minListExp) == 2 and len(maxListUser) == 2: # werkt niet short and long
+            print("exp sigaar, user pannenkoek")
             print("Dismiss trial incorrect orientation")
             axis = 'long'
         elif len(minListExp) == 2 and len(minListUser) == 1: # werkt long
             print("exp sigaar, user ovaal")
             axis = 'long'
         elif len(minListExp) == 2 and len(minListUser) == 3: # werkt nooit
+            print("exp sigaar, user bol")
             print("Dismiss trial incorrect orientation")
             axis = 'long'
 
@@ -333,12 +355,14 @@ class EllipsoidMessage(object):
             print("beden pannenkoek")
             axis = 'short'
         elif len(maxListExp) == 2 and len(minListUser) == 2: # werkt niet long and short
+            print("exp pannenkoek, user sigaar")
             print("Dismiss trial incorrect orientation")
             axis = 'long'
         elif len(maxListExp) == 2 and len(maxListUser) == 1: # werkt short
             print("exp pannenkoek, user ovaal")
             axis = 'short'
         elif len(maxListExp) == 2 and len(minListUser) == 3: # werkt nooit
+            print("exp pannenkoek, user bol")
             print("Dismiss trial incorrect orientation")
             axis = 'short'
 
@@ -352,6 +376,7 @@ class EllipsoidMessage(object):
             print("exp ovaal, user ovaal")
             axis = 'long'
         elif len(maxListExp) == 1 and len(minListUser) == 3: # werkt nooit
+            print("exp ovaal, user bol")
             print("Dismiss trial incorrect orientation")
             axis = 'long'
 
@@ -499,6 +524,7 @@ class EllipsoidMessage(object):
         if shuffleImaxOrMin == shuffleVmaxOrMin:
             # print("specified principial axis are alligned, no shuffle needed")
             shuffleSequence = [0,1,2]
+            print("no shuffling")
             print("shuffleSequence is {}".format(shuffleSequence))
             return shuffleSequence
 
@@ -537,7 +563,7 @@ class EllipsoidMessage(object):
             # swap the guessed and remaining index value pair in the shuffle sequence to achieve a valid rotations
             shuffleSequence[shuffleIRemain] = shuffleVRandom
             shuffleSequence[shuffleIRandom] = shuffleVRemain
-            # print("new shuffleSequence is {}".format(shuffleSequence))
+            print("new shuffleSequence is {}".format(shuffleSequence))
 
         return shuffleSequence
 
@@ -683,6 +709,7 @@ class EllipsoidMessage(object):
         elif absRad>=threeQuarter and absRad<=whole:
             correction = whole
         else:
+            pass
             # print("abs({}) is larger than 2 PI".format(radian))
 
         # print("sign: {}, correction: {}".format(sign,correction))
@@ -690,7 +717,77 @@ class EllipsoidMessage(object):
         # print("new rad: {}".format(newRad))
         return newRad
 
+
+    def transformQuatsToZero(self, q, q1_0, q0_x):
+        # read orientations as qa_b = quaternion "a" as expressed in frame "b""
+        # read transformations as Ta_b = transformation of "a" to "b"
+        # transforms the quaternion q and q1_0 to the zero position q0_x using
+        # the transformation between q1_0 and q0_x 
+
+        # find relative transfrom from q0_x to q1_0 and its inverse
+        T0_1 = self.relativeRotationQuat(q0_x, q1_0)
+        T1_0 = self.inverseQuat(T0_1)
+
+        # now use the transformation to rotate q1_0 and q to zero configuration of q0_x
+        q1ToZero = quaternion_multiply(T1_0, q1_0)
+        qToZero = quaternion_multiply(T1_0, q)
+
+        return qToZero, q1ToZero, T1_0
+
+
+
+
+
 if __name__ == "__main__":  
+
+
+
+    ##### fix rotation a second way #####
+    # process:
+    # find transformation from exp_quat to a standard frame definition -> exp_2_zero_trans
+    # use exp_2_zero_trans to rotate the user_quat to this zero position aswell
+    # qbase = [0.056808103171724085, -0.09129308613382892, 0.9696100483698741, 0.2197607015331963] # is actually qbase_0
+    qbase = [0,0,0,1] # zero position
+    q1_base = [0.5,0.5,0.5,0.5]
+    # T_base_to_1  only now it denotes an rotation instead of an orientation
+    EM = EllipsoidMessage()    
+    q2_base = EM.rotateQuatOverOneAxis(q1_base, [0,0,1], 1*(np.pi/6)) # 10 degrees over zaxis of q1_base
+
+    # this doe not work
+    # q2ToZero, q1ToZero = EM.transformToZero(q2_base, q1_base, qbase)
+
+    # First order eigenvector/values from small to large
+    E1 = [0.088, 0.088, 0.4461775]
+    E2 = [0.5, 0.09, 0.10]
+    sequence = np.argsort(E2)
+    # define transformation from q2_base to qbase such that VLongest = z, Vmedium = y, Vsmall = x
+    R = EM.matrixFromQuat(q2_base)
+    E2, R =  EM.shuffleEig(E2, R, sequence)
+
+    q = EM.quatFromMatrix(R)
+    # EM.relativeRotationQuat(q,qbase)
+    T2_0 = EM.relativeRotationQuat(q, qbase)
+    T1_0 = EM.relativeRotationQuat(q1_base,qbase)
+    T1_2 = EM.relativeRotationQuat(q1_base,q2_base) # or q ipv q2_base?
+    qfixed = quaternion_multiply(T1_2, qbase)
+    # compare qfixed with q or q2_base?
+
+    # T1_0 = self.inverseQuat(T0_1)
+    # print(EM.checkRightHandedNessMatrix(R))
+
+
+    # init_node("test_ellipses",anonymous=False)
+    # while not is_shutdown(): 
+
+    #     EM.broadcastEllipsoidAxis([0,0,0],qbase,"base_footprint","qbase")
+    #     EM.broadcastEllipsoidAxis([0,1,0.5],q1_base,"base_footprint","q1_base")
+    #     EM.broadcastEllipsoidAxis([0,-1,0.5],q2_base,"base_footprint","q2_base")
+
+    #     # EM.broadcastEllipsoidAxis([1,0,0],q2_base,"base_footprint","qbase")
+    #     EM.broadcastEllipsoidAxis([0,0,1],q1ToZero,"base_footprint","q1ToZero")
+    #     EM.broadcastEllipsoidAxis([0,0,1.5],q2ToZero,"base_footprint","q2ToZero")
+
+
 
 
     ########### fix rotatoin #############
@@ -698,111 +795,108 @@ if __name__ == "__main__":
     # expQuat = [0,0,0,1]
 
 
+#######################3 masse comment to all the way below
+    # EM = EllipsoidMessage()
 
-    EM = EllipsoidMessage()
-
-    # Complete fucking process Make function for axisSwap part
-    # exp
-    qExpBaseRot = EM.normalizeList([ 0.5, 0.5, 0.5, -0.5 ])
-    qExp = EM.rotateQuatOverOneAxis(quaternion_multiply(qExpBaseRot,[ 0.0868241, 0.0868241, 0.0075961, 0.9924039 ]),[0,0,1],0*(np.pi/4)) # in base
-    # # qExp =  [ 0.5773503, 0, -0.5773503, 0.5773503 ]# in base
-    expEigVec = EM.matrixFromQuat(qExp)
-    expScales = [0.4,0.4,0.09]         # shortest is z-axis
-    # user
-    userQuat = [0,0,0,1]     # 
-    userScales = [0.29,0.095,0.31]         # longest axis is x-axis
-    userEigVec = EM.matrixFromQuat(userQuat)
-    userEigVal = [(userScales[0]/(2.0*sqrt(2.0)))**2.0, (userScales[1]/(2.0*sqrt(2.0)))**2.0, (userScales[2]/(2.0*sqrt(2.0)))**2.0] # dont really care about this much
-    print("userScales: {}, expScales: {}".format(userScales,expScales))
-    # print("userEigVec: {}\nexpEigVec: {}".format(userEigVec,expEigVec))
-    print(userEigVal)
+    # # Complete fucking process Make function for axisSwap part
+    # # exp
+    # qExpBaseRot = EM.normalizeList([ 0.5, 0.5, 0.5, -0.5 ])
+    # qExp = EM.rotateQuatOverOneAxis(quaternion_multiply(qExpBaseRot,[ 0.0868241, 0.0868241, 0.0075961, 0.9924039 ]),[0,0,1],0*(np.pi/4)) # in base
+    # # # qExp =  [ 0.5773503, 0, -0.5773503, 0.5773503 ]# in base
+    # expEigVec = EM.matrixFromQuat(qExp)
+    # expScales = [0.4,0.4,0.09]         # shortest is z-axis
+    # # user
+    # userQuat = [0,0,0,1]     # 
+    # userScales = [0.29,0.095,0.31]         # longest axis is x-axis
+    # userEigVec = EM.matrixFromQuat(userQuat)
+    # userEigVal = [(userScales[0]/(2.0*sqrt(2.0)))**2.0, (userScales[1]/(2.0*sqrt(2.0)))**2.0, (userScales[2]/(2.0*sqrt(2.0)))**2.0] # dont really care about this much
+    # print("userScales: {}, expScales: {}".format(userScales,expScales))
+    # # print("userEigVec: {}\nexpEigVec: {}".format(userEigVec,expEigVec))
+    # print(userEigVal)
     
-    axis = 'short'
+    # axis = 'short'
 
-    swappedAxisQuat, newScales, _, _ = EM.axisSwap(expScales,userEigVec,userEigVal,0.03,0.20,axis)
+    # swappedAxisQuat, newScales, _, _ = EM.axisSwap(expScales,userEigVec,userEigVal,0.03,0.20,axis)
 
-    print("newScales {}".format(newScales))
+    # print("newScales {}".format(newScales))
 
-    # flip axis, project and rotate user Quat
-    qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(swappedAxisQuat,qExp,newScales,axis)
-    angle = EM.absoluteAngleBetweenEllipsoids(qExp,qExpNew,'deg')
-    # x = array([1,2,3])
-    # xx = array([[1,2,3],[4,5,6],[7,8,9]])
-    # se = [2,0,1]
+    # # flip axis, project and rotate user Quat
+    # qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(swappedAxisQuat,qExp,newScales,axis)
+    # angle = EM.absoluteAngleBetweenEllipsoids(qExp,qExpNew,'deg')
+    # # x = array([1,2,3])
+    # # xx = array([[1,2,3],[4,5,6],[7,8,9]])
+    # # se = [2,0,1]
     
-    # EM.shuffleList(x,se)
-    # EM.shuffle2DList(xx,se,'col')
-    # EM.shuffleMatrix(xx,se,'col')
+    # # EM.shuffleList(x,se)
+    # # EM.shuffle2DList(xx,se,'col')
+    # # EM.shuffleMatrix(xx,se,'col')
 
-    # print(type(EM.shuffleEig(x,xx,se)[1]))
-    # print(EM.shuffleEig(x,xx,se)[1])
-    
-
-
-
-    frame_id='base_footprint' #wrist_ft_tool_link
-    marker_ns='test'
-    marker_id=1 
-    positions=[0,0,0]
-    positions1=[0.6,0,0]
-    positions2=[1.2,0,0]
-    positions3=[0.9,0,0.3]
-    positions4=[0.9,0,0.6]
-    positions5=[1.8,0,0]
-    positions6=[2.4,0,0]
-    positions7=[3,0,0]
-    rgba=[0.95,0.95,0.5,0]
-
-    ##############################################
-    ##############################################
-    init_node("test_ellipses",anonymous=False)
-    # q1Aligned = [ 0.5, 0.5, 0.5, 0.5 ] # in base
-    # # qExp = EM.rotateQuatOverOneAxis([ 0, -0.5773503, 0.5773503, 0.5773503 ],[0,0,1],8*(np.pi/4)) # in base
-    # qExp = EM.rotateQuatOverOneAxis(quaternion_multiply(q1Aligned,[ 0.9645804, -0.2564888, 0.0533718, 0.0308142 ]),[0,0,1],8*(np.pi/4)) # in base
-    # # qExp =  [ 0.5773503, 0, -0.5773503, 0.5773503 ]# in base
-    # qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(q1Aligned,qExp,expScales)
-    ##############################################
-    ##############################################
-
+    # # print(type(EM.shuffleEig(x,xx,se)[1]))
+    # # print(EM.shuffleEig(x,xx,se)[1])
     
 
-    while not is_shutdown(): 
 
 
-        # q2 = [0.7071067811865475,0,0,0.7071067811865475]
-        # # q2 = [ 0, 0, -0.4871745, -0.8733046 ]
-        # # q1 = [0,0,0.7071067811865475,-0.7071067811865475]
-        # q1 = [0.5,0.5,0.5,0.5]
-        # qr = [0,0,0.7071067811865475,0.7071067811865475]
+    # frame_id='base_footprint' #wrist_ft_tool_link
+    # marker_ns='test'
+    # marker_id=1 
+    # positions=[0,0,0]
+    # positions1=[0.6,0,0]
+    # positions2=[1.2,0,0]
+    # positions3=[0.9,0,0.3]
+    # positions4=[0.9,0,0.6]
+    # positions5=[1.8,0,0]
+    # positions6=[2.4,0,0]
+    # positions7=[3,0,0]
+    # rgba=[0.95,0.95,0.5,0]
 
-
-        # q3 = quaternion_multiply(qr,q2)
-        EM.broadcastEllipsoidAxis(positions1,userQuat,frame_id,"userQuat")
-        EM.broadcastEllipsoidAxis(positions2,swappedAxisQuat,frame_id,"q1Aligned")
-        # EM.broadcastEllipsoidAxis(qAlignedAndCorrected,qRel,frame_id,"qRel")
-        # EM.broadcastEllipsoidAxis(positions4,q0Rel,frame_id,"q0Rel")
-        EM.broadcastEllipsoidAxis(positions5,qAlignedAndCorrected,frame_id,"qAlignedAndCorrected")
-        EM.broadcastEllipsoidAxis(positions6,qExpNew,frame_id,"qExpNew")
-        EM.broadcastEllipsoidAxis(positions7,qExp,frame_id,"qExp")
-    # axis = [0,0,1] #-> z-axis
-    # angle = np.pi/2 # rad
-
-    # EM.rotateQuatOverOneAxis(q1,axis,angle)
-    # print(q2)
-    # qr = EM.relativeRotationQuat(q1,q2)
-    # print("qr1: {}".format(qr))
-    # qr = EM.zeroQuaternion(qr,[True,True,False,False]) #-> only rotation around Z axis!
-    # print("qr2: {}".format(qr))
-    # qNew = quaternion_multiply(qr,q1)
-    # print(qNew)
-
-    # correctedQuat = EM.closestQuaternion(q1,q2,expScales)
-
-    # print("initial user Quat: {}".format(q1))
-    # print("Experiment Quat: {}".format(q2))
-    # print("New user quat: {}".format(correctedQuat))
-
-    # print("check new user quat: {}".format(quaternion_multiply(qr,q1)))
+    # ##############################################
+    # ##############################################
+    # init_node("test_ellipses",anonymous=False)
+    # # q1Aligned = [ 0.5, 0.5, 0.5, 0.5 ] # in base
+    # # # qExp = EM.rotateQuatOverOneAxis([ 0, -0.5773503, 0.5773503, 0.5773503 ],[0,0,1],8*(np.pi/4)) # in base
+    # # qExp = EM.rotateQuatOverOneAxis(quaternion_multiply(q1Aligned,[ 0.9645804, -0.2564888, 0.0533718, 0.0308142 ]),[0,0,1],8*(np.pi/4)) # in base
+    # # # qExp =  [ 0.5773503, 0, -0.5773503, 0.5773503 ]# in base
+    # # qExpNew, qAlignedAndCorrected = EM.closestQuaternionProjection(q1Aligned,qExp,expScales)
+    # ##############################################
+    # ##############################################
 
     
 
+    # while not is_shutdown(): 
+
+
+    #     # q2 = [0.7071067811865475,0,0,0.7071067811865475]
+    #     # # q2 = [ 0, 0, -0.4871745, -0.8733046 ]
+    #     # # q1 = [0,0,0.7071067811865475,-0.7071067811865475]
+    #     # q1 = [0.5,0.5,0.5,0.5]
+    #     # qr = [0,0,0.7071067811865475,0.7071067811865475]
+
+
+    #     # q3 = quaternion_multiply(qr,q2)
+    #     EM.broadcastEllipsoidAxis(positions1,userQuat,frame_id,"userQuat")
+    #     EM.broadcastEllipsoidAxis(positions2,swappedAxisQuat,frame_id,"q1Aligned")
+    #     # EM.broadcastEllipsoidAxis(qAlignedAndCorrected,qRel,frame_id,"qRel")
+    #     # EM.broadcastEllipsoidAxis(positions4,q0Rel,frame_id,"q0Rel")
+    #     EM.broadcastEllipsoidAxis(positions5,qAlignedAndCorrected,frame_id,"qAlignedAndCorrected")
+    #     EM.broadcastEllipsoidAxis(positions6,qExpNew,frame_id,"qExpNew")
+    #     EM.broadcastEllipsoidAxis(positions7,qExp,frame_id,"qExp")
+    # # axis = [0,0,1] #-> z-axis
+    # # angle = np.pi/2 # rad
+
+    # # EM.rotateQuatOverOneAxis(q1,axis,angle)
+    # # print(q2)
+    # # qr = EM.relativeRotationQuat(q1,q2)
+    # # print("qr1: {}".format(qr))
+    # # qr = EM.zeroQuaternion(qr,[True,True,False,False]) #-> only rotation around Z axis!
+    # # print("qr2: {}".format(qr))
+    # # qNew = quaternion_multiply(qr,q1)
+    # # print(qNew)
+
+    # # correctedQuat = EM.closestQuaternion(q1,q2,expScales)
+
+    # # print("initial user Quat: {}".format(q1))
+    # # print("Experiment Quat: {}".format(q2))
+    # # print("New user quat: {}".format(correctedQuat))
+
+    # # print("check new user quat: {}".format(quaternion_multiply(qr,q1)))
