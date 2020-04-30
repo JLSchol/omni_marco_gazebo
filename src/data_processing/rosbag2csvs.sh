@@ -11,6 +11,14 @@
 # This script extracts multiple csv files accourding to the topic that 
 # are found from a single rosbag 
 
+##################### OLD FILE ##################### 
+##################### IS REPLACED BY ##################### 
+##################### rosbag_2_csvs.sh ##################### 
+##################### AND ##################### 
+##################### rosbag_record.sh ##################### 
+##################### found in ##################### 
+##################### Simple experiment pkg ##################### 
+
 
 topics=""
 for var in "$@" # Skips $0!!!! only $1 >
