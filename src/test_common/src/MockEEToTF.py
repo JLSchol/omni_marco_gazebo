@@ -5,7 +5,7 @@
 from rospy import init_node, is_shutdown, Time, get_param, Rate, sleep, ROSInterruptException
 from geometry_msgs.msg import Pose, Quaternion, Point
 
-from tf2_ros import TransformBroadcaster, TransformStamped
+from tf2_ros import TransformBroadcaster, TransformStamped, StaticTransformBroadcaster
 
 
 
@@ -36,24 +36,40 @@ class sendMockEndEffector():
 
     def run(self):
         rosRate = Rate(30)
+        broadcaster = StaticTransformBroadcaster()
         while not is_shutdown():
 
-            self._broadcastTransform(self._markerPose, self._parentFrame, self._childFrame) #map2center
+            static_ee_transform = self._setTransform(self._markerPose, self._parentFrame, self._childFrame) 
+            broadcaster.sendTransform(static_ee_transform)
+
+            # self._broadcastTransform(self._markerPose, self._parentFrame, self._childFrame) #map2center
            
-        rosRate.sleep()
+            rosRate.sleep()
+
+    def _setTransform(self, Pose, parentName, childName):
+        static_transformStamped = TransformStamped()
+
+        static_transformStamped.header.stamp = Time.now()
+        static_transformStamped.header.frame_id = parentName
+        static_transformStamped.child_frame_id = childName
+
+        static_transformStamped.transform.translation = Pose.position
+        static_transformStamped.transform.rotation = Pose.orientation
 
 
-    def _broadcastTransform(self, Pose, parentName, childName):
-        br = TransformBroadcaster()
-        tr = TransformStamped()
+        return static_transformStamped
 
-        tr.header.stamp = Time.now() 
-        tr.header.frame_id = parentName
-        tr.child_frame_id = childName
-        tr.transform.translation = Pose.position
-        tr.transform.rotation = Pose.orientation
+    # def _broadcastTransform(self, Pose, parentName, childName):
+    #     br = TransformBroadcaster()
+    #     tr = TransformStamped()
 
-        br.sendTransform(tr)
+    #     tr.header.stamp = Time.now() 
+    #     tr.header.frame_id = parentName
+    #     tr.child_frame_id = childName
+    #     tr.transform.translation = Pose.position
+    #     tr.transform.rotation = Pose.orientation
+
+    #     br.sendTransform(tr)
 
 
         
