@@ -56,19 +56,24 @@ class ManageDataDirectories():
 		subprocess.call(command,shell=True)
 
 	def getAllPathsOfParticipant(self,part_path,csv_dir_list):
-		file_folders = listdir(part_path)
 		# get all the pahts and sort
+		# returns the full paths of all relavant files/ directories
+		# part_info, rosbagpaths, csvDirectories, trialnotes(txt), roslaunchParameters
+
+		file_folders = listdir(part_path)
 		partx_bag_paths = self.getBagPaths(part_path,file_folders)
 		partx_txt_paths = self.getTxtPaths(part_path,file_folders)
 		append_folder = lambda path,folder: str(path) + "/" + str(folder)
 		partx_csvdir_paths = [append_folder(part_path, csv_dir) for csv_dir in csv_dir_list] 
 		partx_yaml_paths = self.getYamlPaths(part_path,file_folders)
+
 		partx_bag_paths.sort()
 		partx_txt_paths.sort()
 		partx_csvdir_paths.sort()
 		part_info_file = self.ifContains(partx_yaml_paths, "info.yaml")
 		partx_yaml_paths.remove(part_info_file)
 		partx_yaml_paths.sort()
+
 		return part_info_file, partx_bag_paths, partx_csvdir_paths, partx_txt_paths, partx_yaml_paths
 
 	def getBagPaths(self,folder_path,file_folder_list):
@@ -104,7 +109,7 @@ class ManageDataDirectories():
 				continue
 
 	def checkPartNr(self, output_dir, rosbag_path):
-		partNr = output_dir.split("data/part_",1)[1][0] # find partNr in outputDir
+		partNr = output_dir.split("data/part_",1)[1][0] # find partNr from outputDir
 		unique_string_dir = "data/part_"+partNr
 		unique_string_bag = "Part"+partNr
 
