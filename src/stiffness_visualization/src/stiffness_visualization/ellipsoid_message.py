@@ -16,6 +16,11 @@ from tf.transformations import *
 import numpy as np
 from numpy import array, transpose, sqrt, zeros
 
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
+
 class EllipsoidMessage(object):
     def __init__(self):
         pass
@@ -629,6 +634,40 @@ class EllipsoidMessage(object):
         # return newAngle
         return absoluteAngle
 
+    def errorOfPrincipleAxis(self,axes1,axes2):
+        # this function assumes sorted principle axis on size
+        axes1 = np.array(axes1)
+        axes2 = np.array(axes2)
+        # from diameter to principle axis length
+        axes1 = np.multiply(0.5,axes1) 
+        axes2 = np.multiply(0.5,axes2)
+
+        s1 = np.argsort(axes1).tolist()
+        s2 = np.argsort(axes2).tolist()
+        if s1 != s2:
+            print("Cehck if axes are equally sorted, Axes1: {} and Axes2: {} sorted?\n{} , {}".format(axes1,axes2,s1,s2))
+
+        errorAx = abs(axes1-axes2)
+
+        percentage = 100*np.divide(errorAx,axes1)
+        percentage = [100 if per_i>100 else per_i for per_i in percentage]
+        # print(percentage)
+
+        # avgPer = np.average(percentage)
+        # print(avgPer)
+
+        # inversed = 100 - avgPer
+        # print(inversed)
+        return errorAx.tolist(), percentage, axes1.tolist()
+
+
+
+        # return float(np.average(np.abs(error))) # return numpyarray?
+
+            
+
+
+
     def volumeEllipsoid(self,scales):
         # scales are diameter
         # V = 4*pi/3 * r1*r2*r3
@@ -740,59 +779,65 @@ class EllipsoidMessage(object):
 
 if __name__ == "__main__":  
 
+    ###### 
+    EM = EllipsoidMessage() 
+    ax1 = [2,2,8]
+    ax2 = [3.9,5,8.1]
+    errorVec, avg = EM.errorOfPrincipleAxis(ax1,ax2)
 
-
+    # print(avg)
+    # print(type(average))
     ##### fix rotation a second way #####
-    # process:
-    # find transformation from exp_quat to a standard frame definition -> exp_2_zero_trans
-    # use exp_2_zero_trans to rotate the user_quat to this zero position aswell
-    # qbase = [0.056808103171724085, -0.09129308613382892, 0.9696100483698741, 0.2197607015331963] # is actually qbase_0
-    qbase = [0,0,0,1] # zero position
-    q1_base = [0.5,0.5,0.5,0.5]
-    # T_base_to_1  only now it denotes an rotation instead of an orientation
-    EM = EllipsoidMessage()    
-    q2_base = EM.rotateQuatOverOneAxis(q1_base, [0,0,1], 1*(np.pi/6)) # 10 degrees over zaxis of q1_base
+    # # process:
+    # # find transformation from exp_quat to a standard frame definition -> exp_2_zero_trans
+    # # use exp_2_zero_trans to rotate the user_quat to this zero position aswell
+    # # qbase = [0.056808103171724085, -0.09129308613382892, 0.9696100483698741, 0.2197607015331963] # is actually qbase_0
+    # qbase = [0,0,0,1] # zero position
+    # q1_base = [0.5,0.5,0.5,0.5]
+    # # T_base_to_1  only now it denotes an rotation instead of an orientation
+    # EM = EllipsoidMessage()    
+    # q2_base = EM.rotateQuatOverOneAxis(q1_base, [0,0,1], 1*(np.pi/6)) # 10 degrees over zaxis of q1_base
 
-    # this doe not work
-    # q2ToZero, q1ToZero = EM.transformToZero(q2_base, q1_base, qbase)
+    # # this doe not work
+    # # q2ToZero, q1ToZero = EM.transformToZero(q2_base, q1_base, qbase)
 
-    # First order eigenvector/values from small to large
-    E1 = [0.088, 0.088, 0.4461775]
-    E2 = [0.5, 0.09, 0.10]
-    sequence = np.argsort(E2)
-    # define transformation from q2_base to qbase such that VLongest = z, Vmedium = y, Vsmall = x
-    R = EM.matrixFromQuat(q2_base)
-    E2, R =  EM.shuffleEig(E2, R, sequence)
+    # # First order eigenvector/values from small to large
+    # E1 = [0.088, 0.088, 0.4461775]
+    # E2 = [0.5, 0.09, 0.10]
+    # sequence = np.argsort(E2)
+    # # define transformation from q2_base to qbase such that VLongest = z, Vmedium = y, Vsmall = x
+    # R = EM.matrixFromQuat(q2_base)
+    # E2, R =  EM.shuffleEig(E2, R, sequence)
 
-    q = EM.quatFromMatrix(R)
-    # EM.relativeRotationQuat(q,qbase)
-    T2_0 = EM.relativeRotationQuat(q, qbase)
-    T1_0 = EM.relativeRotationQuat(q1_base,qbase)
-    T1_2 = EM.relativeRotationQuat(q1_base,q2_base) # or q ipv q2_base?
-    qfixed = quaternion_multiply(T1_2, qbase)
-    # compare qfixed with q or q2_base?
+    # q = EM.quatFromMatrix(R)
+    # # EM.relativeRotationQuat(q,qbase)
+    # T2_0 = EM.relativeRotationQuat(q, qbase)
+    # T1_0 = EM.relativeRotationQuat(q1_base,qbase)
+    # T1_2 = EM.relativeRotationQuat(q1_base,q2_base) # or q ipv q2_base?
+    # qfixed = quaternion_multiply(T1_2, qbase)
+    # # compare qfixed with q or q2_base?
 
-    # T1_0 = self.inverseQuat(T0_1)
-    # print(EM.checkRightHandedNessMatrix(R))
-
-
-    # init_node("test_ellipses",anonymous=False)
-    # while not is_shutdown(): 
-
-    #     EM.broadcastEllipsoidAxis([0,0,0],qbase,"base_footprint","qbase")
-    #     EM.broadcastEllipsoidAxis([0,1,0.5],q1_base,"base_footprint","q1_base")
-    #     EM.broadcastEllipsoidAxis([0,-1,0.5],q2_base,"base_footprint","q2_base")
-
-    #     # EM.broadcastEllipsoidAxis([1,0,0],q2_base,"base_footprint","qbase")
-    #     EM.broadcastEllipsoidAxis([0,0,1],q1ToZero,"base_footprint","q1ToZero")
-    #     EM.broadcastEllipsoidAxis([0,0,1.5],q2ToZero,"base_footprint","q2ToZero")
+    # # T1_0 = self.inverseQuat(T0_1)
+    # # print(EM.checkRightHandedNessMatrix(R))
 
 
+    # # init_node("test_ellipses",anonymous=False)
+    # # while not is_shutdown(): 
+
+    # #     EM.broadcastEllipsoidAxis([0,0,0],qbase,"base_footprint","qbase")
+    # #     EM.broadcastEllipsoidAxis([0,1,0.5],q1_base,"base_footprint","q1_base")
+    # #     EM.broadcastEllipsoidAxis([0,-1,0.5],q2_base,"base_footprint","q2_base")
+
+    # #     # EM.broadcastEllipsoidAxis([1,0,0],q2_base,"base_footprint","qbase")
+    # #     EM.broadcastEllipsoidAxis([0,0,1],q1ToZero,"base_footprint","q1ToZero")
+    # #     EM.broadcastEllipsoidAxis([0,0,1.5],q2ToZero,"base_footprint","q2ToZero")
 
 
-    ########### fix rotatoin #############
-    # newUserQuat = [0.056808103171724085, -0.09129308613382892, 0.9696100483698741, 0.2197607015331963]
-    # expQuat = [0,0,0,1]
+
+
+    # ########### fix rotatoin #############
+    # # newUserQuat = [0.056808103171724085, -0.09129308613382892, 0.9696100483698741, 0.2197607015331963]
+    # # expQuat = [0,0,0,1]
 
 
 #######################3 masse comment to all the way below

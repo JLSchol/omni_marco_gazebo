@@ -91,7 +91,15 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /accuracy_ellipsoid_text
+      Marker Topic: /shape_accuracy_text
+      Name: Marker
+      Namespaces:
+        text: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /orientation_accuracy_text
       Name: Marker
       Namespaces:
         text: true

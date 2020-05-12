@@ -11,13 +11,13 @@ class ExperimentInfo(object):
 		experiment = str(experimentNr) + str(PracticeRun)
 		switcher={
 		'1False':self.experiment1DofFrontReal,
-		'2False':self.experiment1DofTopReal,
-		'3False':self.experiment2DofFrontReal,
+		'2False':self.experiment2DofFrontReal,
+		'3False':self.experiment1DofTopReal,
 		'4False':self.experiment2DofTopReal,
 
 		'1True':self.experiment1DofFrontPractice,
-		'2True':self.experiment1DofTopPractice,
-		'3True':self.experiment2DofFrontPractice,
+		'2True':self.experiment2DofFrontPractice,
+		'3True':self.experiment1DofTopPractice,
 		'4True':self.experiment2DofTopPractice,
 
 		'0False': self.freeForAll,

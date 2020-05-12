@@ -11,16 +11,15 @@ from stiffness_visualization.ellipsoid_message import EllipsoidMessage
 from experiment_ellipsoids import ExperimentInfo
 #import messages
 from std_msgs.msg import Float32MultiArray,MultiArrayLayout,String
+from geometry_msgs.msg import Point, Quaternion
 from visualization_msgs.msg import Marker
 #import custom messages
 from phantom_omni.msg import LockState
 from stiffness_commanding.msg import EigenPairs
 from stiffness_simple_experiment.msg import gui_command
+from stiffness_simple_experiment.msg import SimpleExperimentData
 
 import numpy as np
-# class ExperimentVariables():
-#     def __init__(self,):
-
 
 
 class SimpleExperiment(object):
@@ -34,9 +33,13 @@ class SimpleExperiment(object):
         self._guiSub = Subscriber("gui_commands", gui_command, self._guiCallBack)
         self._omniSub = Subscriber("/omni1_lock_state", LockState, self._phantomCallBack)
         self._eigenSub = Subscriber("/eigen_pair", EigenPairs, self._eigenCallBack)
+
         self._ellipsPub = Publisher("experiment_ellipsoid", Marker, queue_size=2)
         self._logPub = Publisher("simple_experiment_logger", String, queue_size=1)
-        self._textVisPUb = Publisher("accuracy_ellipsoid_text", Marker, queue_size=2)
+        self._textVisPUbShape = Publisher("shape_accuracy_text", Marker, queue_size=1)
+        self._textVisPUbOri = Publisher("orientation_accuracy_text", Marker, queue_size=1)
+        self._expDataPub = Publisher("simple_experiment_data", SimpleExperimentData, queue_size=1)
+
 
     def _getParameters(self):
         lambdaminPar = '/stiffness_commanding/lambda_min'
@@ -55,6 +58,7 @@ class SimpleExperiment(object):
         self.lockStateMsg = LockState()
         self.prevLockStateMsg = LockState()
         self.eigenPairMsg = EigenPairs()
+        # self.experimentDataMsg = SimpleExperimentData()
 
         self.guiMsg.start_experiment = []
         self.userTrialPass=False
@@ -67,6 +71,7 @@ class SimpleExperiment(object):
         self.userQuat = [0,0,0,1]
         self.userScales = []
         self.originalUserQuat = [0,0,0,1]
+        self.originalUserScales = []
         self.userToZeroQuat = [0,0,0,1]
         self.expToZeroQuat =[0,0,0,1]
 
@@ -110,7 +115,7 @@ class SimpleExperiment(object):
                 if (len(EI.data['trialNr']) < self.trialNr + 1):        # self.trialNr start at 0 therefore +1
                     EM.deleteMarker(marker_ns,marker_id)
                     finishText = EM.createMarkerText(frame_id,"text",3,"Experiment Finished\n\nGood Job!",[0,0,0],0.1,[1,1,1,1],3)
-                    self._textVisPUb.publish(finishText)
+                    self._textVisPUbShape.publish(finishText)
                     counter+=1
                     rosRate.sleep()
                     continue
@@ -145,19 +150,27 @@ class SimpleExperiment(object):
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
                                                     self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
-                shapeAcc, rotationAcc = self._getAccuracy(self.prevTrialNr,EI,EM)
-                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,shapeAcc,rotationAcc))
+                # get performance measures
+                shapeAcc, rotationAcc, averageShapeError, absAngle = self._getAccuracy(self.prevTrialNr,EI,EM)
+                # get previous ellipsoid shape
+                expScales, expQuat = EI.getShape(self.prevTrialNr,EI.data)
 
+                # set messages
+                experimentDataMsg = self._setExperimentDataMsg(self.prevTrialNr, round(self.trialTime.to_sec(),3), 
+                                    shapeAcc, rotationAcc, averageShapeError, absAngle, self.userScales, self.userQuat, 
+                                            expScales, expQuat, self.originalUserScales, self.originalUserQuat)
                 shapeText, orientationText = self._getMarkerTexts(shapeAcc, rotationAcc, EM, frame_id)
 
-                # self._textVisPUb.publish(markerText)
-                self._textVisPUb.publish(shapeText)
-                self._textVisPUb.publish(orientationText)
+                # publish after each trial
+                self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,shapeAcc,rotationAcc))
+                self._expDataPub.publish(experimentDataMsg)
+                self._textVisPUbShape.publish(shapeText)
+                self._textVisPUbOri.publish(orientationText)
 
                 # briefly delete marker such that it is clear that a new trial starts ### does not work...
                 EM.deleteMarker(marker_ns,marker_id)
 
-                # update boolian 
+                # update boolian for next loop
                 self.userTrialPass=False
                 print(10*"-----")
 
@@ -170,10 +183,6 @@ class SimpleExperiment(object):
 
                 EM.broadcastEllipsoidAxis(positions,quats,frame_id,marker_ns)
                 self._ellipsPub.publish(ellipsoid)  
-            # elif len(EI.data['trialNr']) <= self.trialNr + 1: # self.trialNr start at 0 therefore +1
-            #     EM.deleteMarker(marker_ns,marker_id)
-            # else:
-            #     print("something went wrong")
 
             # always puvblish user ellipsoid
             EM.broadcastEllipsoidAxis(positions,self.originalUserQuat,frame_id,'original_user_ellips')
@@ -181,9 +190,6 @@ class SimpleExperiment(object):
             EM.broadcastEllipsoidAxis(positions,self.userQuat,frame_id,'corrected_user_ellips')
             
             self.userTrialPass=False
-            # shutdown node from gui command
-            # if self.guiMsg.start_experiment == False:
-            #     signal_shutdown("User requisted shutdown")
             counter += 1
             rosRate.sleep()
          
@@ -232,6 +238,7 @@ class SimpleExperiment(object):
         # get ellipsoid scales , quats from user 
         scales = EM.getEllipsoidScales(eigValues, self._lambda_min, self._lambda_max)       
         quats = EM.getQuatFromMatrix(eigVectors)
+        self.originalUserScales = list(scales)
         self.originalUserQuat = list(quats)
 
 
@@ -243,12 +250,12 @@ class SimpleExperiment(object):
         # Then check direction of the new alligned axis ans rotate 180 when pionting in opposite directino
         # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis        
-        axis = EM.getCharacteristicAxis(scalesExperiment,scales)
+        axis = EM.getCharacteristicAxis(scalesExperiment,self.originalUserScales)
         swappedAxisQuat, self.userScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, 
-        														self._lambda_min, self._lambda_max,axis)
+        														self._lambda_min, self._lambda_max,axis) # new user quat
 
-
-        self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)
+        # returns closest quat after projection and and as 2nd flipped axis quaternion if this was necessary (_)
+        self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)  
     
         # transform ellipsoids to standard position such that they can be compared
         # still does not solve the problem if there are undetermined axis
@@ -274,18 +281,21 @@ class SimpleExperiment(object):
         # angle2 = EM.absoluteAngleBetweenEllipsoids(self.expToZeroQuat,self.userToZeroQuat,'deg')
         # print("original: {} improved: {}".format(angle,angle2))
 
+        errorVec, percentageVec, _ = EM.errorOfPrincipleAxis(scalesExperiment,self.userScales)
+        shapeAccuracy = round(float(100 - np.average(percentageVec)),2)
+        averageShapeError = float(np.average(errorVec)) # of principle axis
 
-        userShape = EM.distanceEllipsoid(scales)
-        experimentShape = EM.distanceEllipsoid(scalesExperiment)
+        # userShape = EM.distanceEllipsoid(self.originalUserScales)
+        # experimentShape = EM.distanceEllipsoid(scalesExperiment)
 
         percentage = lambda nominator, denominator: 100 * (1 - float(nominator)/float(denominator))
         rotationAccuracy = round(percentage(angle,90.0),2)
-        shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
+        # shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
 
         # print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
         # print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
 
-        return shapeAccuracy, rotationAccuracy
+        return shapeAccuracy, rotationAccuracy, averageShapeError, angle #,userShape
 
             
     def _createLogString(self,trial,time,volAcc,rotAcc):
@@ -336,6 +346,37 @@ class SimpleExperiment(object):
                                         orientationsStr,
                                         textPosOr,textHeightSH,rgbOr,lifeTime)
         return shapeText, orientationText
+
+    def _setExperimentDataMsg(self, trialNr, trialTime, shapeAcc, orientationAcc,
+                                shape, absoluteAngle, userScales, userQuat, 
+                                expScales, expQuat, originalUserScales, originalUserQuat):
+        toQuat = lambda x,y,z,w: Quaternion(x,y,z,w)
+        toPoint = lambda x,y,z: Point(x,y,z)
+
+        message = SimpleExperimentData()
+        message.header.stamp = Time.now()
+
+        message.trial_nr = trialNr
+
+        message.trial_time =  trialTime 
+        message.shape_acc = shapeAcc
+        message.orientation_acc = orientationAcc
+
+        message.shape = shape
+        message.absolute_angle = absoluteAngle
+
+        message.user_scales = toPoint(userScales[0],userScales[1],userScales[2])
+        message.user_orientation = toQuat(userQuat[0],userQuat[1],userQuat[2],userQuat[3])
+
+        message.experiment_scales = toPoint(expScales[0],expScales[1],expScales[2])
+        message.experiment_orientation = toQuat(expQuat[0],expQuat[1],expQuat[2],expQuat[3])
+
+        message.original_user_scales = toPoint(originalUserScales[0],originalUserScales[1],
+                                                                        originalUserScales[2])
+        message.original_user_orientation = toQuat(originalUserQuat[0],originalUserQuat[1],
+                                                        originalUserQuat[2],originalUserQuat[3])
+        return message
+
 
     def _getColorText(self,acc):
         color = []

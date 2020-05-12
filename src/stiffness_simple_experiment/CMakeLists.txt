@@ -10,7 +10,7 @@ project(stiffness_simple_experiment)
 find_package(catkin REQUIRED COMPONENTS
   rviz
   message_generation
-  # geometry_msgs
+  geometry_msgs
   std_msgs
   stiffness_visualization
   phantom_omni
@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
 add_message_files(FILES
+  SimpleExperimentData.msg
   gui_command.msg
 )
 
@@ -73,6 +74,7 @@ add_message_files(FILES
 ## Generate added messages and services with any dependencies listed here
 generate_messages(DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 ################################################

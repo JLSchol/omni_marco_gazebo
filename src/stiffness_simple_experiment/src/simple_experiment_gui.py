@@ -137,7 +137,7 @@ class GuiWindow(Frame):
 		entryPartAge = Entry(self.master, bg='white', textvariable=self.participantAge)
 		self.participantAge.trace('w',self.partAgeCB)
 		entryPartAge.place(relx=(bw +col1),rely=row3+2*bh,relwidth=0.1,relheight=bh)
-		comboOptionExp = ttk.Combobox(self.master,values=['none','some','experienced'] ,textvariable=self.experience)
+		comboOptionExp = ttk.Combobox(self.master,values=['1h','10h','1d','10d','1w','10w','more'] ,textvariable=self.experience)
 		self.experience.trace('w',self.experianceCB)
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
 		saveParticipantButton = Button(self.master, text="save info", command=self.saveParticipantInfoCB)
@@ -354,7 +354,7 @@ class GuiWindow(Frame):
 		self.fileName.set(self.generateFileName()) # set variable
 		bagName = self.fileName.get()
 		# fix the topics that are recorded
-		topics = "simple_experiment_logger hoi"
+		topics = "omni1_lock_state omni1_button omni1_force_feedback marker_visualization experiment_ellipsoid draw_ellipsoid/ellipsoid_visualization gui_commands tf tf_static simple_experiment_data"
 		# ./rosbag_record 	saveDir bagName logNodeName topic1 	topic2 	etc
 		# $0 				$1		$2 		$3 			$3		$3 		etc
 		# check if self.saveDir and self.fileName are empty
