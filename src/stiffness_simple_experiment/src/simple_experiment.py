@@ -282,6 +282,11 @@ class SimpleExperiment(object):
         # print("original: {} improved: {}".format(angle,angle2))
 
         errorVec, percentageVec, _ = EM.errorOfPrincipleAxis(scalesExperiment,self.userScales)
+        print(10*"--")
+        print(scalesExperiment)
+        print(self.userScales)
+        print(errorVec)
+        print(10*"--")
         shapeAccuracy = round(float(100 - np.average(percentageVec)),2)
         averageShapeError = float(np.average(errorVec)) # of principle axis
 
@@ -308,7 +313,7 @@ class SimpleExperiment(object):
     # 	return textString
     def _feedBackText(self, identifier, value, newLine=True):
         if newLine:
-            text = "\n\n{}: {} %".format(identifier,value)
+            text = "\n\n\n{}: {} %".format(identifier,value)
         elif not newLine:
             text = "{}: {} %".format(identifier,value)
         else:
@@ -320,7 +325,7 @@ class SimpleExperiment(object):
 
         textPosSh = [-0.3,-0.25,-0.6]
         # textPosOr = [-0.3,-0.25,-0.6]
-        textPosOr = [textPosSh[0]+0.01, textPosSh[1]+0.01, textPosSh[2]]
+        textPosOr = [textPosSh[0]+0.15, textPosSh[1]+0.15, textPosSh[2]-0.05]
 
         # textPosOr = [-0.3,0,-0.6]
         textHeightSH = 0.1
@@ -334,7 +339,7 @@ class SimpleExperiment(object):
         textHeightOr = textHeightSH*coeff # because this text is closer to the camera make smaller
         idOr = 2
         rgbOr = self._getColorText(rotationAcc)
-        orientationsStr = self._feedBackText("Orientation",rotationAcc,True)
+        orientationsStr = self._feedBackText("Orientation",rotationAcc,False)
 
         lifeTime = 3 # sec
 
