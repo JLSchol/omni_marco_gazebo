@@ -71,7 +71,9 @@ class ManageDataDirectories():
 		partx_txt_paths.sort()
 		partx_csvdir_paths.sort()
 		part_info_file = self.ifContains(partx_yaml_paths, "info.yaml")
-		partx_yaml_paths.remove(part_info_file)
+		print(part_info_file)
+		if part_info_file != None:
+			partx_yaml_paths.remove(part_info_file)
 		partx_yaml_paths.sort()
 
 		return part_info_file, partx_bag_paths, partx_csvdir_paths, partx_txt_paths, partx_yaml_paths
@@ -92,6 +94,8 @@ class ManageDataDirectories():
 		for string in string_list:
 			if identifier in string:
 				return string
+			else:
+				return False
 
 	def exportBagsToCsvDirs(self, bash_file_path, bash_file_name, folder_bag_dict):
 		for output_dir, rosbag_path in folder_bag_dict.items():
@@ -211,4 +215,16 @@ class ManageDataDirectories():
 
 if __name__ == "__main__":
 	MD = ManageDataDirectories()
-	MD.main()
+	# MD.main()
+	# where to extract topics to and where to find bagfile
+	destination_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_1_real"
+	bag_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/Part1_Exp1_Real_05071624.bag"
+
+	bash_file_name = "rosbag_2_csvs.sh"
+	folder_with_bash_file = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment"
+	topics = "/tf /tf_static"
+	bash_args = bag_path + " " + destination_path + " " + topics
+	MD.callBashFile(folder_with_bash_file,bash_file_name,bash_args)
+
+
+
