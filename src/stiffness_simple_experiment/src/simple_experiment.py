@@ -150,17 +150,18 @@ class SimpleExperiment(object):
                 # update trial number
                 self.trialNr,self.prevTrialNr = self._getUpdatedTrialNumbers(
                                                     self.trialNr,self.guiMsg.trial_change,self.userTrialPass)
+                print("trial nr: {}".format(self.prevTrialNr))
                 # get performance measures
-                shapeAcc, rotationAcc, averageShapeError, absAngle = self._getAccuracy(self.prevTrialNr,EI,EM)
+                shapeAcc, rotationAcc, averageShapeError, absAngle, errorVec = self._getAccuracy(self.prevTrialNr,EI,EM)
                 # get previous ellipsoid shape
                 expScales, expQuat = EI.getShape(self.prevTrialNr,EI.data)
 
                 # set messages
-                experimentDataMsg = self._setExperimentDataMsg(self.prevTrialNr, round(self.trialTime.to_sec(),3), 
-                                    shapeAcc, rotationAcc, averageShapeError, absAngle, self.userScales, self.userQuat, 
+                experimentDataMsg = self._setExperimentDataMsg(frame_id, self.prevTrialNr, round(self.trialTime.to_sec(),3), 
+                                    shapeAcc, rotationAcc, averageShapeError, absAngle, errorVec, self.userScales, self.userQuat, 
                                             expScales, expQuat, self.originalUserScales, self.originalUserQuat)
                 shapeText, orientationText = self._getMarkerTexts(shapeAcc, rotationAcc, EM, frame_id)
-
+                
                 # publish after each trial
                 self._logPub.publish(self._createLogString(self.prevTrialNr,self.trialTime,shapeAcc,rotationAcc))
                 self._expDataPub.publish(experimentDataMsg)
@@ -251,7 +252,7 @@ class SimpleExperiment(object):
         # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis        
         axis = EM.getCharacteristicAxis(scalesExperiment,self.originalUserScales)
-        swappedAxisQuat, self.userScales, _, _ = EM.axisSwap(scalesExperiment,eigVectors,eigValues, 
+        swappedAxisQuat, self.userScales, _, _, _ = EM.axisSwap(scalesExperiment,scales,eigVectors,eigValues, 
         														self._lambda_min, self._lambda_max,axis) # new user quat
 
         # returns closest quat after projection and and as 2nd flipped axis quaternion if this was necessary (_)
@@ -300,7 +301,7 @@ class SimpleExperiment(object):
         # print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
         # print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
 
-        return shapeAccuracy, rotationAccuracy, averageShapeError, angle #,userShape
+        return shapeAccuracy, rotationAccuracy, averageShapeError, angle, errorVec #,userShape
 
             
     def _createLogString(self,trial,time,volAcc,rotAcc):
@@ -352,14 +353,17 @@ class SimpleExperiment(object):
                                         textPosOr,textHeightSH,rgbOr,lifeTime)
         return shapeText, orientationText
 
-    def _setExperimentDataMsg(self, trialNr, trialTime, shapeAcc, orientationAcc,
-                                shape, absoluteAngle, userScales, userQuat, 
+    def _setExperimentDataMsg(self, frame_id, trialNr, trialTime, shapeAcc, orientationAcc,
+                                shape, absoluteAngle, errorVec, userScales, userQuat, 
                                 expScales, expQuat, originalUserScales, originalUserQuat):
-        toQuat = lambda x,y,z,w: Quaternion(x,y,z,w)
-        toPoint = lambda x,y,z: Point(x,y,z)
+        # toQuat = lambda x,y,z,w: Quaternion(x,y,z,w)
+        # toPoint = lambda x,y,z: Point(x,y,z)
+        toPoint = lambda x: Point(x[0],x[1],x[2])
+        toQuat = lambda x: Quaternion(x[0],x[1],x[2],x[3])
 
         message = SimpleExperimentData()
         message.header.stamp = Time.now()
+        message.header.frame_id = frame_id
 
         message.trial_nr = trialNr
 
@@ -370,16 +374,16 @@ class SimpleExperiment(object):
         message.shape = shape
         message.absolute_angle = absoluteAngle
 
-        message.user_scales = toPoint(userScales[0],userScales[1],userScales[2])
-        message.user_orientation = toQuat(userQuat[0],userQuat[1],userQuat[2],userQuat[3])
+        message.error_sorted_principle_axes = toPoint(errorVec) 
 
-        message.experiment_scales = toPoint(expScales[0],expScales[1],expScales[2])
-        message.experiment_orientation = toQuat(expQuat[0],expQuat[1],expQuat[2],expQuat[3])
+        message.user_scales = toPoint(userScales)
+        message.user_orientation = toQuat(userQuat)
 
-        message.original_user_scales = toPoint(originalUserScales[0],originalUserScales[1],
-                                                                        originalUserScales[2])
-        message.original_user_orientation = toQuat(originalUserQuat[0],originalUserQuat[1],
-                                                        originalUserQuat[2],originalUserQuat[3])
+        message.experiment_scales = toPoint(expScales)
+        message.experiment_orientation = toQuat(expQuat)
+
+        message.original_user_scales = toPoint(originalUserScales)
+        message.original_user_orientation = toQuat(originalUserQuat)
         return message
 
 

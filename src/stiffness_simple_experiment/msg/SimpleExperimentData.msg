@@ -10,7 +10,9 @@ float32 shape_acc
 float32 orientation_acc
 
 float32 shape                       # average error between principle axis (radius)
-float32 absolute_angle
+float32 absolute_angle              # absolute angle between the two ellipsoids ([0-90 degree])
+
+geometry_msgs/Point error_sorted_principle_axes # sorted from small to large
 
 geometry_msgs/Point user_scales 
 geometry_msgs/Quaternion user_orientation

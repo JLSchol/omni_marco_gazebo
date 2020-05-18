@@ -239,6 +239,8 @@ class EllipsoidMessage(object):
             v2 = matrix[:,1]
             v3 = matrix[:,2]
         rightHanded = False
+        # print(" if below is >0 -> rightHanded")
+        # print(np.dot(np.cross(v1,v2),v3))
         if np.dot(np.cross(v1,v2),v3)>0: #1>0
             rightHanded = True
         return rightHanded
@@ -391,19 +393,24 @@ class EllipsoidMessage(object):
         return axis
 
 
-    def axisSwap(self,expScales,userEigVec,userEigVal,lambda_min,lambda_max ,axis='long'):
+    def axisSwap(self,expScales,userScales,userEigVec,userEigVal,lambda_min,lambda_max ,axis='long'):
         # Swaps the axis of input orientation(eigVectors) by shuffeling vector,value,scales
         # along largest (long) axis or smalles (short) axis
         # get user scales:
-        userScales = self.getEllipsoidScales(userEigVal, lambda_min, lambda_max)
+        # userScales = self.getEllipsoidScales(userEigVal, lambda_min, lambda_max)
         # print("userScales: {}, expScales: {}".format(userScales,expScales))
-        shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec,axis)
+        ############### HIER GAAT HET MIS ###############
+        print(type(expScales))
+        print(type(userScales))
+        shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec,axis) #CHECK THIS SEQUENCE WHEN BOTH SHAPSE ARE OVALS
+        ############### HIER GAAT HET MIS ###############
         newUserVal, newUserVec = self.shuffleEig(userEigVal, userEigVec, shuffleSeq)
         newUserScales = self.shuffleList(userScales,shuffleSeq)
+        print("new shuffled scales: {}\nnew shuffled vect:\n{}\nuserScales+vect above should be correct".format(newUserScales,newUserVec))
         if not self.checkRightHandedNessMatrix(newUserVec):
             logfatal("not a valid rotation, could NOT find a solution")
         swappedAxisQuat = self.getQuatFromMatrix(newUserVec)
-        return swappedAxisQuat, newUserScales, newUserVec, newUserVal,   
+        return swappedAxisQuat, newUserScales, newUserVec, newUserVal, shuffleSeq  
 
     def closestQuaternionProjection(self,q,qTarget,scales,axis='long'):
         # get indices from long and short axis other2
@@ -504,6 +511,8 @@ class EllipsoidMessage(object):
     def getShuffleSequence(self,scaleExp,scaleUser,eigValues,eigVectors,axis='long'):
         # function returns a sequence list with indexes that can be used to shuffle the eigValues,eigVectors positions
         # and thereby checks if the relocated eigVectors is an valid rotation 
+        print("initial scales Exp: {} \nscales user: {}".format(scaleExp,scaleUser))
+        print("initial eigVectors: \n{}".format(eigVectors))
 
         # Star with unknown shuffleSequence
         shuffleSequence = ['x','y','z']
@@ -557,7 +566,7 @@ class EllipsoidMessage(object):
         shuffleIRemain = 3 - shuffleImaxOrMin - shuffleIRandom
         shuffleVRemain = 3 - shuffleVmaxOrMin - shuffleVRandom
         shuffleSequence[shuffleIRemain] = shuffleVRemain # [remainginValue,maxOrMinValue,randomValue] (on remaining index)
-        # print("shuffleSequence is {}".format(shuffleSequence))
+        print("first shuffleSequence found is {}".format(shuffleSequence))
 
         # Check if found sequence provides an actual rotation matrix, otherwise swap 
         shuffledValues, shuffledVectors = self.shuffleEig(eigValues, eigVectors, shuffleSequence)
@@ -570,6 +579,7 @@ class EllipsoidMessage(object):
             shuffleSequence[shuffleIRandom] = shuffleVRemain
             print("new shuffleSequence is {}".format(shuffleSequence))
 
+        print("returned shuffle seq which should be correct: {}".format(shuffleSequence))
         return shuffleSequence
 
     # rename shuffleEigVectorValues, Split function in matrix and vector
@@ -646,8 +656,14 @@ class EllipsoidMessage(object):
         s2 = np.argsort(axes2).tolist()
         if s1 != s2:
             print("Cehck if axes are equally sorted, Axes1: {} and Axes2: {} sorted?\n{} , {}".format(axes1,axes2,s1,s2))
+            print("Sorting manually small to large")
+            # set axis 2 in the same order as axis one
+            axes1 = np.array(self.shuffleList(axes1,s1))
+            axes2 = np.array(self.shuffleList(axes2,s2))
 
+        print("axes1 (U): {}\naxes2 (E): {}".format(axes1,axes2))
         errorAx = abs(axes1-axes2)
+        print(errorAx)
 
         percentage = 100*np.divide(errorAx,axes1)
         percentage = [100 if per_i>100 else per_i for per_i in percentage]
@@ -781,9 +797,50 @@ if __name__ == "__main__":
 
     ###### 
     EM = EllipsoidMessage() 
-    ax1 = [2,2,8]
-    ax2 = [3.9,5,8.1]
-    errorVec, avg = EM.errorOfPrincipleAxis(ax1,ax2)
+    wrist_ft_tool_link = [-0.5, 0.5, 0.5, 0.5]
+
+    scalesExperiment = [0.088, 0.2073925, 0.4461775] 
+    quatsExperiment = [0.3826834324, 0, 0, 0.9238795325]
+
+    scalesUser = [0.08485281374238571, 0.4414204282931017, 0.2223998651578292]
+    quatsUser = [0.0120242869,    0.8758626002,    -0.4730794589,   0.0944242959]
+    userEigVec = [[-0.98187894,  0.11040363,  0.15402852],
+                    [-0.06827714,  0.55210245, -0.83097595],
+                    [-0.17678231, -0.82643443, -0.53455973]]
+    userEigVal = [1,3,2]
+
+    newscalesUser = [0.2223998652,    0.0848528137,    0.4414204283] 
+    newquatsUser = [-0.2900813569,   0.0513379139,    0.0212153076,    -0.9553884737]
+
+    axis = EM.getCharacteristicAxis(scalesExperiment,scalesUser)
+    swappedAxisQuat, _, _, _, shuffleSeq = EM.axisSwap(scalesExperiment,scalesUser,userEigVec,userEigVal, 
+                                                                0.03, 0.2, axis)
+    # shuffle user scales manually
+    newscalesUser2 = EM.shuffleList(scalesUser,shuffleSeq)
+    newquatUser2,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newscalesUser2,axis)
+    print(newscalesUser2)
+    print(newquatUser2)
+    # if axis == "normal":
+    #     sequence = np.argsort(scalesExperiment)
+
+    # print("userScales: {}, expScales: {}".format(userScales,expScales))
+    ############### HIER GAAT HET MIS ###############
+    # shuffleSeq = EM.getShuffleSequence(scalesExperiment,scalesUser,userEigVal,userEigVec,axis) #CHECK THIS SEQUENCE WHEN BOTH SHAPSE ARE OVALS
+    # print(shuffleSeq)
+    ############### HIER GAAT HET MIS ###############
+    # newUserVal, newUserVec = self.shuffleEig(userEigVal, userEigVec, shuffleSeq)
+    # newUserScales = self.shuffleList(userScales,shuffleSeq)
+    # print("new shuffled scales: {}\nnew shuffled vect:\n{}\nuserScales+vect above should be correct".format(newUserScales,newUserVec))
+    # if not self.checkRightHandedNessMatrix(newUserVec):
+    #     logfatal("not a valid rotation, could NOT find a solution")
+    # swappedAxisQuat = self.getQuatFromMatrix(newUserVec)
+    # return swappedAxisQuat, newUserScales, newUserVec, newUserVal  
+
+
+
+    # ax1 = [2,2,8]
+    # ax2 = [3.9,5,8.1]
+    # errorVec, avg = EM.errorOfPrincipleAxis(ax1,ax2)
 
     # print(avg)
     # print(type(average))
@@ -821,10 +878,15 @@ if __name__ == "__main__":
     # # print(EM.checkRightHandedNessMatrix(R))
 
 
-    # # init_node("test_ellipses",anonymous=False)
-    # # while not is_shutdown(): 
+    init_node("test_ellipses",anonymous=False)
+    while not is_shutdown(): 
 
-    # #     EM.broadcastEllipsoidAxis([0,0,0],qbase,"base_footprint","qbase")
+        EM.broadcastEllipsoidAxis([0.5,0.5,0.5],wrist_ft_tool_link,"base_footprint","wrist_ft_tool_link")
+        EM.broadcastEllipsoidAxis([0,0,-0.5],quatsExperiment,"wrist_ft_tool_link","exp")
+        EM.broadcastEllipsoidAxis([0,0,+0.5],quatsUser,"wrist_ft_tool_link","ori")
+        EM.broadcastEllipsoidAxis([-0.4,0,+0.5],swappedAxisQuat,"wrist_ft_tool_link","swap")
+        EM.broadcastEllipsoidAxis([-0.4,0,+0.5],newquatsUser,"wrist_ft_tool_link","new")
+
     # #     EM.broadcastEllipsoidAxis([0,1,0.5],q1_base,"base_footprint","q1_base")
     # #     EM.broadcastEllipsoidAxis([0,-1,0.5],q2_base,"base_footprint","q2_base")
 

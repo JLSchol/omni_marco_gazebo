@@ -54,7 +54,7 @@ echo "topics that will be extracted from bag: " $topics
 for topic in $topics
 do 
 	filename="${topic///}"
-	echo $filename
+	echo exporting $filename ...
 	rostopic echo -b $1 -p $topic > $2"/"${filename}.csv
 	echo $filename".csv created"
 done
