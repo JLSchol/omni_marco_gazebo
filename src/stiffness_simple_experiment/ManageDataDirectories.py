@@ -3,6 +3,11 @@ import sys
 import subprocess
 from os import listdir, walk ,mkdir, path
 import errno
+# python 2.7
+try:
+	from itertools import izip as zip
+except ImportError:
+	pass
 
 # custom classes
 # insert at 1, 0 is the script path (or '' in REPL)
@@ -18,7 +23,13 @@ class ManageDataDirectories():
 		#directories to be created
 		self.csv_dir_list = ["csvs_1_learn","csvs_1_real","csvs_2_learn","csvs_2_real",
 					"csvs_3_learn","csvs_3_real","csvs_4_learn","csvs_4_real"]
+
+		self.experiment_IDs = ['1L','1R','2L','2R','3L','3R','4L','4R'] # this is a predefined and ordered list
+
 		self.csv_dir_list.sort()	
+		self.folder_bags = []
+
+		# self.get
 
 		print("initialized")
 
@@ -70,8 +81,9 @@ class ManageDataDirectories():
 		partx_bag_paths.sort()
 		partx_txt_paths.sort()
 		partx_csvdir_paths.sort()
+		# print(partx_yaml_paths)
 		part_info_file = self.ifContains(partx_yaml_paths, "info.yaml")
-		print(part_info_file)
+		# print(part_info_file)
 		if part_info_file != None:
 			partx_yaml_paths.remove(part_info_file)
 		partx_yaml_paths.sort()
@@ -92,20 +104,21 @@ class ManageDataDirectories():
 		
 	def ifContains(self, string_list, identifier):
 		for string in string_list:
+			# print(string)
 			if identifier in string:
 				return string
 			else:
-				return False
+				pass
 
-	def exportBagsToCsvDirs(self, bash_file_path, bash_file_name, folder_bag_dict):
+	def exportBagsToCsvDirs(self, bash_file_path, bash_file_name, folder_bag_dict, topics):
 		for output_dir, rosbag_path in folder_bag_dict.items():
 			#check if output dir and rosbag_path match!
 			part_nr_check = self.checkPartNr(output_dir, rosbag_path)
 			practice_learn_check = self.checkPracticeLearn(output_dir, rosbag_path)
 			exp_check = self.checkExpNr(output_dir, rosbag_path)
 			if part_nr_check == True and practice_learn_check == True and exp_check == True:
-				bash_args = rosbag_path + " " + output_dir 
-				print("Exporting: {} to:\n{}".format(rosbag_path,output_dir))
+				bash_args = rosbag_path + " " + output_dir + " " + topics
+				print("Exporting: {}\nWith topic(s): {}\nto:\n{}".format(rosbag_path,topics,output_dir))
 				self.callBashFile(bash_file_path, bash_file_name, bash_args)
 			else:
 				print("{} is not exported to \n{}\n Due to wrong bag/dir combination (check string)"
@@ -156,8 +169,50 @@ class ManageDataDirectories():
 			return False
 		
 
+	def getTopics(self,dir_path="/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_1_learn"):
+		topics = []
+		for (dirpath, dirnames, filenames) in walk(dir_path):
+			# print(filenames)
+			for fileName in filenames:
+				topic = fileName.split(".", 1)[0]
+				topics.append(topic)
+			return topics
 
-		
+	def getFilesInDir(self,dir_path):
+		files = listdir(dir_path)
+		return [dir_path + '/' + file for file in files]
+
+	def getFilesInDirList(self,dir_paths):
+		file_paths = []
+		for path in dir_paths:
+			f = self.getFilesInDir(path)
+			file_paths.extend(f)
+		return file_paths
+
+	def addParticipant(self,part_path,topics):
+		bash_file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/"
+		bash_file_name = "rosbag_2_csvs.sh"
+		if not isinstance(topics, list):
+			if isinstance(topics, str):
+				print("topics to list")
+				topics = [topics]
+			else:
+				print("in addParticipant(self,part_path,topics); topics is not of type string or list")
+
+		# add folders
+		[self.createDir(part_path, sub_dir) for sub_dir in self.csv_dir_list]
+
+		# get paths
+		_, partx_bag_paths, partx_csvdir_paths,_,_ = self.getAllPathsOfParticipant(part_path, 
+																							self.csv_dir_list)
+		partx_folder_bag_dict = dict(zip(partx_csvdir_paths, partx_bag_paths))
+
+		# export topics from bag
+		for topic in topics:
+			self.exportBagsToCsvDirs(bash_file_path, bash_file_name, partx_folder_bag_dict, topic)
+
+
+
 
 
 	def main(self):
@@ -200,7 +255,7 @@ class ManageDataDirectories():
 				print("amount of bags is: {} and should be 8 if all the experiments are done"
 														.format(len(folder_bags[ipart].keys())))
 				print("check bagfiles and csv folders for participant: {}".format(ipart))
-			self.exportBagsToCsvDirs(bash_file_path, bash_file_name, folder_bags[ipart])
+			self.exportBagsToCsvDirs(bash_file_path, bash_file_name, folder_bags[ipart], "/simple_experiment_data")
 
 		# export rosbags to correct folder
 		# every experiment has an unique rosbag thus nr_bag = 4(part)*8(exp) = 32 bags 
@@ -215,16 +270,26 @@ class ManageDataDirectories():
 
 if __name__ == "__main__":
 	MD = ManageDataDirectories()
-	# MD.main()
-	# where to extract topics to and where to find bagfile
-	destination_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_1_real"
-	bag_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/Part1_Exp1_Real_05071624.bag"
 
-	bash_file_name = "rosbag_2_csvs.sh"
-	folder_with_bash_file = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment"
-	topics = "/tf /tf_static"
-	bash_args = bag_path + " " + destination_path + " " + topics
-	MD.callBashFile(folder_with_bash_file,bash_file_name,bash_args)
+	print("uncomment addParticipant() or main() or callBashFile() part")
+	
+	# # add everything from all participants
+	# MD.main()
+
+	# # add single participant
+	# partpath = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_3"
+	# topics = ["/simple_experiment_data"]
+	# MD.addParticipant(partpath,topics)
+
+	# # extract specific topic(s) from bash file to specific folder
+	# destination_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_4_real"
+	# bag_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/Part_Exp4_Real_05141713.bag"
+
+	# bash_file_name = "rosbag_2_csvs.sh"
+	# folder_with_bash_file = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment"
+	# topics = "/simple_experiment_data"
+	# bash_args = bag_path + " " + destination_path + " " + topics
+	# MD.callBashFile(folder_with_bash_file,bash_file_name,bash_args)
 
 
 
