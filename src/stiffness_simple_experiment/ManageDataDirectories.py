@@ -29,9 +29,7 @@ class ManageDataDirectories():
 		self.csv_dir_list.sort()	
 		self.folder_bags = []
 
-		# self.get
 
-		print("initialized")
 
 	def getparticipantPaths(self,root_dir_with_data):
 		part_dirs = listdir(root_dir_with_data)
@@ -81,9 +79,8 @@ class ManageDataDirectories():
 		partx_bag_paths.sort()
 		partx_txt_paths.sort()
 		partx_csvdir_paths.sort()
-		# print(partx_yaml_paths)
 		part_info_file = self.ifContains(partx_yaml_paths, "info.yaml")
-		# print(part_info_file)
+
 		if part_info_file != None:
 			partx_yaml_paths.remove(part_info_file)
 		partx_yaml_paths.sort()
@@ -104,7 +101,6 @@ class ManageDataDirectories():
 		
 	def ifContains(self, string_list, identifier):
 		for string in string_list:
-			# print(string)
 			if identifier in string:
 				return string
 			else:
@@ -172,7 +168,6 @@ class ManageDataDirectories():
 	def getTopics(self,dir_path="/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_1_learn"):
 		topics = []
 		for (dirpath, dirnames, filenames) in walk(dir_path):
-			# print(filenames)
 			for fileName in filenames:
 				topic = fileName.split(".", 1)[0]
 				topics.append(topic)
@@ -182,11 +177,14 @@ class ManageDataDirectories():
 		files = listdir(dir_path)
 		return [dir_path + '/' + file for file in files]
 
-	def getFilesInDirList(self,dir_paths):
+
+	def getFilesInDirList(self,dir_paths,extension='.csv'):
 		file_paths = []
-		for path in dir_paths:
-			f = self.getFilesInDir(path)
-			file_paths.extend(f)
+		for path in dir_paths: #list with paths to different directories
+			file_path_list = self.getFilesInDir(path) # add the files to directory path
+			for path in file_path_list: # for each path is fileList
+				if path.endswith(extension): # filter for correct extension
+					file_paths.append(path)
 		return file_paths
 
 	def addParticipant(self,part_path,topics):
@@ -194,7 +192,6 @@ class ManageDataDirectories():
 		bash_file_name = "rosbag_2_csvs.sh"
 		if not isinstance(topics, list):
 			if isinstance(topics, str):
-				print("topics to list")
 				topics = [topics]
 			else:
 				print("in addParticipant(self,part_path,topics); topics is not of type string or list")
