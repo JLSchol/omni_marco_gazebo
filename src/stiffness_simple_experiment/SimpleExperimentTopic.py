@@ -26,15 +26,147 @@ class ProcessSimpleExperiment():
 				df.drop(df.head(1).index, inplace=True)
 		# note that df is removed in place thus dataDict is changed in place!
 
-	def getSize1DOF(self, df):
+	def getSizeID1DoF(self, df):
 		values = df["field.experiment_scales.z"].unique()
 		values.sort() # ascending
 
-		fn = lambda x: 'small' if x["field.experiment_scales.z"]==values[0] else 'large'
+		fn = lambda x: 'small_cigar' if x["field.experiment_scales.z"]==values[0] else 'large_cigar'
 
 		df2 = df.apply(fn, axis=1)
-		print(df2)
-		return df2
+		return df2.tolist()
+
+	def getSizeID2DoF(self, df):
+		# one of these 2 columns is not varied and the smallest size of the ellipsoid
+		valuesx = df["field.experiment_scales.x"].unique() 
+		valuesy = df["field.experiment_scales.y"].unique()
+		
+		small = df['field.experiment_scales.z'].min() # z axis should always have 2 sizes as defined in experiment_ellipsoids.py
+		direction_id =[]
+
+		scales_1 = []
+		scales_2 = []
+		if len(valuesx) == 1: # if only one value in len(valuesx) is unique -> x is smallest axis of ellipsoid
+			direction_id = 'yz'
+			scales_1 = df["field.experiment_scales.y"].values.tolist()
+			scales_2 = df["field.experiment_scales.z"].values.tolist()
+		elif len(valuesy) == 1: # if only one value in len(valuesy) is unique -> y is smallest axis of ellipsoid
+			direction_id = 'xz'
+			scales_1 = df["field.experiment_scales.x"].values.tolist()
+			scales_2 = df["field.experiment_scales.z"].values.tolist()
+		else:
+			# z is always varying for the defined experiments
+			Print(" deze bestaat als het goed is niet")
+
+		textList = []
+		shape_id = []
+		for x,y in zip(scales_1,scales_2):
+			if x != y:
+				shape_id = 'oval'
+			elif x == y and x == small:
+				shape_id = 'small_circle'
+			else:
+				shape_id = "large_circle"
+
+			# combine shape id and direction id
+			text = shape_id+"_"+direction_id
+			textList.append(text)
+		return textList
+		
+
+
+	def getRotIDText(self, df):
+		deg_key = ['0_deg'	,'30_deg',	'36_deg',	'45_deg',	'60_deg',	'72_deg',	'90_deg',	'108_deg',	'120_deg',	'135_deg',	'144_deg',	'150_deg']
+		qw_val =[1,			0.9659258,	0.9510565,	0.9238795,	0.8660254,	0.809017,	0.7071068,	0.5877853,	0.5,		0.3826834,	0.309017,	0.258819]
+		deg_2_qw = dict(zip(deg_key,qw_val))
+
+		qx_list = df["field.experiment_orientation.x"].values.tolist()
+		qy_list = df["field.experiment_orientation.y"].values.tolist()
+		qz_list = df["field.experiment_orientation.z"].values.tolist()
+		qw_list = df["field.experiment_orientation.w"].values.tolist()
+
+		get_direction = lambda x,y,z: 'x' if x!=0 else('y' if y!=0 else 'z')
+		# print(get_direction(0,2,0))
+		combine_text = lambda a,y: str(a)+'_'+str(y)
+
+		textList = []
+		for qx,qy,qz,qw in zip(qx_list,qy_list,qz_list,qw_list):
+			if abs(round(float(qw),3)) == abs(round(float(deg_2_qw['0_deg']),3)):
+				text = '0_deg'
+				# 0 degrees thus no rotation axis...
+				# direction_text = get_direction(qx, qy, qz)
+				# text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['30_deg']),3)):
+				angle_text = '30_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['36_deg']),3)):
+				angle_text = '36_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['45_deg']),3)):
+				angle_text = '45_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['60_deg']),3)):
+				angle_text = '60_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['72_deg']),3)):
+				angle_text = '72_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['90_deg']),3)):
+				angle_text = '90_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['108_deg']),3)):
+				angle_text = '108_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['120_deg']),3)):
+				angle_text = '120_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['135_deg']),3)):
+				angle_text = '135_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['144_deg']),3)):
+				angle_text = '144_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+
+			elif abs(round(float(qw),3)) == abs(round(float(deg_2_qw['150_deg']),3)):
+				angle_text = '150_deg'
+				direction_text = get_direction(qx, qy, qz)
+				text = combine_text(angle_text, direction_text)
+				textList.append(text)
+			else:
+				print("something went wrong")
+				return 0
+
+		return textList
 
 
 
@@ -48,8 +180,7 @@ class ProcessSimpleExperiment():
 			df.insert(index, label, data, False)
 			df[label] = data
 
-
-		
+	
 	def main():
 		pass
 
@@ -89,7 +220,7 @@ class PlotSimpleExperiment():
 					'fs_title' : 16,
 					'fs_legend': 12,
 					'xLim'	: False,
-					'yLim'	:(0,100)
+					'yLim'	:(80,100)
 				}
 
 		self.shape_error = {'title': "Shape Error Axes (diameter)",
@@ -266,27 +397,44 @@ if __name__ == "__main__":
 	########## THE PROCESSING PART ##########
 	proces = ProcessSimpleExperiment()
 
+	# remove all the first trials
 	proces.removeFirstTrials(data)
 
-
-
-	# print(data['1L']['simple_experiment_data'].head(1))
+	# list data of 1 participant: use this to check with figures
 	data_P1_1L = data['1L']['simple_experiment_data']
+	data_P1_1R = data['1R']['simple_experiment_data']
+	data_P1_2L = data['2L']['simple_experiment_data']
+	data_P1_2R = data['2R']['simple_experiment_data']
 	data_P1_3L = data['3L']['simple_experiment_data']
+	data_P1_3R = data['3R']['simple_experiment_data']
+	data_P1_4L = data['4L']['simple_experiment_data']
+	data_P1_4R = data['4R']['simple_experiment_data']
+
 	
-	# add new column
-	df_sizes = proces.getSize1DOF(data_P1_1L) #returns dataframe
-	proces.addColumns(data_P1_1L, ['size_type'], [df_sizes.tolist()], [5])
+	# add new columns that identify type of elipsoid 1dof case
+	size_id_list = proces.getSizeID1DoF(data_P1_1L) #returns dataframe
+	rot_id_list = proces.getRotIDText(data_P1_1L)
+	proces.addColumns(data_P1_1L, ['size_type','rot_type'], [size_id_list,rot_id_list], [5,6])
+	print(data['1L']['simple_experiment_data'].columns.values)
+	print(data['1L']['simple_experiment_data'].index.values)
+	print(data['1L']['simple_experiment_data'].loc[3,:])
+
+	# add new column that identifes tupe of elliposdi in 2dof case
+	size_id_list2 = proces.getSizeID2DoF(data_P1_4R) 
+	rot_id_list2 = proces.getRotIDText(data_P1_4R)
+	proces.addColumns(data_P1_4R, ['size_type','rot_type'], [size_id_list2,rot_id_list2], [5,6])
+	print(data['4R']['simple_experiment_data'].columns.values)
+	print(data['4R']['simple_experiment_data'].index.values)
+	print(data['4R']['simple_experiment_data'].loc[3,:])
 
 
-	# remover trials that are failed specify manually
+	# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
 	proces.removeIncorrectTrials(data_P1_3L, [3,17])
 	# print(data_P1_3L.loc[3,:])
 	# print(part.data['1L']['simple_experiment_data'].head(1))
 
-
 	########## THE PLOTTING PART ##########
-	# initialize class
+	# initialize plot class
 	plot_exp = PlotSimpleExperiment()
 
 
@@ -347,7 +495,7 @@ if __name__ == "__main__":
 
 
 
-	plt.show()
+	# plt.show()
 	# check what kind of set attributes the ax class has
 	# ax_getters = [getter for getter in dir(ax) if 'get' in getter]
 	# print(ax_getters)
