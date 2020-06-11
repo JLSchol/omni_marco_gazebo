@@ -354,7 +354,7 @@ class GuiWindow(Frame):
 		self.fileName.set(self.generateFileName()) # set variable
 		bagName = self.fileName.get()
 		# fix the topics that are recorded
-		topics = "omni1_lock_state omni1_button omni1_force_feedback omni1_joint_states omni_stiffness eigen_pair stiffness_command marker_visualization experiment_ellipsoid draw_ellipsoid/ellipsoid_visualization experiment_ellipsoid gui_commands tf tf_static simple_experiment_data virtual_robot_force"
+		topics = "omni1_lock_state omni1_button omni1_force_feedback omni1_joint_states omni_stiffness eigen_pair stiffness_command marker_visualization experiment_ellipsoid draw_ellipsoid/ellipsoid_visualization draw_ellipsoid/arrow_visualization experiment_ellipsoid gui_commands orientation_accuracy_text shape_accuracy_text tf tf_static simple_experiment_data virtual_robot_force"
 		# ./rosbag_record 	saveDir bagName logNodeName topic1 	topic2 	etc
 		# $0 				$1		$2 		$3 			$3		$3 		etc
 		# check if self.saveDir and self.fileName are empty

@@ -282,26 +282,21 @@ class SimpleExperiment(object):
         # angle2 = EM.absoluteAngleBetweenEllipsoids(self.expToZeroQuat,self.userToZeroQuat,'deg')
         # print("original: {} improved: {}".format(angle,angle2))
 
-        errorVec, percentageVec, _ = EM.errorOfPrincipleAxis(scalesExperiment,self.userScales)
-        print(10*"--")
-        print(scalesExperiment)
-        print(self.userScales)
-        print(errorVec)
-        print(10*"--")
-        shapeAccuracy = round(float(100 - np.average(percentageVec)),2)
-        averageShapeError = float(np.average(errorVec)) # of principle axis
+        # Shape metrics + feedback measures
+        # See EM.errorOfScales for explanation of percentage/error vec, and False/True
+        errorVec, percentageVec, _, _ = EM.errorOfScales(scalesExperiment,self.userScales,False) 
+        avgShapeError = float(np.average(errorVec))             # errorVec can be larger that the scalesExperiment
+        avgShapePercentage = float(np.average(percentageVec))   # percentageVec = errorVec/scalesExperiment*100[%] BUT IS LIMITED TO 100%
+        #inverse shape accuracy feedback to be consistent with the rotation accuracy measure
+        shapeAccuracy = round(float(100 - avgShapePercentage), 2)
 
-        # userShape = EM.distanceEllipsoid(self.originalUserScales)
-        # experimentShape = EM.distanceEllipsoid(scalesExperiment)
 
+        # Orientation metrics + feedback measures
         percentage = lambda nominator, denominator: 100 * (1 - float(nominator)/float(denominator))
         rotationAccuracy = round(percentage(angle,90.0),2)
-        # shapeAccuracy = round(percentage(abs(userShape-experimentShape),experimentShape),2)
 
-        # print("Absolute angle = {} [degrees]; max angle = {} [degrees]".format(angle,90.0))
-        # print("userShape = {} [m]; experimentShape = {} [m]".format(userShape,experimentShape))
 
-        return shapeAccuracy, rotationAccuracy, averageShapeError, angle, errorVec #,userShape
+        return shapeAccuracy, rotationAccuracy, avgShapeError, angle, errorVec #,userShape
 
             
     def _createLogString(self,trial,time,volAcc,rotAcc):

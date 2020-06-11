@@ -32,10 +32,11 @@ class ExperimentInfo(object):
 			print("invalid experiment name: {}".format(experiment))
 
 	def experiment1DofFrontReal(self):
+		# why is this function executed twice upon initialization?
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [4, 5]  
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -60,7 +61,7 @@ class ExperimentInfo(object):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [4, 5]  
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -87,7 +88,7 @@ class ExperimentInfo(object):
 		# verdeling van ellipses
 		amountOvals,amountSmallPan,amountLargePan = [4,1,1]
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [1,0,1]
@@ -114,7 +115,7 @@ class ExperimentInfo(object):
 		# verdeling van ellipses
 		amountOvals,amountSmallPan,amountLargePan = [4,1,1]
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,1,1]
@@ -140,7 +141,7 @@ class ExperimentInfo(object):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [6, 4]  
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -165,7 +166,7 @@ class ExperimentInfo(object):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [6, 4]  
 		# create size list ordered
-		minSize, maxSize = [0.088, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -192,14 +193,14 @@ class ExperimentInfo(object):
 		# verdeling van ellipses
 		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
 		# create size list ordered
-		minSize, maxSize = [0.095, 0.52] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [1,0,1]
 		# rotation axis
 		rotationAxis = [0,1,0]
 		# seed to create a pseudo random sequence
-		seed = 3
+		seed = 7
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
 												minSize, maxSize, minAngle, maxAngle, 
@@ -219,14 +220,14 @@ class ExperimentInfo(object):
 		# verdeling van ellipses
 		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
 		# create size list ordered
-		minSize, maxSize = [0.095, 0.52] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,1,1]
 		# rotation axis
 		rotationAxis = [1,0,0]
 		# seed to create a pseudo random sequence
-		seed = 3
+		seed = 8
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
 												minSize, maxSize, minAngle, maxAngle, 
@@ -442,6 +443,7 @@ class ExperimentInfo(object):
 		# create quaternions ans scale list
 		scales, orientations = self.createScalesAndOrientations(totalSizeList, sizeAxis, minSize, 
 																	totalAngleList, rotationAxis)
+
 		return scales, orientations
 
 
@@ -518,24 +520,47 @@ class ExperimentInfo(object):
 
 
 if __name__ == "__main__":  
-	EI = ExperimentInfo(1,False)
-	# minAngle, maxAngle, step, amount = [-90, 90, 180/4, 4]
-	# amount of different ellipses
-	amountDistinctEllips = 6
+	pass
 
-	# repetitions of each ellipsoid
-	repetitionsEllips = 5
+	# EI = ExperimentInfo(2,True)
 
-	# create size list ordered
-	minSize, maxSize = [0.088, 0.56557] 
-	minAngle, maxAngle = [0, 180]
+	# # total amount of ellipses = amountDistinctEllips * repetitionsEllips
+	# amountDistinctEllips, repetitionsEllips = [4, 5]  
+	# # create size list ordered
+	# minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+	# minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+	# # varied size axis
+	# sizeAxis = [0,0,1]
+	# # rotation axis
+	# rotationAxis = [0,1,0]
+	# # seed to create a pseudo random sequence
+	# seed = 1
 
-	# varied size axis
-	sizeAxis = [1,0,1]
-	# rotation axis
-	rotationAxis = [0,1,0]
-	# seed
-	seed = 5
+	# # scales, orientations = EI.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+	# # 										minSize, maxSize, minAngle, maxAngle, 
+	# # 										sizeAxis, rotationAxis, seed)
+
+
+
+	#################
+	# EI = ExperimentInfo(1,False)
+	# # minAngle, maxAngle, step, amount = [-90, 90, 180/4, 4]
+	# # amount of different ellipses
+	# amountDistinctEllips = 6
+
+	# # repetitions of each ellipsoid
+	# repetitionsEllips = 5
+
+	# # create size list ordered
+	# minSize, maxSize = [0.0848528137424, 0.56557] 
+	# minAngle, maxAngle = [0, 180]
+
+	# # varied size axis
+	# sizeAxis = [1,0,1]
+	# # rotation axis
+	# rotationAxis = [0,1,0]
+	# # seed
+	# seed = 5
 
 	# print(list3)
 

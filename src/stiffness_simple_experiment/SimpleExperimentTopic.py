@@ -429,7 +429,7 @@ if __name__ == "__main__":
 
 
 	# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
-	proces.removeIncorrectTrials(data_P1_3L, [3,17])
+	# proces.removeIncorrectTrials(data_P1_3L, [3,17])
 	# print(data_P1_3L.loc[3,:])
 	# print(part.data['1L']['simple_experiment_data'].head(1))
 
@@ -438,64 +438,65 @@ if __name__ == "__main__":
 	plot_exp = PlotSimpleExperiment()
 
 
-	# # (1) plot trial times
-	# # copy and set custom legends
-	# time1_info = dict(plot_exp.trial_time) 
-	# time1_info['legends'] = ['Part1_Exp1L']
-	# # plot using custom legend
-	# fig_time,ax_time = plot_exp.singleDFPlot(data_P1_1L, time1_info)
-	# # add trial times plot from other experiment
-	# # set new color for line
+	# (1) plot trial times
+	# copy and set custom legends
+	time1_info = dict(plot_exp.trial_time) 
+	time1_info['legends'] = ['Part1_Exp1L']
+	# plot using custom legend
+	fig_time,ax_time = plot_exp.singleDFPlot(data_P1_3L, time1_info)
+
+	# add trial times plot from other experiment
+	# set new color for line
 	# time2_info = dict(time1_info)
 	# time2_info['colors'] = ['r']
 	# time2_info['legends'] = ['Part1_Exp3L']
 	# # add line to figure using other color
 	# ax_time = plot_exp.addLineFromDfToPlot(ax_time, data_P1_3L, time2_info)
 
-	# # (2) plot accuracy
-	# acc_info = dict(plot_exp.accuracy)
-	# fig_acc, ax_acc = plot_exp.singleDFPlot(data_P1_1L, acc_info)
+	# (2) plot accuracy
+	acc_info = dict(plot_exp.accuracy)
+	fig_acc, ax_acc = plot_exp.singleDFPlot(data_P1_3L, acc_info)
 
-	# # (3) plot shape error (diameter)
-	# shape_error_info = dict(plot_exp.shape_error)
-	# fig_shape, ax_shape = plot_exp.singleDFPlot(data_P1_1L, shape_error_info)
+	# (3) plot shape error (diameter)
+	shape_error_info = dict(plot_exp.shape_error)
+	fig_shape, ax_shape = plot_exp.singleDFPlot(data_P1_3L, shape_error_info)
 
-	# # (4) plot average shape error (radius)
-	# avg_shape_error_info = dict(plot_exp.avg_shape_error)
-	# fig_avgShape, ax_avgShape = plot_exp.singleDFPlot(data_P1_1L, avg_shape_error_info)
+	# (4) plot average shape error (diameter)
+	avg_shape_error_info = dict(plot_exp.avg_shape_error)
+	fig_avgShape, ax_avgShape = plot_exp.singleDFPlot(data_P1_3L, avg_shape_error_info)
 
-	# # (5) plot angle
-	# angle_info = dict(plot_exp.abs_angle)
-	# fig_angle, ax_angle = plot_exp.singleDFPlot(data_P1_1L, angle_info)
+	# (5) plot angle
+	angle_info = dict(plot_exp.abs_angle)
+	fig_angle, ax_angle = plot_exp.singleDFPlot(data_P1_3L, angle_info)
 
-	# # (6) plot user scales
-	# user_scales_info = dict(plot_exp.user_scales)
-	# fig_us, ax_us = plot_exp.singleDFPlot(data_P1_1L, user_scales_info)
+	# (6) plot user scales
+	user_scales_info = dict(plot_exp.user_scales)
+	fig_us, ax_us = plot_exp.singleDFPlot(data_P1_3L, user_scales_info)
 
-	# # (7) plot experiment scales
-	# exp_scales_info = dict(plot_exp.exp_scales)
-	# fig_es, ax_es = plot_exp.singleDFPlot(data_P1_1L, exp_scales_info)
+	# (7) plot experiment scales
+	exp_scales_info = dict(plot_exp.exp_scales)
+	fig_es, ax_es = plot_exp.singleDFPlot(data_P1_3L, exp_scales_info)
 
-	# # (8) plot originals experiment scales
-	# or_exp_scales_info = dict(plot_exp.or_user_scales)
-	# fig_oes, ax_oes = plot_exp.singleDFPlot(data_P1_1L, or_exp_scales_info)
+	# (8) plot originals experiment scales
+	or_exp_scales_info = dict(plot_exp.or_user_scales)
+	fig_oes, ax_oes = plot_exp.singleDFPlot(data_P1_3L, or_exp_scales_info)
 
-	# # (9) plot user quats
-	# user_quats_info = dict(plot_exp.user_quats)
-	# fig_us, ax_us = plot_exp.singleDFPlot(data_P1_1L, user_quats_info)
+	# (9) plot user quats
+	user_quats_info = dict(plot_exp.user_quats)
+	fig_us, ax_us = plot_exp.singleDFPlot(data_P1_3L, user_quats_info)
 
-	# # (10) plot experiment quats
-	# exp_quats_info = dict(plot_exp.exp_quats)
-	# fig_es, ax_es = plot_exp.singleDFPlot(data_P1_1L, exp_quats_info)
+	# (10) plot experiment quats
+	exp_quats_info = dict(plot_exp.exp_quats)
+	fig_es, ax_es = plot_exp.singleDFPlot(data_P1_3L, exp_quats_info)
 
-	# # (11) plot originals experiment quats
-	# or_exp_quats_info = dict(plot_exp.or_user_quats)
-	# fig_oes, ax_oes = plot_exp.singleDFPlot(data_P1_1L, or_exp_quats_info)
-
-
+	# (11) plot originals experiment quats
+	or_exp_quats_info = dict(plot_exp.or_user_quats)
+	fig_oes, ax_oes = plot_exp.singleDFPlot(data_P1_3L, or_exp_quats_info)
 
 
-	# plt.show()
+
+
+	plt.show()
 	# check what kind of set attributes the ax class has
 	# ax_getters = [getter for getter in dir(ax) if 'get' in getter]
 	# print(ax_getters)

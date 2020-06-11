@@ -24,7 +24,7 @@ except ImportError:
 class EllipsoidMessage(object):
     def __init__(self):
         pass
-    ######################### Ros Interface, message conversions etc  ###################################  
+    ######################### Ros Interface, message conversions, rviz msgs  ###################################  
     def eigDecompositionToMatrix(self, eigVectorMatrix, eigValueVector):
         originalMatrix = eigVectorMatrix* np.diag(eigValueVector) * np.transpose(eigVectorMatrix)
         return originalMatrix
@@ -608,7 +608,7 @@ class EllipsoidMessage(object):
             return
         return npMatrix.tolist()
 
-
+#################### METRIC FUNCTIONS SIMPLE EXPERIMENT  ####################
     # rename absoluteAngleBetweenEllipsoids, test function (is angle always positive?)
     def absoluteAngleBetweenEllipsoids(self,q1,q2,deg='deg'):
         # goal: find distance metric to compare ellipsoids
@@ -644,13 +644,20 @@ class EllipsoidMessage(object):
         # return newAngle
         return absoluteAngle
 
-    def errorOfPrincipleAxis(self,axes1,axes2):
-        # this function assumes sorted principle axis on size
+    def errorOfScales(self,axes1,axes2,to_principle_axis=False):
+    	# percentage is the absolute difference of axes 1 and 2 devided by axes 1
+    	# therefor axes 1 is the reference axes of which the error is expressed
+        # if half == True uses half of the input axes
+        # When the axis are not sorted on size, this function does that
+        # returns errorVec, percVec, (half) axis1, (half) axis2
+
         axes1 = np.array(axes1)
         axes2 = np.array(axes2)
-        # from diameter to principle axis length
-        axes1 = np.multiply(0.5,axes1) 
-        axes2 = np.multiply(0.5,axes2)
+
+        # from scales (diameter) to principle axis (radius) if to_principle_axis is true
+        if to_principle_axis:
+	        axes1 = np.multiply(0.5,axes1) 
+	        axes2 = np.multiply(0.5,axes2)
 
         s1 = np.argsort(axes1).tolist()
         s2 = np.argsort(axes2).tolist()
@@ -661,28 +668,22 @@ class EllipsoidMessage(object):
             axes1 = np.array(self.shuffleList(axes1,s1))
             axes2 = np.array(self.shuffleList(axes2,s2))
 
-        print("axes1 (U): {}\naxes2 (E): {}".format(axes1,axes2))
+        # print("axes1 (E): {}\naxes2 (U): {}".format(axes1,axes2))
+        # difference between vector
         errorAx = abs(axes1-axes2)
-        print(errorAx)
+        # print(errorAx)
 
-        percentage = 100*np.divide(errorAx,axes1)
-        percentage = [100 if per_i>100 else per_i for per_i in percentage]
-        # print(percentage)
+        # error/axes2*100% 
+        # if the error is larger than the experimnent axis, set to maximal error of 100%
+        to_perc = lambda x,y: x/y*100 if x<y else 100
+        percentageVec = [float(to_perc(error,length)) for error,length in zip(errorAx,axes1)]
 
-        # avgPer = np.average(percentage)
-        # print(avgPer)
 
-        # inversed = 100 - avgPer
-        # print(inversed)
-        return errorAx.tolist(), percentage, axes1.tolist()
+        return errorAx.tolist(), percentageVec, axes1.tolist(), axes2.tolist()
 
 
 
         # return float(np.average(np.abs(error))) # return numpyarray?
-
-            
-
-
 
     def volumeEllipsoid(self,scales):
         # scales are diameter
@@ -795,31 +796,31 @@ class EllipsoidMessage(object):
 
 if __name__ == "__main__":  
 
-    ###### 
+    # ###### 
     EM = EllipsoidMessage() 
-    wrist_ft_tool_link = [-0.5, 0.5, 0.5, 0.5]
+    # wrist_ft_tool_link = [-0.5, 0.5, 0.5, 0.5]
 
-    scalesExperiment = [0.088, 0.2073925, 0.4461775] 
-    quatsExperiment = [0.3826834324, 0, 0, 0.9238795325]
+    # scalesExperiment = [0.088, 0.2073925, 0.4461775] 
+    # quatsExperiment = [0.3826834324, 0, 0, 0.9238795325]
 
-    scalesUser = [0.08485281374238571, 0.4414204282931017, 0.2223998651578292]
-    quatsUser = [0.0120242869,    0.8758626002,    -0.4730794589,   0.0944242959]
-    userEigVec = [[-0.98187894,  0.11040363,  0.15402852],
-                    [-0.06827714,  0.55210245, -0.83097595],
-                    [-0.17678231, -0.82643443, -0.53455973]]
-    userEigVal = [1,3,2]
+    # scalesUser = [0.08485281374238571, 0.4414204282931017, 0.2223998651578292]
+    # quatsUser = [0.0120242869,    0.8758626002,    -0.4730794589,   0.0944242959]
+    # userEigVec = [[-0.98187894,  0.11040363,  0.15402852],
+    #                 [-0.06827714,  0.55210245, -0.83097595],
+    #                 [-0.17678231, -0.82643443, -0.53455973]]
+    # userEigVal = [1,3,2]
 
-    newscalesUser = [0.2223998652,    0.0848528137,    0.4414204283] 
-    newquatsUser = [-0.2900813569,   0.0513379139,    0.0212153076,    -0.9553884737]
+    # newscalesUser = [0.2223998652,    0.0848528137,    0.4414204283] 
+    # newquatsUser = [-0.2900813569,   0.0513379139,    0.0212153076,    -0.9553884737]
 
-    axis = EM.getCharacteristicAxis(scalesExperiment,scalesUser)
-    swappedAxisQuat, _, _, _, shuffleSeq = EM.axisSwap(scalesExperiment,scalesUser,userEigVec,userEigVal, 
-                                                                0.03, 0.2, axis)
-    # shuffle user scales manually
-    newscalesUser2 = EM.shuffleList(scalesUser,shuffleSeq)
-    newquatUser2,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newscalesUser2,axis)
-    print(newscalesUser2)
-    print(newquatUser2)
+    # axis = EM.getCharacteristicAxis(scalesExperiment,scalesUser)
+    # swappedAxisQuat, _, _, _, shuffleSeq = EM.axisSwap(scalesExperiment,scalesUser,userEigVec,userEigVal, 
+    #                                                             0.03, 0.2, axis)
+    # # shuffle user scales manually
+    # newscalesUser2 = EM.shuffleList(scalesUser,shuffleSeq)
+    # newquatUser2,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,newscalesUser2,axis)
+    # print(newscalesUser2)
+    # print(newquatUser2)
     # if axis == "normal":
     #     sequence = np.argsort(scalesExperiment)
 
@@ -836,12 +837,51 @@ if __name__ == "__main__":
     # swappedAxisQuat = self.getQuatFromMatrix(newUserVec)
     # return swappedAxisQuat, newUserScales, newUserVec, newUserVal  
 
+    # gegevens from csv, trial 16, 
+    # trial 16
+    experiment_scales = [0.088,0.088,0.4461775]
+    user_scales = [0.0848528137424, 0.0848528137424, 0.363338424942]
+    error_sorter = [0.00157359312881, 0.00157359312881, 0.0414195375292]
+
+    average_shape_error = 0.0148555748165
+    shape_acc = 91.4300003052
+
+    # inputs
+    ax1 = experiment_scales
+    ax2 = user_scales
+    print("input ax1: {}\ninput ax2: {}".format(ax1,ax2))
+    print(10*'--'+'\n')
+
+    # function principle axis
+    errorVec, perceVec, half_of_ax1, half_of_ax2 = EM.errorOfScales(ax1,ax2)
+    print("errorVec: {}\nperceVec: {}\nhalf_of_ax1: {}\nhalf_of_ax2: {}".format(errorVec,perceVec,half_of_ax1,half_of_ax2) )
+    print(10*'--'+'\n')
+
+    # average and inverse relation
+    errorAvg = np.average(errorVec)
+    percAvg = np.average(perceVec)
+    print("errorAvg: {}\npercAvg: {}".format(errorAvg,percAvg))
+    print(10*'--'+'\n')
+
+    #inverse relation accuracy feedback
+    shape_acc = 100 - percAvg
+    print("shape_acc = {}".format(shape_acc))
+
+    print('\n')
+    print(type(errorVec[0]))
+    print(type(perceVec[0]))
+    print(type(half_of_ax1[0]))
+    print(type(half_of_ax2[0]))
+
+    # # print("percentage check")
+    # f = lambda x,y: x/y*100 if x<y else 100
+    # percCheck = [f(error,length) for error,length in zip(errorVec,half_of_ax2)]
+    # print("peceVec check: {}".format(percCheck))
 
 
-    # ax1 = [2,2,8]
-    # ax2 = [3.9,5,8.1]
-    # errorVec, avg = EM.errorOfPrincipleAxis(ax1,ax2)
-
+    # convert to percenatage
+    # shapeAccuracy = round(float(100 - np.average(percentageVec)),2)
+    # print(np.average())
     # print(avg)
     # print(type(average))
     ##### fix rotation a second way #####
@@ -878,14 +918,14 @@ if __name__ == "__main__":
     # # print(EM.checkRightHandedNessMatrix(R))
 
 
-    init_node("test_ellipses",anonymous=False)
-    while not is_shutdown(): 
+    # init_node("test_ellipses",anonymous=False)
+    # while not is_shutdown(): 
 
-        EM.broadcastEllipsoidAxis([0.5,0.5,0.5],wrist_ft_tool_link,"base_footprint","wrist_ft_tool_link")
-        EM.broadcastEllipsoidAxis([0,0,-0.5],quatsExperiment,"wrist_ft_tool_link","exp")
-        EM.broadcastEllipsoidAxis([0,0,+0.5],quatsUser,"wrist_ft_tool_link","ori")
-        EM.broadcastEllipsoidAxis([-0.4,0,+0.5],swappedAxisQuat,"wrist_ft_tool_link","swap")
-        EM.broadcastEllipsoidAxis([-0.4,0,+0.5],newquatsUser,"wrist_ft_tool_link","new")
+    #     EM.broadcastEllipsoidAxis([0.5,0.5,0.5],wrist_ft_tool_link,"base_footprint","wrist_ft_tool_link")
+    #     EM.broadcastEllipsoidAxis([0,0,-0.5],quatsExperiment,"wrist_ft_tool_link","exp")
+    #     EM.broadcastEllipsoidAxis([0,0,+0.5],quatsUser,"wrist_ft_tool_link","ori")
+    #     EM.broadcastEllipsoidAxis([-0.4,0,+0.5],swappedAxisQuat,"wrist_ft_tool_link","swap")
+    #     EM.broadcastEllipsoidAxis([-0.4,0,+0.5],newquatsUser,"wrist_ft_tool_link","new")
 
     # #     EM.broadcastEllipsoidAxis([0,1,0.5],q1_base,"base_footprint","q1_base")
     # #     EM.broadcastEllipsoidAxis([0,-1,0.5],q2_base,"base_footprint","q2_base")
