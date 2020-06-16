@@ -31,6 +31,15 @@
   <xacro:include filename="$(find marco_description)/urdf/sensors/usb_cam.urdf.xacro" />
 
   <!-- Now we can start using the macros included above to define the actual robot -->
+
+
+    <link name="world"/>
+    <joint name="world_to_base_footprint" type="fixed">
+        <parent link="world"/>
+        <child link="base_footprint"/>
+    </joint>
+
+  
   <xacro:base name="base"/>
   <xacro:marco_torso name="torso" parent="base_link"/>
   <xacro:usb_cam name="rear_cam" parent="torso_lift_link">
@@ -42,10 +51,11 @@
   <xacro:marco_arm name="arm" parent="torso_lift_link"/>
   <xacro:ft_sensor name="wrist" parent="arm_tool_link" reflect="1.0" />
   <xacro:hit_gripper name="gripper" parent="wrist_ft_tool_link" />
+  
   <xacro:usb_cam name="end_effector_cam" parent="gripper_camera_mount_link">
       <origin xyz="0 0.021 0" rpy="0 0 0" />
       <!-- optical origin -->
-      <origin xyz="0 0 -0.025" rpy="${-90*deg_to_rad} ${90*deg_to_rad} ${-90*deg_to_rad}" />
+      <origin xyz="0 0 0.025" rpy="${0*deg_to_rad} ${-90*deg_to_rad} ${-90*deg_to_rad}" />
   </xacro:usb_cam>
 
 </robot>
