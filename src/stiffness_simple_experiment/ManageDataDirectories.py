@@ -62,6 +62,7 @@ class ManageDataDirectories():
 		# args = "$1 $2 $3" etc..
 		full_path = path + "/" + file_name
 		command = full_path +" "+ args
+		print('Calling bash file to extract')
 		subprocess.call(command,shell=True)
 
 	def getAllPathsOfParticipant(self,part_path,csv_dir_list):
@@ -188,7 +189,7 @@ class ManageDataDirectories():
 		return file_paths
 
 	def addParticipant(self,part_path,topics):
-		bash_file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/"
+		bash_file_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment"
 		bash_file_name = "rosbag_2_csvs.sh"
 		if not isinstance(topics, list):
 			if isinstance(topics, str):
