@@ -60,6 +60,11 @@ src/gazebo_ros_demos
 *.csv
 *.yaml
 *.bag
+*.png
+*.jpg
+*.eps
+*.pdf
+*.gv
 
 data/
 old_data/
