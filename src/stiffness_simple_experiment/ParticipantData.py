@@ -143,6 +143,21 @@ class ParticipantData():
 					paths_containing_exp_dir.append(path)
 			self._setTopicsInExp(exp_name, topics, paths_containing_exp_dir)
 
+	def getMeanAndStds(self,dfList):
+		ms_list = []
+		for i,df in enumerate(dfList):
+			means = df.mean(axis = 0)
+			stds = df.std(axis = 0)
+			ms_df = pd.concat([means,stds], axis=1, keys=['mean_'+str(i+1),'std_'+str(i+1)])
+			ms_list.append(ms_df)
+
+		complete_df = pd.concat(ms_list,axis=1)
+		return complete_df
+
+
+
+
+
 
 	def main(self):
 	
