@@ -798,6 +798,30 @@ if __name__ == "__main__":
 
     # ###### 
     EM = EllipsoidMessage() 
+
+
+    qstart = [0,0,0,1]
+    q_ee = [ 0.7071068, 0, 0, 0.7071068 ] # world z axis is EE y axis
+
+    q_rot_w = [ 0, 0, -0.0871557, 0.9961947 ] # -10 degrees over world z axis
+    q_rot_l = [ 0, -0.0871557, 0, 0.9961947 ] # 10 degrees over locale y axis (same rotation as seen from world frame)
+
+    # rotate qee with 10 degress over world z axis
+    q_rotated_w = quaternion_multiply(q_rot_w,q_ee) # this is correct!
+
+    # rotate qee with 10 degrees over local y axis 
+    q_rotated_l = quaternion_multiply(q_ee,q_rot_l) # this is Also correct!
+
+    print(q_rotated_w)
+    print(q_rotated_l)
+
+    init_node("test_ellipses",anonymous=False)
+    while not is_shutdown(): 
+
+        EM.broadcastEllipsoidAxis([0.5,0.5,0.5],q_ee,"world","wrist_ft_tool_link")
+        EM.broadcastEllipsoidAxis([0.5,0.5,0.7],q_rotated_w,"world","w_rot")
+        EM.broadcastEllipsoidAxis([0.5,0.5,0.9],q_rotated_l,"world","l_rot")
+
     # wrist_ft_tool_link = [-0.5, 0.5, 0.5, 0.5]
 
     # scalesExperiment = [0.088, 0.2073925, 0.4461775] 
@@ -839,39 +863,39 @@ if __name__ == "__main__":
 
     # gegevens from csv, trial 16, 
     # trial 16
-    experiment_scales = [0.088,0.088,0.4461775]
-    user_scales = [0.0848528137424, 0.0848528137424, 0.363338424942]
-    error_sorter = [0.00157359312881, 0.00157359312881, 0.0414195375292]
+    # experiment_scales = [0.088,0.088,0.4461775]
+    # user_scales = [0.0848528137424, 0.0848528137424, 0.363338424942]
+    # error_sorter = [0.00157359312881, 0.00157359312881, 0.0414195375292]
 
-    average_shape_error = 0.0148555748165
-    shape_acc = 91.4300003052
+    # average_shape_error = 0.0148555748165
+    # shape_acc = 91.4300003052
 
-    # inputs
-    ax1 = experiment_scales
-    ax2 = user_scales
-    print("input ax1: {}\ninput ax2: {}".format(ax1,ax2))
-    print(10*'--'+'\n')
+    # # inputs
+    # ax1 = experiment_scales
+    # ax2 = user_scales
+    # print("input ax1: {}\ninput ax2: {}".format(ax1,ax2))
+    # print(10*'--'+'\n')
 
-    # function principle axis
-    errorVec, perceVec, half_of_ax1, half_of_ax2 = EM.errorOfScales(ax1,ax2)
-    print("errorVec: {}\nperceVec: {}\nhalf_of_ax1: {}\nhalf_of_ax2: {}".format(errorVec,perceVec,half_of_ax1,half_of_ax2) )
-    print(10*'--'+'\n')
+    # # function principle axis
+    # errorVec, perceVec, half_of_ax1, half_of_ax2 = EM.errorOfScales(ax1,ax2)
+    # print("errorVec: {}\nperceVec: {}\nhalf_of_ax1: {}\nhalf_of_ax2: {}".format(errorVec,perceVec,half_of_ax1,half_of_ax2) )
+    # print(10*'--'+'\n')
 
-    # average and inverse relation
-    errorAvg = np.average(errorVec)
-    percAvg = np.average(perceVec)
-    print("errorAvg: {}\npercAvg: {}".format(errorAvg,percAvg))
-    print(10*'--'+'\n')
+    # # average and inverse relation
+    # errorAvg = np.average(errorVec)
+    # percAvg = np.average(perceVec)
+    # print("errorAvg: {}\npercAvg: {}".format(errorAvg,percAvg))
+    # print(10*'--'+'\n')
 
-    #inverse relation accuracy feedback
-    shape_acc = 100 - percAvg
-    print("shape_acc = {}".format(shape_acc))
+    # #inverse relation accuracy feedback
+    # shape_acc = 100 - percAvg
+    # print("shape_acc = {}".format(shape_acc))
 
-    print('\n')
-    print(type(errorVec[0]))
-    print(type(perceVec[0]))
-    print(type(half_of_ax1[0]))
-    print(type(half_of_ax2[0]))
+    # print('\n')
+    # print(type(errorVec[0]))
+    # print(type(perceVec[0]))
+    # print(type(half_of_ax1[0]))
+    # print(type(half_of_ax2[0]))
 
     # # print("percentage check")
     # f = lambda x,y: x/y*100 if x<y else 100
