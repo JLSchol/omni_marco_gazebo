@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from os import path
 from ManageDataDirectories import ManageDataDirectories
+from PlotExperiment import PlotSimpleExperiment
 from ParticipantData import ParticipantData
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
@@ -17,10 +18,21 @@ except ImportError:
 class ProcessSimpleExperiment():
 	def __init__(self):
 		self.topic = 'simple_experiment'
-		self.exp_IDs = ['1R', '2R', '3R', '4R', '4L', '3L', '2L', '1L']
+		self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
+		self.exp_id = {
+						1: '1_DoF_Front_Practice',
+						2: '1_DoF_Front_Real',
+						3: '2_DoF_Front_Practice',
+						4: '2_DoF_Front_Real',
+						5: '1_DoF_Horizon_Practice',
+						6: '1_DoF_Horizon_Real',
+						7: '2_DoF_Horizon_Practice',
+						8: '2_DoF_Horizon_Real'
+		}
+		# need variables that store part names, data, other stuff in list for easy acces all over the code
 		
 
-	def removeFirstTrials(self,dataDict,exp_IDs=['1R', '2R', '3R', '4R', '4L', '3L', '2L', '1L'], 
+	def removeFirstTrials(self,dataDict,exp_IDs=['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R'], 
 																topics=['simple_experiment_data']):
 		for exp_x in exp_IDs:
 			for topic in topics:
@@ -36,6 +48,7 @@ class ProcessSimpleExperiment():
 
 		df2 = df.apply(fn, axis=1)
 		return df2.tolist()
+
 
 	def getSizeID2DoF(self, df):
 		# one of these 2 columns is not varied and the smallest size of the ellipsoid
@@ -74,6 +87,7 @@ class ProcessSimpleExperiment():
 			textList.append(text)
 		return textList
 		
+
 	def filterOnUniqueColumnValues(self, df, column_name):
 		newDfList = []
 		uniques = df[column_name].unique()
@@ -83,6 +97,7 @@ class ProcessSimpleExperiment():
 			newDf = df[is_value]
 			newDfList.append(newDf)
 		return newDfList, uniques
+
 
 	def createNewDFs(self,newColumns,dfs,dfs_column_ids):
 		# get data
@@ -195,461 +210,309 @@ class ProcessSimpleExperiment():
 		return textList
 
 
-
-
 	def removeIncorrectTrials(self, df, indices):
 		for index in indices:
 			df.loc[index, :] = None
+
 
 	def addColumns(self, df, column_labels, data_lists, insert_list):
 		for label, data, index in zip(column_labels,data_lists,insert_list):
 			df.insert(index, label, data, False)
 			df[label] = data
 
-	
+
 	def main():
 		pass
 
-class PlotSimpleExperiment():
-	def __init__(self):
-		self.trial_time = {'title': "Time per Trial",
-					'xLabel': "Trial [-]",
-					'yLabel': "Time [s]",
-					'xAxis': "field.trial_nr",
-					'yAxes': ["field.trial_time"],
-					'legends': ["time"],
-					'linestyles': ['-'],
-					'markers': ['d'],
-					'colors':['b'],
-					'loc':	"best",
-					'grid': True,
-					'linewidth' : 2,
-					'fs_label' : 14,
-					'fs_title' : 16,
-					'fs_legend': 12,
-					'xLim'	: False,
-					'yLim'	:(0,15)
-				}
-		self.accuracy = {'title': "Accuracy Feedback",
-					'xLabel': "Trial [-]",
-					'yLabel': "Accuracy [%]",
-					'xAxis': "field.trial_nr",
-					'yAxes': ["field.shape_acc","field.orientation_acc"],
-					'legends': ["shape","orientaton"],
-					'linestyles': ['-','-'],
-					'markers': ['d','d'],
-					'colors':['b','r'],
-					'loc':	"best",
-					'grid': True,
-					'linewidth' : 2,
-					'fs_label' : 14,
-					'fs_title' : 16,
-					'fs_legend': 12,
-					'xLim'	: False,
-					'yLim'	:(0,100)
-				}
+def combineData(dfList):
+	pass
 
-		self.shape_error = {'title': "Shape Error Axes (diameter)",
-					'xLabel': "Trial [-]",
-					'yLabel': "Error axes [m]",
-					'xAxis': "field.trial_nr",
-					'yAxes': ["field.error_sorted_principle_axes.x","field.error_sorted_principle_axes.y",
-																	"field.error_sorted_principle_axes.z"], # large -> small
-					'legends': ["axis 1","axis 2","axis 3"],
-					'linestyles': ['-','-','-'],
-					'markers': ['d','d','d'],
-					'colors':['b','r','g'],
-					'loc':	"best",
-					'grid': True,
-					'linewidth' : 2,
-					'fs_label' : 14,
-					'fs_title' : 16,
-					'fs_legend': 12,
-					'xLim'	: False,
-					'yLim'	: False
-				}
-
-		self.user_quats= {'title': "User Quaterion",
-					'xLabel': "Trial [-]",
-					'yLabel': "Unit quaternion [-]",
-					'xAxis': "field.trial_nr",
-					'yAxes': ["field.user_orientation.x","field.user_orientation.y",
-							"field.user_orientation.z","field.user_orientation.w"], # large -> small
-					'legends': ["q_x","q_y","q_z","q_w"],
-					'linestyles': ['-','-','-','-'],
-					'markers': ['d','d','d','d'],
-					'colors':['b','r','g','k'],
-					'loc':	"best",
-					'grid': True,
-					'linewidth' : 2,
-					'fs_label' : 14,
-					'fs_title' : 16,
-					'fs_legend': 12,
-					'xLim'	: False,
-					'yLim'	: (-1,1)
-				}
-
-		self.type_info= {'title': "Title",
-					'xLabel': "Size [-]",
-					'yLabel': "Performance [-]",
-
-					'legends': ["q_x","q_y","q_z","q_w"],
-					'linestyles': ['-','-','-','-'],
-					'markers': ['d','d','d','d'],
-					'colors':['b','r','g','k'],
-					'loc':	"best",
-					'grid': True,
-					'linewidth' : 2,
-					'fs_label' : 14,
-					'fs_title' : 16,
-					'fs_legend': 12,
-					'xLim'	: False,
-					'yLim'	: (-1,1)
-				}
-
-		self.avg_shape_error = dict(self.trial_time)
-		keys = ['title','yLabel','yAxes','legends','yLim']
-		values = ["Average Axes Shape Error (radius)", "Error [m]", ["field.shape"],["avg shape error"],False]
-		for key,value in zip(keys,values):
-			self.avg_shape_error[key] = value
-
-		self.abs_angle = dict(self.trial_time)
-		keys = [ 'title', 'yLabel', 'yAxes', 'legends', 'yLim' ]
-		values = ["Absolute Angle Between Ellipsoids", "angle [deg]", ["field.absolute_angle"], ['angle'] ,(0,90)]
-		for key,value in zip(keys,values):
-			self.abs_angle[key] = value
-
-		self.user_scales = dict(self.shape_error)
-		keys = [ 'title', 'yLabel', 'yAxes', 'legends', 'yLim' ]
-		values = ["User Scales", "size [m]", ["field.user_scales.x","field.user_scales.y","field.user_scales.z"], 
-		["axis 1","axis 2","axis 3"], (0,0.5)]
-		for key,value in zip(keys,values):
-			self.user_scales[key] = value
-
-		self.exp_scales = dict(self.user_scales)
-		keys = [ 'title', 'yAxes']
-		values = ["Experiment Scales", ["field.experiment_scales.x","field.experiment_scales.y","field.experiment_scales.z"]]
-		for key,value in zip(keys,values):
-			self.exp_scales[key] = value
-
-		self.or_user_scales = dict(self.exp_scales)
-		keys = [ 'title', 'yAxes']
-		values = ["User Scales original", ["field.original_user_scales.x","field.original_user_scales.y","field.original_user_scales.z"]]
-		for key,value in zip(keys,values):
-			self.or_user_scales[key] = value
-
-		self.exp_quats = dict(self.user_quats)
-		self.exp_quats['title'] = 'Experiment Quaterion'
-		self.exp_quats['yAxes'] = ['field.experiment_orientation.x','field.experiment_orientation.y',
-								'field.experiment_orientation.z','field.experiment_orientation.w']
-
-		self.or_user_quats = dict(self.exp_quats)
-		self.or_user_quats['title'] = 'Original User Quaternion'
-		self.or_user_quats['yAxes'] = ['field.original_user_orientation.x','field.original_user_orientation.y',
-								'field.original_user_orientation.z','field.original_user_orientation.w']
-
-
-
-	def singlePlotDf(self,df,plot_info):
-		fig,ax = plt.subplots()
-
-		ax.set_title(plot_info['title'],fontsize=plot_info['fs_title'])
-
-		for i, yAxis in enumerate(plot_info['yAxes']):
-
-			# set the plot in axis object for each specified y-value
-			ax.plot(df[plot_info['xAxis']],df[yAxis],label=plot_info['legends'][i],
-				linewidth=plot_info['linewidth'], linestyle=plot_info['linestyles'][i],
-				marker=plot_info['markers'][i],color=plot_info['colors'][i])
-
-		if plot_info['xLim'] != False:
-			ax.set_ylim(plot_info['xLim'])
-
-		if plot_info['yLim'] != False:
-			ax.set_ylim(plot_info['yLim'])
-
-		ax.set_xlabel(plot_info['xLabel'],fontsize=plot_info['fs_label'])
-		ax.set_ylabel(plot_info['yLabel'],fontsize=plot_info['fs_label'])
-		ax.legend(loc=plot_info['loc'],fontsize=plot_info['fs_legend'])
-		if plot_info['grid']:
-			ax.grid()
-		
-		return fig,ax
-
-	def addLineFromDfToPlot(self,ax,df,plot_info):
-		# get current legend ahndles and labels
-		# needs specification in plot_info of:
-		# xAxis, yAxes, legends, linewidth, linestyles, markers, colors, fs_legend, los
-
-		handles, labels = ax.get_legend_handles_labels()
-
-		# create new line/lines 
-		# append to handles and labels list of legend
-		# add plot to ax
-		for i, yAxis in enumerate(plot_info['yAxes']):
-
-			# create a new line from the plot info and the data frame
-			newLine = Line2D(df[plot_info['xAxis']],df[yAxis],label=plot_info['legends'][i],
-				linewidth=plot_info['linewidth'], linestyle=plot_info['linestyles'][i],
-				marker=plot_info['markers'][i],color=plot_info['colors'][i])
-
-			labels.append(plot_info['legends'][i])
-			handles.append(newLine)
-
-
-
-			ax.plot(df[plot_info['xAxis']],df[yAxis],label=plot_info['legends'][i],
-					linewidth=plot_info['linewidth'], linestyle=plot_info['linestyles'][i],
-					marker=plot_info['markers'][i],color=plot_info['colors'][i])
-
-		if plot_info['xLim'] != False:
-			ax.set_ylim(plot_info['xLim'])
-
-		if plot_info['yLim'] != False:
-			ax.set_ylim(plot_info['yLim'])
-
-		# legend must be reacreated as it cannot be updated
-		lgd = ax.get_legend()
-		lgd._legend_box = None
-		lgd._init_legend_box(handles, labels)
-		lgd.set_title(lgd.get_title().get_text())
-
-
-		ax.legend(loc=plot_info['loc'],fontsize=plot_info['fs_legend'])
-		return ax
-
-	def singleScatterPlotDf(self, df, plot_info):
-		fig,ax = plt.subplots()
-
-		ax.set_title(plot_info['title'],fontsize=plot_info['fs_title'])
-
-		for i, yAxis in enumerate(plot_info['yAxes']):
-
-			# set the plot in axis object for each specified y-value
-			ax.scatter(df[plot_info['xAxis']],df[yAxis],label=plot_info['legends'][i],
-				linewidth=plot_info['linewidth'], linestyle=plot_info['linestyles'][i],
-				marker=plot_info['markers'][i],color=plot_info['colors'][i])
-
-		if plot_info['xLim'] != False:
-			ax.set_ylim(plot_info['xLim'])
-
-		if plot_info['yLim'] != False:
-			ax.set_ylim(plot_info['yLim'])
-
-		ax.set_xlabel(plot_info['xLabel'],fontsize=plot_info['fs_label'])
-		ax.set_ylabel(plot_info['yLabel'],fontsize=plot_info['fs_label'])
-		ax.legend(loc=plot_info['loc'],fontsize=plot_info['fs_legend'])
-		if plot_info['grid']:
-			ax.grid()
-		
-		return fig,ax
-
-
-
-	def plotTypes(self,df,title,title_fs,xLabel,yLabel,fs_label,legend,fs_legend,marker='*',color='b',grid=True):		
-		# xl,yl = df.size()
-		fig,ax = plt.subplots()
-		
-		ax.set_title(title,fontsize=title_fs)
-
-		xticks = df.index.values
-		x = range(len(xticks))
-		for y in df.columns.values:
-			ax.scatter(x,df[y],
-				# label=plot_info['legends'][i],
-				# linewidth=plot_info['linewidth'], linestyle=plot_info['linestyles'][i],
-				marker=marker,color=color)
-
-		ax.set_xticks(x)
-		ax.set_xticklabels(xticks)
-		ax.set_xlabel(xLabel,fontsize=fs_label)
-		ax.set_ylabel(yLabel,fontsize=fs_label)
-		ax.legend(legend, loc='best',fontsize=fs_legend)
-		if grid:
-			ax.grid()
-
-		return fig,ax
-
-	def saveFigs(self,figs,fig_names,out_dir,extension='.png'):
-		for fig,fig_name in zip(figs,fig_names):
-			fig.savefig(path.join(out_dir,(fig_name+extension)))
 
 
 if __name__ == "__main__":
 	########## THE GETTING DATA DICTIONAIR PART ##########
 	# single participant
 	# get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
-	participant_nr = 2
-	part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(participant_nr)
-
 	MD = ManageDataDirectories()
-	exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
-	topics = ["simple_experiment_data"]
-	# get relavant directories containing the files
-	partx_info_file_path, _, partx_csvdir_paths, partx_txt_paths, _ = MD.getAllPathsOfParticipant(part_dir, MD.csv_dir_list)
-	csvfile_paths = MD.getFilesInDirList(partx_csvdir_paths,".csv")
-	# print(csvfile_paths)
+	part_data_list = []
+	for part_nr in [1,2]:
+		part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
 
-	# set the files in one dictionari
-	part = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
-	data = part.data
+		exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
+		topics = ["simple_experiment_data"]
+		# get relavant directories containing the files
+		partx_info_file_path, _, partx_csvdir_paths, partx_txt_paths, _ = MD.getAllPathsOfParticipant(part_dir, MD.csv_dir_list)
+		csvfile_paths = MD.getFilesInDirList(partx_csvdir_paths,".csv")
+
+		# set the files in one dictionari
+		part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
+		# data = part_x.data
+		part_data_list.append(part_x)
 
 
 	########## THE PROCESSING PART ##########
 	proces = ProcessSimpleExperiment()
+	# also initialize the plot class already
+	plot_exp = PlotSimpleExperiment()
 
 	# REMOVE ALL FIRST TRIALS
-	proces.removeFirstTrials(data)
+	# data = []
+	# loop over the participants
 
-	# list data of 1 participant: use this to make switching with plots esier
-	exp_data = {
-					1: data['1L']['simple_experiment_data'],
-					2: data['1R']['simple_experiment_data'],
-					3: data['2L']['simple_experiment_data'],
-					4: data['2R']['simple_experiment_data'],
-					5: data['3L']['simple_experiment_data'],
-					6: data['3R']['simple_experiment_data'],
-					7: data['4L']['simple_experiment_data'],
-					8: data['4R']['simple_experiment_data'],
-	}
-	exp_id = {
-					1: '1_DoF_Front_Practice',
-					2: '1_DoF_Front_Real',
-					3: '2_DoF_Front_Practice',
-					4: '2_DoF_Front_Real',
-					5: '1_DoF_Horizon_Practice',
-					6: '1_DoF_Horizon_Real',
-					7: '2_DoF_Horizon_Practice',
-					8: '2_DoF_Horizon_Real'
-	}
-	
-	nr = 8
-	dof = 2
+	for part_nr,part_x in enumerate(part_data_list): 
+		part_nr += 1 # start at 1 ipv 0
+		data = part_x.data
 
-	if dof == 1:
-		# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 1DOF
-		size_id_list = proces.getSizeID1DoF(exp_data[nr]) #returns dataframe
-		rot_id_list = proces.getRotIDText(exp_data[nr])
-		proces.addColumns(exp_data[nr], ['size_type','rot_type'], [size_id_list,rot_id_list], [5,6])
-	elif dof ==  2:
-		# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 2DOF
-		size_id_list2 = proces.getSizeID2DoF(exp_data[nr]) 
-		rot_id_list2 = proces.getRotIDText(exp_data[nr])
-		proces.addColumns(exp_data[nr], ['size_type','rot_type'], [size_id_list2,rot_id_list2], [5,6])
+		exp_data = {
+						1: data['1L']['simple_experiment_data'],
+						2: data['1R']['simple_experiment_data'],
+						3: data['2L']['simple_experiment_data'],
+						4: data['2R']['simple_experiment_data'],
+						5: data['3L']['simple_experiment_data'],
+						6: data['3R']['simple_experiment_data'],
+						7: data['4L']['simple_experiment_data'],
+						8: data['4R']['simple_experiment_data'],
+		}
+
+		proces.removeFirstTrials(part_x.data)
+
+		# loop over the experiments
+		for exp_nr in proces.exp_id.keys(): 
+			if exp_nr == 1 or exp_nr == 2 or exp_nr == 5 or exp_nr == 6: # 1 DOF
+				# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 1DOF
+				size_id_list = proces.getSizeID1DoF(exp_data[exp_nr]) #returns dataframe
+				rot_id_list = proces.getRotIDText(exp_data[exp_nr])
+				proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list,rot_id_list], [5,6])
+			elif exp_nr == 3 or exp_nr == 4 or exp_nr == 7 or exp_nr == 8: # 2 DOF
+				# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 2DOF
+				size_id_list2 = proces.getSizeID2DoF(exp_data[exp_nr]) 
+				rot_id_list2 = proces.getRotIDText(exp_data[exp_nr])
+				proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list2,rot_id_list2], [5,6])
 
 
 
-	# FIX NEW DF SUCH THAT IT CAN BE PLOTTED (CAREFULL WEIRD PROCESS BELOW)
-	size_dfs, uniques_sizes = proces.filterOnUniqueColumnValues(exp_data[nr],'size_type')
-	rot_dfs, uniques_rot = proces.filterOnUniqueColumnValues(exp_data[nr],'rot_type')
-	# creates dfs for every field in fieldList with index being the uniques and columns being the index of the 
-	# createNewDFs(newColumns,dfs,dfs_column_ids):
+			# FIX NEW DF SUCH THAT IT CAN BE PLOTTED (CAREFULL WEIRD PROCESS BELOW)
+			size_dfs, uniques_sizes = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'size_type')
+			rot_dfs, uniques_rot = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'rot_type')
+			# creates dfs for every field in fieldList with index being the uniques and columns being the index of the 
+			# createNewDFs(newColumns,dfs,dfs_column_ids):
 
-	[size_time_df,size_accShape_df,size_accRot_df] = proces.createNewDFs(uniques_sizes,size_dfs,[
-										'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
-	[rot_time_df,rot_accShape_df,rot_accRot_df] = proces.createNewDFs(uniques_rot,rot_dfs,[
-										'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
+			[size_time_df,size_accShape_df,size_accRot_df] = proces.createNewDFs(uniques_sizes,size_dfs,[
+												'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
+			[rot_time_df,rot_accShape_df,rot_accRot_df] = proces.createNewDFs(uniques_rot,rot_dfs,[
+												'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
 
 
 
 
+			# REMOVE INCORRECT TRIALS
+			# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
+			if exp_nr == 7 and part_nr == 2:
+				proces.removeIncorrectTrials(exp_data[exp_nr], [1,9])
+			if exp_nr == 2 and part_nr == 1:
+				proces.removeIncorrectTrials(exp_data[exp_nr], [1,4])
+			# print(exp_data[nr].loc[3,:])
 
-	# REMOVE INCORRECT TRIALS
-	# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
-	if nr == 7 and participant_nr == 2:
-		proces.removeIncorrectTrials(exp_data[nr], [1,9])
-	# print(exp_data[nr].loc[3,:])
 
+			########## THE PLOTTING PART ##########
+			# set output directory for figures
+			base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
+			out_dir = base_path + str(part_nr)+"/"+proces.exp_id[exp_nr]
+			# initialize plot class
+			
 
-	########## THE PLOTTING PART ##########
-	# set output directory for figures
-	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_2" +"/"+exp_id[nr]
-	# initialize plot class
+			# # plot types (1-6) 
+			# # shapes
+			# fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+			# fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			# fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			# # rotations
+			# fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+			# fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			# fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
 
-	# plot types
-	plot_exp = PlotSimpleExperiment()
-	# shapes
-	fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[exp_id[nr]],12)
-	fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[exp_id[nr]],12)
-	fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[exp_id[nr]],12)
-	# rotations
-	fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[exp_id[nr]],12)
-	fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[exp_id[nr]],12)
-	fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[exp_id[nr]],12)
+			# type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
+			# type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
+			# 'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
+			# plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
+			# plt.close('all')
 
-	type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
-	type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
-	'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
-	plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
+			# # (1) plot trial times
+			# # copy and set custom legends
+			# time1_info = dict(plot_exp.trial_time) 
+			# time1_info['legends'] = [proces.exp_id[exp_nr]]
+			# # plot using custom legend
+			# fig_time,ax_time = plot_exp.singlePlotDf(exp_data[exp_nr], time1_info)
 
-	# (1) plot trial times
-	# copy and set custom legends
-	time1_info = dict(plot_exp.trial_time) 
-	time1_info['legends'] = [exp_id[nr]]
-	# plot using custom legend
-	fig_time,ax_time = plot_exp.singlePlotDf(exp_data[nr], time1_info)
+			# # add trial times plot from other experiment (1-2)
+			# # set new color for line
+			# time2_info = dict(time1_info)
+			# time2_info['colors'] = ['r']
+			# time2_info['legends'] = [proces.exp_id[exp_nr]]
+			# # add line to figure using other color
+			# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[exp_nr], time2_info)
 
-	# # add trial times plot from other experiment
-	# # set new color for line
-	# time2_info = dict(time1_info)
-	# time2_info['colors'] = ['r']
-	# time2_info['legends'] = [exp_id[nr]]
-	# # add line to figure using other color
-	# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[nr], time2_info)
+			# # (2) plot accuracy
+			# acc_info = dict(plot_exp.accuracy)
+			# acc_info['title'] = proces.exp_id[exp_nr]
+			# fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[exp_nr], acc_info)
 
-	# (2) plot accuracy
-	acc_info = dict(plot_exp.accuracy)
-	acc_info['title'] = exp_id[nr]
-	fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[nr], acc_info)
+			# # (3) plot shape error (diameter)
+			# shape_error_info = dict(plot_exp.shape_error)
+			# shape_error_info['title'] = proces.exp_id[exp_nr]
+			# fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[exp_nr], shape_error_info)
 
-	# (3) plot shape error (diameter)
-	shape_error_info = dict(plot_exp.shape_error)
-	shape_error_info['title'] = exp_id[nr]
-	fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[nr], shape_error_info)
+			# # (4) plot average shape error (diameter)
+			# avg_shape_error_info = dict(plot_exp.avg_shape_error)
+			# fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[exp_nr], avg_shape_error_info)
 
-	# (4) plot average shape error (diameter)
-	avg_shape_error_info = dict(plot_exp.avg_shape_error)
-	fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[nr], avg_shape_error_info)
+			# # (5) plot angle
+			# angle_info = dict(plot_exp.abs_angle)
+			# fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[exp_nr], angle_info)
 
-	# (5) plot angle
-	angle_info = dict(plot_exp.abs_angle)
-	fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[nr], angle_info)
+			# # (6) plot user scales
+			# user_scales_info = dict(plot_exp.user_scales)
+			# fig_us, ax_us = plot_exp.singlePlotDf(exp_data[exp_nr], user_scales_info)
 
-	# (6) plot user scales
-	user_scales_info = dict(plot_exp.user_scales)
-	fig_us, ax_us = plot_exp.singlePlotDf(exp_data[nr], user_scales_info)
+			# # (7) plot experiment scales
+			# exp_scales_info = dict(plot_exp.exp_scales)
+			# fig_es, ax_es = plot_exp.singlePlotDf(exp_data[exp_nr], exp_scales_info)
 
-	# (7) plot experiment scales
-	exp_scales_info = dict(plot_exp.exp_scales)
-	fig_es, ax_es = plot_exp.singlePlotDf(exp_data[nr], exp_scales_info)
+			# # (8) plot originals experiment scales
+			# or_exp_scales_info = dict(plot_exp.or_user_scales)
+			# fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_scales_info)
 
-	# (8) plot originals experiment scales
-	or_exp_scales_info = dict(plot_exp.or_user_scales)
-	fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[nr], or_exp_scales_info)
+			# # (9) plot user quats
+			# user_quats_info = dict(plot_exp.user_quats)
+			# fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[exp_nr], user_quats_info)
 
-	# (9) plot user quats
-	user_quats_info = dict(plot_exp.user_quats)
-	fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[nr], user_quats_info)
+			# # (10) plot experiment quats
+			# exp_quats_info = dict(plot_exp.exp_quats)
+			# fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[exp_nr], exp_quats_info)
 
-	# (10) plot experiment quats
-	exp_quats_info = dict(plot_exp.exp_quats)
-	fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[nr], exp_quats_info)
+			# # (11) plot originals experiment quats
+			# or_exp_quats_info = dict(plot_exp.or_user_quats)
+			# fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_quats_info)
 
-	# (11) plot originals experiment quats
-	or_exp_quats_info = dict(plot_exp.or_user_quats)
-	fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[nr], or_exp_quats_info)
-
-	basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
-	basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
-	"7_exp_scales","8_exp_scales_original","9_user_quats","10_exp_quats","11_user_quats_original"]
-	plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
+			# basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
+			# basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
+			# "7_exp_scales","8_exp_scales_original","9_user_quats","10_exp_quats","11_user_quats_original"]
+			# plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
+			# plt.close('all')
+			# print('RUSTAAAGH!!!, plotjes worden gemaakt')
+			
 
 
 	# more advanced plots
+	# boxplots
+
+	############## GET DATA OF EACH PARTICIPANT ##############
+	# initialize some names and properties
+	column_names = ['Exp1_Shape','Exp1_Orientation','Exp1_Trial_time',
+	'Exp2_Shape','Exp2_Orientation','Exp2_Trial_time',
+	'Exp3_Shape','Exp3_Orientation','Exp3_Trial_time',
+	'Exp4_Shape','Exp4_Orientation','Exp4_Trial_time']
+
+	y_axes_names = ['Acc [%]','Time [s]']
+	x_tick_labels = ['experiment 1', 'experiment 2', 'experiment 3', 'experiment 4']
+	x_ticks = range(len(x_tick_labels))
+
+	# data that is interesting to keep
+	keep_list = ['field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+
+	# get name and data per participant
+	part_name_list = []
+	# create name string
+	partName = lambda nr: 'part_' + str(nr)
+	means_std_per_part = [] # list with means and std per participant in pandas df
+	for part_nr,part_x in enumerate(part_data_list): # for loop over the participants
+		part_nr += 1 # start at part_1 (no patient zero this time)
+		part_name_list.append(partName(part_nr))
+		exp_data = {
+						1: part_x.data['1L']['simple_experiment_data'],
+						2: part_x.data['1R']['simple_experiment_data'],
+						3: part_x.data['2L']['simple_experiment_data'],
+						4: part_x.data['2R']['simple_experiment_data'],
+						5: part_x.data['3L']['simple_experiment_data'],
+						6: part_x.data['3R']['simple_experiment_data'],
+						7: part_x.data['4L']['simple_experiment_data'],
+						8: part_x.data['4R']['simple_experiment_data'],
+		}
+		experiments = [ exp_data[2], exp_data[4], exp_data[6], exp_data[8] ]
+	################## GET MEANS AND STDS OF ONE PARTICIPANT FOR ALL PARTICIPANTS ################## 
+		# get from from data class
+		part_avgstds = part_x.getMeanAndStds(experiments)
+		# drop unimportant rows
+		part_avgstds = part_avgstds.transpose()[keep_list]
+		# add to list
+		means_std_per_part.append( part_avgstds )
+	# create, rename and shape one df from list of dfs
+	mean_stds_all_part = pd.concat(means_std_per_part, axis=0, keys=part_name_list)
+	mean_stds_all_part = mean_stds_all_part.reset_index()
+	mean_stds_all_part.rename(columns = {'level_0':'participants', 'level_1':'calc'},inplace=True)
+	mean_stds_all_part = mean_stds_all_part.pivot_table(index='participants', columns='calc', values=keep_list)
+
+	################## GET MEANS OF THE MEANS AND STDS OF THE PARTICIPANTS ################## 
+	average_of_means_stds = mean_stds_all_part.mean(axis=0)
+	average_of_means_stds = average_of_means_stds.reset_index()
+	average_of_means_stds.rename(columns = {'level_0':'metrics', 0:'data'}, inplace=True)
+	average_of_means_stds = average_of_means_stds.pivot_table(index='metrics',columns='calc',values='data')
+	# print(average_of_means_stds.iloc[:,0:4])
+
+
+	################## GET MEANS AND STDS OF THE TOTAL TRIALS ################## 
+	# get means/stds of all trials
+	# keep_list = ['size_type','rot_type','field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+	experiments = ['1R', '2R', '3R', '4R']
+	topic = 'simple_experiment_data'
+	keep_list = ['field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+	
+
+	exp_data = [] # list of 4 experiments df
+	for i, experiment in enumerate(experiments):
+
+		# get data of experiment_x for all participants
+		dfList = []
+		for i, part_x in enumerate(part_data_list): 
+			dx = part_x.data[experiment][topic][keep_list]
+			dfList.append(dx)
+		# add participants to exp x
+		exp_x_data = pd.concat(dfList,axis=0,keys=part_name_list)
+		# print(exp_x_data)	
+		exp_data.append(exp_x_data)
+
+	# wie = 'jelle'
+	# wie = 'jasper'
+	wie = 'iedereen'
+	out_dir = []
+	if wie == 'jelle':
+		exp_data = [exp_x_data.loc[ part_name_list[1], :] for exp_x_data in exp_data]
+		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_2"
+	elif wie == 'jasper':
+		exp_data = [exp_x_data.loc[ part_name_list[0], :] for exp_x_data in exp_data]
+		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_1"
+	else:
+		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+		pass
+
+	# remove nans and convert to list for each experiment
+	getData = lambda df,name: df[name].dropna().tolist()
+	exp1 = [getData(exp_data[0],'field.shape_acc'), getData(exp_data[0],'field.orientation_acc'), getData(exp_data[0],'field.trial_time')]
+	exp2 = [getData(exp_data[1],'field.shape_acc'), getData(exp_data[1],'field.orientation_acc'), getData(exp_data[1],'field.trial_time')]
+	exp3 = [getData(exp_data[2],'field.shape_acc'), getData(exp_data[2],'field.orientation_acc'), getData(exp_data[2],'field.trial_time')]
+	exp4 = [getData(exp_data[3],'field.shape_acc'), getData(exp_data[3],'field.orientation_acc'), getData(exp_data[3],'field.trial_time')]
+
+	fig_time_acc = plot_exp.BoxPlotGroup2axis(exp1,exp2,exp3,exp4)
+
+	box_figs = [fig_time_acc]
+	box_names = ["box_time_accuracy"]
+	plot_exp.saveFigs(box_figs,box_names,out_dir,'.png')
+	plt.close('all')
 
 
 	# plt.draw()
 	# check what kind of set attributes the ax class has
+
 	# ax_getters = [getter for getter in dir(ax) if 'get' in getter]
 	# print(ax_getters)
 
