@@ -1,42 +1,48 @@
 #!/usr/bin/env python
 from random import randrange, shuffle, Random
+import copy
 import numpy as np
 
 
 class ExperimentInfo(object):
 	def __init__(self,experimentNr=1,PracticeRun=False):
-		self.data = self.getInfo(experimentNr,PracticeRun)     
+		self.data = self.getInfo(experimentNr,PracticeRun)
+		print(self.data['scale'])     
 
 	def getInfo(self,experimentNr,PracticeRun):
 		experiment = str(experimentNr) + str(PracticeRun)
 		switcher={
 		'1False':self.experiment1DofFrontReal,
 		'2False':self.experiment2DofFrontReal,
+		# '2False':self.experiment2DofFrontReal_2,
 		'3False':self.experiment1DofTopReal,
 		'4False':self.experiment2DofTopReal,
+		# '4False':self.experiment2DofTopReal_2,
 
 		'1True':self.experiment1DofFrontPractice,
 		'2True':self.experiment2DofFrontPractice,
+		# '2True':self.experiment2DofFrontPractice_2,
 		'3True':self.experiment1DofTopPractice,
 		'4True':self.experiment2DofTopPractice,
-
-		'0False': self.freeForAll,
-
+		# '4True':self.experiment2DofTopPractice_2,
+		# '0False': self.freeForAll,
 		}
 		if experiment in switcher:
 			func = switcher.get(experiment, lambda: "invalid experiment definition: {}"
 						.format(experiment))
-			self.data = func()
+
+			# IF EXPERIMENT FAILS MIGHT WATN TO UNCOMMENT LINE BELOW 
+			# self.data = func() 
 			return func()
 		else:
 			print("invalid experiment name: {}".format(experiment))
 
 	def experiment1DofFrontReal(self):
-		# why is this function executed twice upon initialization?
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [4, 5]  
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -46,7 +52,8 @@ class ExperimentInfo(object):
 		seed = 1
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
 						'practice': False,
@@ -62,6 +69,7 @@ class ExperimentInfo(object):
 		amountDistinctEllips, repetitionsEllips = [4, 5]  
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -71,8 +79,9 @@ class ExperimentInfo(object):
 		seed = 2
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
-												sizeAxis, rotationAxis,seed)
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofTop',
 						'practice': False,
 						'trialNr': range(len(scales)),
@@ -89,6 +98,7 @@ class ExperimentInfo(object):
 		amountOvals,amountSmallPan,amountLargePan = [4,1,1]
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [1,0,1]
@@ -98,14 +108,51 @@ class ExperimentInfo(object):
 		seed = 3
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff,
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
-		infoSequence={  'experiment': '1DofTop',
+		infoSequence={  'experiment': '2DofFront',
 						'practice': False,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
 						'orientation': orientations
+						}
+		return infoSequence
+
+	def experiment2DofFrontReal_2(self):
+		######### experiment1DofFrontReal #########
+		######### 1DOF settings #########
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [4, 5]  
+		# create size list ordered
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [0,1,0]
+		# seed to create a pseudo random sequence
+		seed = 1
+
+		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		######### 2DOF #########
+		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
+		######## ADD 10 PANCACKES TO IT  ########
+		amountSmallPan, amountLargePan = [5,5] 
+		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
+															minSize, maxSize, smallCoeff, largeCoeff,
+																amountSmallPan, amountLargePan)
+		infoSequence={  'experiment': '2DofFront',
+						'practice': False,
+						'trialNr': range(len(sclaes2Dof)),
+						# tussen 0.0849 - 0.56557
+						'scale': sclaes2Dof,
+						'orientation': orientaitons2Dof
 						}
 		return infoSequence
 
@@ -116,6 +163,7 @@ class ExperimentInfo(object):
 		amountOvals,amountSmallPan,amountLargePan = [4,1,1]
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75]
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,1,1]
@@ -125,7 +173,8 @@ class ExperimentInfo(object):
 		seed = 4
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff,
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
 						'practice': False,
@@ -136,12 +185,49 @@ class ExperimentInfo(object):
 						}
 		return infoSequence
 
+	def experiment2DofTopReal_2(self):
+		######### experiment1DofTopReal #########
+		######### 1DOF settings #########
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [4, 5]  
+		# create size list ordered
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [1,0,0]
+		# seed to create a pseudo random sequence
+		seed = 2
+
+		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		######### 2DOF #########
+		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
+		######## ADD 10 PANCACKES TO IT  ########
+		amountSmallPan, amountLargePan = [5,5] 
+		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
+															minSize, maxSize, smallCoeff, largeCoeff,
+																amountSmallPan, amountLargePan)
+		infoSequence={  'experiment': '2DofTop',
+						'practice': False,
+						'trialNr': range(len(sclaes2Dof)),
+						# tussen 0.0849 - 0.56557
+						'scale': sclaes2Dof,
+						'orientation': orientaitons2Dof
+						}
+		return infoSequence
+
 
 	def experiment1DofFrontPractice(self):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		amountDistinctEllips, repetitionsEllips = [6, 4]  
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -151,7 +237,8 @@ class ExperimentInfo(object):
 		seed = 5
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
 						'practice': True,
@@ -167,6 +254,7 @@ class ExperimentInfo(object):
 		amountDistinctEllips, repetitionsEllips = [6, 4]  
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,0,1]
@@ -176,7 +264,8 @@ class ExperimentInfo(object):
 		seed = 6
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
 						'practice': True,
@@ -194,6 +283,7 @@ class ExperimentInfo(object):
 		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [1,0,1]
@@ -203,14 +293,51 @@ class ExperimentInfo(object):
 		seed = 7
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff,
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
-		infoSequence={  'experiment': '1DofTop',
+		infoSequence={  'experiment': '2DofFront',
 						'practice': True,
 						'trialNr': range(len(scales)),
 						# tussen 0.0849 - 0.56557
 						'scale': scales,
 						'orientation': orientations
+						}
+		return infoSequence
+
+	def experiment2DofFrontPractice_2(self):
+		######### experiment1DofFrontPractice #########
+		######### 1DOF settings #########
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [6, 4]  
+		# create size list ordered
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [0,1,0]
+		# seed to create a pseudo random sequence
+		seed = 5
+
+		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		######### 2DOF #########
+		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
+		######## ADD 10 PANCACKES TO IT  ########
+		amountSmallPan, amountLargePan = [5,5] 
+		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
+															minSize, maxSize, smallCoeff, largeCoeff,
+																amountSmallPan, amountLargePan)
+		infoSequence={  'experiment': '2DofFront',
+						'practice': True,
+						'trialNr': range(len(sclaes2Dof)),
+						# tussen 0.0849 - 0.56557
+						'scale': sclaes2Dof,
+						'orientation': orientaitons2Dof
 						}
 		return infoSequence
 
@@ -221,6 +348,7 @@ class ExperimentInfo(object):
 		amountOvals,amountSmallPan,amountLargePan = [5,1,1]
 		# create size list ordered
 		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
 		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
 		# varied size axis
 		sizeAxis = [0,1,1]
@@ -230,7 +358,8 @@ class ExperimentInfo(object):
 		seed = 8
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, minAngle, maxAngle, 
+												minSize, maxSize, smallCoeff, largeCoeff,
+												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
 						'practice': True,
@@ -240,9 +369,42 @@ class ExperimentInfo(object):
 						'orientation': orientations
 						}
 		return infoSequence
+	
+	def experiment2DofTopPractice_2(self):
+		######### experiment1DofTopPractice #########
+		######### 1DOF settings #########
+		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
+		amountDistinctEllips, repetitionsEllips = [6, 4]  
+		# create size list ordered
+		minSize, maxSize = [0.0848528137424, 0.56557] # generates 2 sizes: [minSize+quarter, minSize+3*quarter] for 4 ellipses
+		smallCoeff, largeCoeff = [0.25, 0.75] 
+		minAngle, maxAngle = [0, 180] #generates 4 equally distrubuted angles [0,45,90,135]
+		# varied size axis
+		sizeAxis = [0,0,1]
+		# rotation axis
+		rotationAxis = [1,0,0]
+		# seed to create a pseudo random sequence
+		seed = 6
 
-	def freeForAll(self):
-		pass
+		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
+												minSize, maxSize, smallCoeff, largeCoeff, 
+												minAngle, maxAngle, 
+												sizeAxis, rotationAxis, seed)
+		######### 2DOF #########
+		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
+		######## ADD 10 PANCACKES TO IT  ########
+		amountSmallPan, amountLargePan = [5,5] 
+		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
+															minSize, maxSize, smallCoeff, largeCoeff,
+																amountSmallPan, amountLargePan)
+		infoSequence={  'experiment': '2DofTop',
+						'practice': True,
+						'trialNr': range(len(sclaes2Dof)),
+						# tussen 0.0849 - 0.56557
+						'scale': sclaes2Dof,
+						'orientation': orientaitons2Dof
+						}
+		return infoSequence
 
 
 	def getShape(self,trialNr,data):
@@ -273,10 +435,6 @@ class ExperimentInfo(object):
 
 		return randList
 
-
-	def generateScales(self,minSize, maxSize):
-		pass
-
 	def shuffleList(self,lijst,sequence):
 		lijst = np.array(lijst)
 		newList = []
@@ -288,42 +446,6 @@ class ExperimentInfo(object):
 			print("This function does not handle a {}dimensional lsit".format(lijst.ndim))
 
 		return newList.tolist()
-
-		# def create1DofSequence(self,smallMedium,mediumLarge,
-		# 					minAngle, maxAngle ,step, amountInRandList, 
-		# 													repetitions):
-			
-		# 	sizes1DOF = [smallMedium, mediumLarge, smallMedium, mediumLarge]
-
-		# 	# Angle1 = EI.generateRandList(minAngle, maxAngle, step, amount) #0,15
-		# 	# Angle2 = EI.generateRandList(minAngle+20, maxAngle+15, step, amount) # 20,30
-		# 	# Angle3 = EI.generateRandList(minAngle+20+15, maxAngle+15+15, step, amount) # 35, 45
-		# 	# angles1DOF = [Angle1[0], Angle1[1], Angle2[0], Angle2[1], Angle3[0], Angle3[1]]
-
-		# 	angles1DOF = EI.generateRandList(minAngle, maxAngle, step, amountInRandList)
-
-		# 	# shuffle zize and angles in some way
-		# 	# shuffleSeq = EI.generateRandList(0, 5, 1, 6)
-		# 	# shuffleSeq = [int(x) for x in shuffleSeq]
-		# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
-		# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
-
-
-		# 	sizes1DOF = repetitions*sizes1DOF 
-		# 	angles1DOF = repetitions*angles1DOF
-
-		# 	shuffleSeq = self.generateRandList(0, 29, 1, 30)
-		# 	shuffleSeq = [int(x) for x in shuffleSeq]
-		# 	# sizes1DOF = EI.shuffleList(sizes1DOF,shuffleSeq)
-		# 	# angles1DOF = EI.shuffleList(angles1DOF,shuffleSeq)
-
-
-		# 	# # add starting angle and size to list
-		# 	sizes1DOF = [mediumLarge] + sizes1DOF
-		# 	angles1DOF = [0] + angles1DOF
-		# 	print(sizes1DOF)
-		# 	print(angles1DOF)
-		# 	return sizes1DOF, angles1DOF
 
 	def makeAngles(self,start,stop,amount):
 		interval = (float(stop)-start)/amount
@@ -345,7 +467,6 @@ class ExperimentInfo(object):
 		return sizeList
 
 	def repeatLists(self, sizeList, angleList, repititions):
-
 		repeatedSize = repititions*sizeList
 		repeatedAngles = repititions*angleList
 		return repeatedSize, repeatedAngles
@@ -364,7 +485,6 @@ class ExperimentInfo(object):
 		quat[1] = axis[1] * s
 		quat[2] = axis[2] * s
 		quat[3] = np.cos(angleRad/2)
-		# print(type(quat))
 		return quat.tolist()
 
 	def quatMultiply(self, q1, q2):
@@ -411,13 +531,26 @@ class ExperimentInfo(object):
 
 		return scaleList, quatList
 
+	def make2DofShapeList(self,xLength,yLength, amount):
+		return [ [xLength,yLength] for i in range(amount) ]
+
+
+	def getSmallLargeValues(self, minSize, maxSize, smallCoeff, largeCoeff):
+		# coeff ranges between 0-1 where 0 is min and 1 is max
+		diff = maxSize - minSize
+		smallSize = minSize + smallCoeff*diff
+		largeSize = minSize + largeCoeff*diff
+
+		return smallSize, largeSize
+
+
 	def experiment1Dof(self,amountDistinctEllips,repetitionsEllips,	# 4, 5
-						minSize, maxSize, minAngle, maxAngle,		# 0.08, 0.4, 0, 180
+						minSize, maxSize, smallCoeff, largeCoeff, # 0.08, 0.4, 0.25, 0.75
+						minAngle, maxAngle,		# 0, 180
 						sizeAxis, rotationAxis, seed):				# [0,0,1], [0,1,0], 5
 		# [0,0,1] (vary size around local z axis), [0,1,0](rotate around local y-axis)
-		quarter = (maxSize-minSize)/4
-		# make better function out of this next two lines
-		smallMedium, mediumLarge = [minSize+quarter, minSize+3*quarter] # not dynamic
+
+		smallMedium, mediumLarge = self.getSmallLargeValues(minSize,maxSize,smallCoeff,largeCoeff)
 		sizeList = self.makeSizes([smallMedium,mediumLarge],amountDistinctEllips)
 
 		# create angle list ordered
@@ -447,22 +580,86 @@ class ExperimentInfo(object):
 		return scales, orientations
 
 
-	def make2DofShapeList(self,xLength,yLength, amount):
-		# print(range(amount))
-		# print(xLength)
-		# print(yLength)
-		# print(10*'--')
-		return [ [xLength,yLength] for i in range(amount) ]
-		# return [self._make2DofShape(xLength, yLength) for i in range(amount)] 
+
+
+	def experiment2DoF_2(self, scales_1dof, orientation_1dof, rotationAxis, 
+						minSize, maxSize, smallCoeff, largeCoeff,
+						amountSmallPan, amountLargePan):
+		########## GET THE VARIED AXIS OF THE 2DOF SHAPE BASED ON ROTATION AXIS ##########
+		# if we are rotating around 1 axis we are varying the size of the other axes
+		sizeAxis2Dof = []
+		if rotationAxis == [0,1,0]:
+			sizeAxis2Dof = [1,0,1]
+		elif rotationAxis == [1,0,0]:
+			sizeAxis2Dof = [0,1,1]
+		elif rotationAxis == [0,0,1]:
+			sizeAxis2Dof = [1,1,0]
+		else:
+			print("DIT IS ONMOGELIJK o.O (foute invoer van rotatie as in experiment2DoF_2 func)")
+
+
+		######## Create the OVALS  based of 1Dof sigars ########
+		# convert 1Dof scalesList to 2 Dof scales by keeping the large axis 
+		# and setting the second to large axis to half the size of the large axis
+		scales_2dof = copy.deepcopy(scales_1dof)
+		for scales_xyz in scales_2dof: # e.g. scales_xyz = [0.0848528137424, 0.0848528137424, 0.4453907034356]
+			max_value = max(scales_xyz) 			# 0.4453907034356
+			half_value = max_value/2 			# 0.22369
+			max_index = scales_xyz.index(max_value) 	# 2
+			# set the other varied axis to # 0.22369 (replace one of the 0.0845 with 0.2236)
+			for i,scale_i in enumerate(sizeAxis2Dof): # sizeAxis2Dof = [1,0,1] or [0,1,1] vert or hor respectevily
+				# if (scale_i == 1) containts a 1 than it is a varied size axis
+				# AND
+				# if (max_index != i) iterator is not equal to the index of the max value
+				if (scale_i == 1) and (max_index != i): 
+					scales_xyz[i] = half_value
+					# result: [0.0848528137424, 0.0848528137424, 0.4453907034356] replaced with [0.22369, 0.0848528137424, 0.4453907034356]
+		
+
+		######## Create the PANCCKACES  ########
+		small, large = self.getSmallLargeValues(minSize,maxSize,smallCoeff,largeCoeff)
+		# size list 
+		pancakeSizelist = self.make2DofShapeList(small, small, amountSmallPan)
+		pancakeSizelist.extend(self.make2DofShapeList(large, large, amountLargePan))
+		# angle list
+		pancakeAngleList = len(pancakeSizelist)*[0] #angel = 0 degrees -> [0,0,0,etc]
+		panScale, panQuat = self.createScalesAndOrientations(pancakeSizelist, sizeAxis2Dof, minSize, 
+																	pancakeAngleList, rotationAxis,"2DOF")
+
+
+		######## EXTEND QUATS/SCALES 2DOF(ONLY CONTAINING OVALS NOW) WITH PANCAKES QUATS/SCALES  ########
+		scales_2dof.extend(panScale)
+		orientation_1dof.extend(panQuat) # orientations remain the same! in 2Dof and 1Dof
+
+
+		######### REMOVE FIRST FAKE START TRIAL  ########
+		first_trial_scales = scales_2dof.pop(0)
+		first_trial_ori = orientation_1dof.pop(0)
+		assert len(scales_2dof)==len(orientation_1dof)
+
+		######## SHUFFLE  ########
+		totalShapes = len(scales_2dof)
+		shuffleSeq = range(totalShapes)
+		Random(3).shuffle(shuffleSeq) # fixed seed
+		scales = self.shuffleList(scales_2dof, shuffleSeq)
+		orientations = self.shuffleList(orientation_1dof, shuffleSeq)
+
+		# ######## ADD START TRIAL  ########
+		scales.insert(0,first_trial_scales)
+		orientations.insert(0,first_trial_ori)
+		assert len(scales)==len(orientations)
+
+		return scales, orientations
 
 
 
 	def experiment2Dof(self,amountOvals,amountSmallPan,amountLargePan,repetitionsEllips,	
-						minSize, maxSize, minAngle, maxAngle,		
+						minSize, maxSize, smallCoeff, largeCoeff, 
+						minAngle, maxAngle,		
 						sizeAxis, rotationAxis, seed):
-		# create function that makes sizes based on min/max
-		quarter = (maxSize-minSize)/4
-		small, large = [minSize+quarter, minSize+3*quarter] # not dynamic
+
+		# create function that makes sizes based on min/max and small/large coeff
+		small, large = self.getSmallLargeValues(minSize,maxSize,smallCoeff,largeCoeff)
 		shapes = [[small,small],[small,large],[large,large]]
 
 		# since min,min and max,max are pancakes, the orientation does not matter
@@ -513,6 +710,7 @@ class ExperimentInfo(object):
 
 		scales, orientations = self.createScalesAndOrientations(totalSizeList, sizeAxis, minSize, 
 																	totalAngleList, rotationAxis, '2DOF')
+
 		return scales, orientations
 		
 
@@ -521,8 +719,24 @@ class ExperimentInfo(object):
 
 if __name__ == "__main__":  
 	pass
-
+	# print(20*'=1=')
+	# EI = ExperimentInfo(1,True)
+	# print(20*'--')
 	# EI = ExperimentInfo(2,True)
+	# print(20*'=2=')
+	# EI = ExperimentInfo(3,True)
+	# print(20*'--')
+	# EI = ExperimentInfo(4,True)
+	# print(20*'=3=')
+	# EI = ExperimentInfo(1,False)
+	# print(20*'--')
+	# EI = ExperimentInfo(2,False)
+	# print(20*'=4=')
+	# EI = ExperimentInfo(3,False)
+	# print(20*'--')
+	# EI = ExperimentInfo(4,False)
+
+
 
 	# # total amount of ellipses = amountDistinctEllips * repetitionsEllips
 	# amountDistinctEllips, repetitionsEllips = [4, 5]  
