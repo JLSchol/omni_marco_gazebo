@@ -20,15 +20,15 @@
 
   <!-- start up world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <!--<arg name="world_name" value="$(find stiffness_experiment)/worlds/$(arg world).world"/>-->
     <arg name="world_name" value="$(find marco_gazebo)/worlds/$(arg world).world"/>
+    <!--<arg name="world_name" value="$(find stiffness_experiment)/worlds/$(arg world).world"/>-->
     <arg name="gui" value="$(arg gui)"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="paused" value="$(arg paused)"/>
   </include>
 
   <!-- spawn robot in simulation -->
-  <include file="$(find marco_gazebo)/launch/marco_spawn.launch">
+  <include file="$(find stiffness_experiment)/launch/marco_spawn.launch">
     <arg name="robot"  value="$(arg robot)"/>
     <arg name="gzpose" value="$(arg gzpose)"/>
   </include>
