@@ -6,6 +6,8 @@ import numpy as np
 
 class ExperimentInfo(object):
 	def __init__(self,experimentNr=1,PracticeRun=False):
+		self.smallCoeff = 0.35
+		self.largeCoeff = 0.75
 		self.data = self.getInfo(experimentNr,PracticeRun)
 		print(self.data['scale'])     
 
@@ -13,18 +15,18 @@ class ExperimentInfo(object):
 		experiment = str(experimentNr) + str(PracticeRun)
 		switcher={
 		'1False':self.experiment1DofFrontReal,
-		'2False':self.experiment2DofFrontReal,
-		# '2False':self.experiment2DofFrontReal_2,
+		# '2False':self.experiment2DofFrontReal,
+		'2False':self.experiment2DofFrontReal_2,
 		'3False':self.experiment1DofTopReal,
-		'4False':self.experiment2DofTopReal,
-		# '4False':self.experiment2DofTopReal_2,
+		# '4False':self.experiment2DofTopReal,
+		'4False':self.experiment2DofTopReal_2,
 
 		'1True':self.experiment1DofFrontPractice,
-		'2True':self.experiment2DofFrontPractice,
-		# '2True':self.experiment2DofFrontPractice_2,
+		# '2True':self.experiment2DofFrontPractice,
+		'2True':self.experiment2DofFrontPractice_2,
 		'3True':self.experiment1DofTopPractice,
-		'4True':self.experiment2DofTopPractice,
-		# '4True':self.experiment2DofTopPractice_2,
+		# '4True':self.experiment2DofTopPractice,
+		'4True':self.experiment2DofTopPractice_2,
 		# '0False': self.freeForAll,
 		}
 		if experiment in switcher:
@@ -52,7 +54,7 @@ class ExperimentInfo(object):
 		seed = 1
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
@@ -79,7 +81,7 @@ class ExperimentInfo(object):
 		seed = 2
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofTop',
@@ -108,7 +110,7 @@ class ExperimentInfo(object):
 		seed = 3
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff,
+												minSize, maxSize, self.smallCoeff, self.largeCoeff,
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '2DofFront',
@@ -137,7 +139,7 @@ class ExperimentInfo(object):
 		seed = 1
 
 		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		######### 2DOF #########
@@ -145,7 +147,7 @@ class ExperimentInfo(object):
 		######## ADD 10 PANCACKES TO IT  ########
 		amountSmallPan, amountLargePan = [5,5] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
-															minSize, maxSize, smallCoeff, largeCoeff,
+															minSize, maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
 		infoSequence={  'experiment': '2DofFront',
 						'practice': False,
@@ -173,7 +175,7 @@ class ExperimentInfo(object):
 		seed = 4
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff,
+												minSize, maxSize, self.smallCoeff, self.largeCoeff,
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
@@ -202,7 +204,7 @@ class ExperimentInfo(object):
 		seed = 2
 
 		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		######### 2DOF #########
@@ -210,7 +212,7 @@ class ExperimentInfo(object):
 		######## ADD 10 PANCACKES TO IT  ########
 		amountSmallPan, amountLargePan = [5,5] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
-															minSize, maxSize, smallCoeff, largeCoeff,
+															minSize, maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
 		infoSequence={  'experiment': '2DofTop',
 						'practice': False,
@@ -237,7 +239,7 @@ class ExperimentInfo(object):
 		seed = 5
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
@@ -264,7 +266,7 @@ class ExperimentInfo(object):
 		seed = 6
 
 		scales, orientations = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		infoSequence={  'experiment': '1DofFront',
@@ -293,7 +295,7 @@ class ExperimentInfo(object):
 		seed = 7
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff,
+												minSize, maxSize, self.smallCoeff, self.largeCoeff,
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '2DofFront',
@@ -322,7 +324,7 @@ class ExperimentInfo(object):
 		seed = 5
 
 		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		######### 2DOF #########
@@ -330,7 +332,7 @@ class ExperimentInfo(object):
 		######## ADD 10 PANCACKES TO IT  ########
 		amountSmallPan, amountLargePan = [5,5] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
-															minSize, maxSize, smallCoeff, largeCoeff,
+															minSize, maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
 		infoSequence={  'experiment': '2DofFront',
 						'practice': True,
@@ -358,7 +360,7 @@ class ExperimentInfo(object):
 		seed = 8
 
 		scales, orientations = self.experiment2Dof(amountOvals,amountSmallPan,amountLargePan,repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff,
+												minSize, maxSize, self.smallCoeff, self.largeCoeff,
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis,seed)
 		infoSequence={  'experiment': '1DofTop',
@@ -387,7 +389,7 @@ class ExperimentInfo(object):
 		seed = 6
 
 		scales1DoF, orientations1DoF = self.experiment1Dof(amountDistinctEllips, repetitionsEllips, 
-												minSize, maxSize, smallCoeff, largeCoeff, 
+												minSize, maxSize, self.smallCoeff, self.largeCoeff, 
 												minAngle, maxAngle, 
 												sizeAxis, rotationAxis, seed)
 		######### 2DOF #########
@@ -395,7 +397,7 @@ class ExperimentInfo(object):
 		######## ADD 10 PANCACKES TO IT  ########
 		amountSmallPan, amountLargePan = [5,5] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
-															minSize, maxSize, smallCoeff, largeCoeff,
+															minSize, maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
 		infoSequence={  'experiment': '2DofTop',
 						'practice': True,
