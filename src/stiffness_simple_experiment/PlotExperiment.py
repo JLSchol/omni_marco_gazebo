@@ -282,6 +282,56 @@ class PlotSimpleExperiment():
 				for i,line2D in enumerate(bp_dict[element]):
 					line2D.set_facecolor(colorList[i])
 
+	def BoxPlotGroup2axisTypes(self,dfList,column_names,tick_labels):
+		# TO DO
+		# add title
+		# get legend on nice position
+		# add sample size on top?
+
+		colors = ['red','blue','green']
+
+		fig,ax1 = plt.subplots()
+		ax1.set_ylabel('accuracy [%]')
+		ax1.set_ylim(50,100)
+		ax2 = ax1.twinx() # second axisObj that has x-axis in common
+		ax2.set_ylabel('time [s]')
+		ax2.set_ylim(0,20)
+
+		p1=1 # skip zero tick of box plot
+		tick_values=[]
+		for df in dfList:
+			ys = [df.loc[:,name].dropna().tolist() for name in column_names]
+
+			p2=p1+1 # move p2 1 tick to the right of p1
+			p3=p2+1 # move p3 1 tick to the right of p2
+			# print(ys[2])
+
+			bp = ax1.boxplot([ys[0],ys[1]], positions=[p1, p2], widths=0.8, patch_artist=True)	
+			bp2 = ax2.boxplot(ys[2], positions=[p3], widths=0.8, patch_artist=True)	
+			# add bp2 to bp
+			for key in bp.keys():
+				bp[key].extend(bp2[key])
+
+			# set color
+			self.setColor(bp,colors)
+			# updat position 1	
+			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
+			tick_values.append(p2)
+			# label_list.append(label)
+
+		x_upper_lim = 4*len(dfList)
+
+		ax2.set_xticks(tick_values)
+		# ax2.set_xticklabels(tick_labels,rotation=45)
+		ax2.set_xlim(0,x_upper_lim)
+
+		ax2.legend([bp["boxes"][0],bp["boxes"][1],bp["boxes"][2]],['shape [%]','orientation [%]','trial time [s]'],
+						loc='lower left',fontsize='10')
+
+		ax1.set_xticklabels(tick_labels,rotation=70)
+		# ax1.set_xmargin()
+		fig.tight_layout()
+		return fig
 
 	def BoxPlotGroup2axis(self,exp1,exp2,exp3,exp4):
 		# TO DO
