@@ -269,7 +269,7 @@ def main():
     #########################       Approach door   ################################
     # assumes torso_lift_joint = 0.3 and gripper_joint 0.37 
     print "============ Press `Enter` to approach door ============"
-    # raw_input()
+    raw_input()
     joint_angles_at_door = [1.35, -0.18, 1.46, 0.35, -1.28, -0.58, -0.37]
     test_bool = cl.go_to_joint_state(joint_angles_at_door)
 

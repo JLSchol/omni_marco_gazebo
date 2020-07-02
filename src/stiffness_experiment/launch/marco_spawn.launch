@@ -31,13 +31,13 @@
         -J gripper_joint 0.37 
         -J head_1_joint 0 
         -J head_2_joint -0.38
-        -J arm_1_joint 1.35
-        -J arm_2_joint -0.18
-        -J arm_3_joint 1.46
-        -J arm_4_joint 0.35
-        -J arm_5_joint -1.28
-        -J arm_6_joint -0.58
-        -J arm_7_joint -0.37" 
+        -J arm_1_joint 0
+        -J arm_2_joint 0
+        -J arm_3_joint 0
+        -J arm_4_joint 0
+        -J arm_5_joint 0
+        -J arm_6_joint 0
+        -J arm_7_joint 0" 
     />
 
 </launch>
