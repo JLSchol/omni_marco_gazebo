@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+  <!-- When changing robot_reference_frame wrt HD also change the rotmatrix array!! -->
+  <!--<arg name="robot_reference_frame"          value="base_footprint"/> -->
+  <!--<arg name="omni_frame_name"          value="omni_rotation"/>-->
+  <!--<arg name="rot_matrix_array"          value="0 0 -1 -1 0 0 0 1 0"/> -->
+  <!-- base_footprint: name="rot_matrix_array"          default="0 0 -1 -1 0 0 0 1 0" -->
+  <!-- wrist_ft_tool_link: name="rot_matrix_array"          default="0 -1 0 0 0 1 -1 0 0" -->
+  <!-- launch omni-->
+
+<!-- launchg the omni-->
+  <!--<include file="$(find phantom_omni)/launch/omni_stiffness.launch"> 
+        <arg name="omni_frame_name"     default="$(arg omni_frame_name)"/>
+  </include>-->
+
+  <!-- setup Gazebo world, spawn marco, bringup in simlatoin-->
+  <include file="$(find stiffness_experiment)/launch/world.launch"/>
+
+  <!-- Add omni HD to tf from robot-->
+  <!--<include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">
+      <arg name="parent_reference_frame"     default="$(arg robot_reference_frame)"/>
+      <arg name="child_HD_frame_name"     default="$(arg omni_frame_name)"/> 
+      <arg name="rot_matrix_array"     default="$(arg rot_matrix_array)"/>
+  </include>-->
+
+  <!-- Launch stiffness package-->
+
+  <!-- launch task planner node-->
+  <!--<node name="EEF_Path_Planning" pkg="stiffness_experiment" type="omni" output="screen" />-->
+
+  <!--Rviz-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find stiffness_experiment)/cfg/micro_wave.rviz" required="true" />
+
+
+
+  
+</launch>

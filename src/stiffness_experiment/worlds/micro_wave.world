@@ -146,10 +146,10 @@
       <pose frame=''>0.554544 -0.556992 0 0 -0 0</pose>
     </model>
     <state world_name='default'>
-      <sim_time>1092 138000000</sim_time>
-      <real_time>461 584093539</real_time>
-      <wall_time>1593115301 999033821</wall_time>
-      <iterations>220490</iterations>
+      <sim_time>1123 142000000</sim_time>
+      <real_time>56 495847078</real_time>
+      <wall_time>1594039396 164629619</wall_time>
+      <iterations>31004</iterations>
       <model name='arm_chair'>
         <pose frame=''>4.33818 0.815613 0 0 0 -0.785398</pose>
         <scale>1 1 1</scale>
@@ -190,21 +190,21 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-    
       <model name='microwave_oven'>
-        <pose frame=''>1.16548 -0.069099 0.675 -3e-06 0 -1.59932</pose>
+        <pose frame=''>1.16461 -0.068784 0.675001 -1.8e-05 0 -1.57302</pose>
         <scale>1 1 1</scale>
         <link name='base_link'>
-          <pose frame=''>1.16548 -0.069099 0.675 -3e-06 0 -1.59932</pose>
-          <velocity>0.000185 -8e-06 0.000388 0.000677 0.012491 2e-05</velocity>
-          <acceleration>2.76602 -0.149258 0.617209 2.04211 0.426797 0.3226</acceleration>
-          <wrench>29.5688 -1.59557 6.59796 0 -0 0</wrench>
+          <pose frame=''>1.16461 -0.068784 0.674994 -1.8e-05 0 -1.57302</pose>
+          <velocity>0.0 -0.0 -0.0 0.0 0.0 -0.0</velocity>
+          <acceleration>0.0 -0.0 -0.0 0.0 -0.0 -0.0</acceleration>
+          <wrench>0.0 -0.0 -0.0 0 -0 0</wrench>
+
         </link>
         <link name='door_link'>
-          <pose frame=''>1.03509 0.146208 0.677131 1.5708 -0 -1.60293</pose>
-          <velocity>-7.4e-05 -2.3e-05 0.002183 0.000688 0.012629 0.000146</velocity>
-          <acceleration>2.89914 -0.220267 4.71428 -0.897074 0.250808 -2.66494</acceleration>
-          <wrench>3.23834 -0.246038 5.26586 0 -0 0</wrench>
+          <pose frame=''>1.0286 0.14302 0.677135 1.57078 1e-06 -1.57731</pose>
+          <velocity>0.0 -0.0 0.0 0.0 0.0 -0.0</velocity>
+          <acceleration>0.0 -0.0 -0.0 0.0 0.0 -0.0</acceleration>
+          <wrench>0.0 -0.0 -0.0 0 -0 0</wrench>
         </link>
       </model>
       <model name='sideboard'>
@@ -228,10 +228,10 @@
         </link>
       </model>
       <model name='tv'>
-        <pose frame=''>2.86662 -0.344549 0.696618 0 -0 0</pose>
+        <pose frame=''>3.00677 -0.344549 0.614024 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>2.86662 -0.344549 0.696618 0 -0 0</pose>
+          <pose frame=''>3.00677 -0.344549 0.614024 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -243,7 +243,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>-1.95793 -0.269159 5.38514 0 0.957796 -0.01115</pose>
+        <pose frame=''>-3.2299 -0.175982 7.32794 0 0.993793 0.008851</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -256,14 +256,14 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <inertial>
           <pose frame=''>-0.003499 0.0063 0.095793 0 -0 0</pose>
-          <mass>10.69</mass>
+          <mass>100</mass>
           <inertia>
             <ixx>0.15798</ixx>
             <ixy>0.002699</ixy>
             <ixz>0.0025714</ixz>
             <iyy>0.31998</iyy>
             <iyz>-0.0019679</iyz>
-            <izz>0.30475</izz>
+            <izz>10.0</izz>
           </inertia>
         </inertial>
         <collision name='base_link_collision'>
@@ -333,7 +333,10 @@
               <torsional>
                 <ode/>
               </torsional>
-              <ode/>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
             </friction>
           </surface>
         </collision>
