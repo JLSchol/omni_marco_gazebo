@@ -134,6 +134,7 @@ public:
 			// state->lock_pos[2] = omnifeed->position.z;
 		}
 		else{
+			ROS_INFO_STREAM("FORCE FEEDBACK DISABLED!!!!");
 			state->force[0] = 0;
 			state->force[1] = 0;
 			state->force[2] = 0;
