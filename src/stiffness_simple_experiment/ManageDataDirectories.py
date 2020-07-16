@@ -210,7 +210,17 @@ class ManageDataDirectories():
 			self.exportBagsToCsvDirs(bash_file_path, bash_file_name, partx_folder_bag_dict, topic)
 
 
+	def createFigureDirs(self,part_nr):
+		# add part dir
+		basepath = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures'
+		partFolder = 'part_'+str(part_nr)
+		self.createDir(basepath,partFolder)
 
+		dir_names = ['1_DoF_Front_Practice','1_DoF_Front_Real','1_DoF_Horizon_Practice','1_DoF_Horizon_Real',
+				'2_DoF_Front_Practice','2_DoF_Front_Real','2_DoF_Horizon_Practice','2_DoF_Horizon_Real']
+		path = basepath +'/' + partFolder
+		for name in dir_names:
+			self.createDir(path, name)
 
 
 	def main(self):
@@ -274,10 +284,12 @@ if __name__ == "__main__":
 	# # add everything from all participants
 	# MD.main()
 
-	# # add single participant
-	# partpath = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_3"
+	# add single participant
+	# partpath = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_5"
+	# partpath2 = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_6"
 	# topics = ["/simple_experiment_data"]
 	# MD.addParticipant(partpath,topics)
+	# MD.addParticipant(partpath2,topics)
 
 	# # extract specific topic(s) from bash file to specific folder
 	# destination_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_1/csvs_4_real"
@@ -289,5 +301,9 @@ if __name__ == "__main__":
 	# bash_args = bag_path + " " + destination_path + " " + topics
 	# MD.callBashFile(folder_with_bash_file,bash_file_name,bash_args)
 
-
+	# Add figure directory
+	# partnr = 5
+	# partnr2 = 6
+	# MD.createFigureDirs(partnr)
+	# MD.createFigureDirs(partnr2)
 
