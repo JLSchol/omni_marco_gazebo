@@ -7,8 +7,8 @@ import numpy as np
 class ExperimentInfo(object):
 	def __init__(self,experimentNr=1,PracticeRun=False):
 		# generates 2 sizes based on min/max values and coefficent
-		self.minSize, self.maxSize = 0.0848528137424, 0.56557
-		self.smallCoeff, self.largeCoeff = 0.35, 0.75
+		self.minSize, self.maxSize = 0.0848528137424, 0.5
+		self.smallCoeff, self.largeCoeff = 0.4, 0.9
 		#  small = minSize + smallCoeff*(maxSize-minSize)
 		#  large = minSize + largeCoeff*(maxSize-minSize)
 		
