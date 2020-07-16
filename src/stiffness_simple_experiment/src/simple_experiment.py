@@ -251,18 +251,32 @@ class SimpleExperiment(object):
         # Then check direction of the new alligned axis ans rotate 180 when pionting in opposite directino
         # finally, rotate around that axis to the closest orientation of the exp ellipsoid
         # find the closest orientation by rotating around the longest axis        
-        axis = EM.getCharacteristicAxis(scalesExperiment,self.originalUserScales)
+        axis, expShape, userShape = EM.getCharacteristicAxis(scalesExperiment,self.originalUserScales)
         swappedAxisQuat, self.userScales, _, _, _ = EM.axisSwap(scalesExperiment,scales,eigVectors,eigValues, 
         														self._lambda_min, self._lambda_max,axis) # new user quat
 
         # returns closest quat after projection and and as 2nd flipped axis quaternion if this was necessary (_)
-        self.userQuat,_ = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)  
+        self.userQuat, swappedFlippedQuat = EM.closestQuaternionProjection(swappedAxisQuat,quatsExperiment,self.userScales,axis)
+
+        # if user and exp ellipsoid have 3 unique scales-> both 2DoF ovals, does not need projection step
+        if len(scalesExperiment)==len(set(scalesExperiment)) and len(scales)==len(set(scales)): # ellips-ellisps
+            print('oval/ oval fixing orientation')
+            long_axis_index = scalesExperiment.index(max(scalesExperiment)) 
+            self.userQuat = EM.rotate2DofOval(swappedFlippedQuat, quatsExperiment, long_axis_index)
+            self.userScales = EM.getOvalShuffledScales(scalesExperiment,self.originalUserScales)
+            
+
+        
     
         # transform ellipsoids to standard position such that they can be compared
         # still does not solve the problem if there are undetermined axis
         # self.userToZeroQuat, self.expToZeroQuat, rot = EM.transformQuatsToZero(swappedAxisQuat, quatsExperiment, [0,0,0,1])
-        # EM.broadcastEllipsoidAxis([-0.25,0,0],self.expToZeroQuat,"wrist_ft_tool_link","expTo0")
-        # EM.broadcastEllipsoidAxis([-0.5,0,0,0],self.userToZeroQuat,"wrist_ft_tool_link","userTo0")
+        # EM.broadcastEllipsoidAxis([-0.25,0,0],self.originalUserQuat,"wrist_ft_tool_link","original")
+        # EM.broadcastEllipsoidAxis([-0.5,0,0,0],swappedAxisQuat,"wrist_ft_tool_link","after_swap")
+        # EM.broadcastEllipsoidAxis([-0.75,0,0,0],swappedFlippedQuat,"wrist_ft_tool_link","after_swap_flip")
+        # EM.broadcastEllipsoidAxis([-1,0,0],self.userQuat,"wrist_ft_tool_link","after_rot")
+        # ellipsmsgs = EM.getEllipsoidMsg('wrist_ft_tool_link','val_ellips',0,[-1,0,0],self.userQuat,self.userScales,[0.95,0.95,0.05,0.3],lifeTime=0)
+        # self._ellipsPub.publish(ellipsmsgs)
 
         # print(10*"----")
         # print("Experiment scales: {}  ;   quats: {}".format(scalesExperiment, quatsExperiment))
@@ -284,7 +298,7 @@ class SimpleExperiment(object):
 
         # Shape metrics + feedback measures
         # See EM.errorOfScales for explanation of percentage/error vec, and False/True
-        errorVec, percentageVec, _, _ = EM.errorOfScales(scalesExperiment,self.userScales,False) 
+        errorVec, percentageVec, _, _ = EM.errorOfScales(scalesExperiment,self.userScales,False,expShape) 
         avgShapeError = float(np.average(errorVec))             # errorVec can be larger that the scalesExperiment
         avgShapePercentage = float(np.average(percentageVec))   # percentageVec = errorVec/scalesExperiment*100[%] BUT IS LIMITED TO 100%
         #inverse shape accuracy feedback to be consistent with the rotation accuracy measure

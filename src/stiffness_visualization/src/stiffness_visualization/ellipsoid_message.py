@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from rospy import Time, init_node, is_shutdown, Duration
+from rospy import Time, init_node, is_shutdown, Duration, Publisher, logwarn
 from tf2_ros import TransformBroadcaster
 #import messages
 from geometry_msgs.msg import TransformStamped, Point
@@ -343,54 +343,67 @@ class EllipsoidMessage(object):
         maxListUser = [x for x in scalesUser if x == maxValueUser]
 
         axis = []
+        expType, userType = [], []
         if len(minListExp) == 2 and len(minListUser) == 2: # werkt long
             print("beiden Sigaar") 
             axis = 'long'
+            expType, userType = 'sigaar','sigaar'
         elif len(minListExp) == 2 and len(maxListUser) == 2: # werkt niet short and long
             print("exp sigaar, user pannenkoek")
             print("Dismiss trial incorrect orientation")
             axis = 'long'
+            expType, userType = 'sigaar','pannenkoek'
         elif len(minListExp) == 2 and len(minListUser) == 1: # werkt long
             print("exp sigaar, user ovaal")
             axis = 'long'
+            expType, userType = 'sigaar','ovaal'
         elif len(minListExp) == 2 and len(minListUser) == 3: # werkt nooit
             print("exp sigaar, user bol")
             print("Dismiss trial incorrect orientation")
+            expType, userType = 'sigaar','bol'
             axis = 'long'
 
         elif len(maxListExp) == 2 and len(maxListUser) == 2: # werkt short
             print("beden pannenkoek")
+            expType, userType = 'pannenkoek','pannenkoek'
             axis = 'short'
         elif len(maxListExp) == 2 and len(minListUser) == 2: # werkt niet long and short
             print("exp pannenkoek, user sigaar")
             print("Dismiss trial incorrect orientation")
+            expType, userType = 'pannenkoek','sigaar'
             axis = 'long'
         elif len(maxListExp) == 2 and len(maxListUser) == 1: # werkt short
             print("exp pannenkoek, user ovaal")
+            expType, userType = 'pannenkoek','ovaal'
             axis = 'short'
         elif len(maxListExp) == 2 and len(minListUser) == 3: # werkt nooit
             print("exp pannenkoek, user bol")
             print("Dismiss trial incorrect orientation")
+            expType, userType = 'pannenkoek','bol'
             axis = 'short'
 
         elif len(maxListExp) == 1 and len(minListUser) == 2: # werkt long
             print("exp ovaal, user Sigaar")
+            expType, userType = 'ovaal','Sigaar'
             axis = 'long'
         elif len(maxListExp) == 1 and len(maxListUser) == 2: # werkt short
             print("exp ovaal, user pannenkoek")
+            expType, userType = 'ovaal','pannenkoek'
             axis = 'short'
         elif len(maxListExp) == 1 and len(minListUser) == 1: # werkt long 
             print("exp ovaal, user ovaal")
+            expType, userType = 'ovaal','ovaal'
             axis = 'long'
         elif len(maxListExp) == 1 and len(minListUser) == 3: # werkt nooit
             print("exp ovaal, user bol")
             print("Dismiss trial incorrect orientation")
+            expType, userType = 'ovaal','bol'
             axis = 'long'
 
         else:
             print("no more cases possible -> otherwise error in code/logic")
 
-        return axis
+        return axis, expType, userType
 
 
     def axisSwap(self,expScales,userScales,userEigVec,userEigVal,lambda_min,lambda_max ,axis='long'):
@@ -400,9 +413,10 @@ class EllipsoidMessage(object):
         # userScales = self.getEllipsoidScales(userEigVal, lambda_min, lambda_max)
         # print("userScales: {}, expScales: {}".format(userScales,expScales))
         ############### HIER GAAT HET MIS ###############
-        print(type(expScales))
-        print(type(userScales))
+        # print(expScales)
+        # print(userScales)
         shuffleSeq = self.getShuffleSequence(expScales,userScales,userEigVal,userEigVec,axis) #CHECK THIS SEQUENCE WHEN BOTH SHAPSE ARE OVALS
+        # fixed by sorting the eigenvalues if both are
         ############### HIER GAAT HET MIS ###############
         newUserVal, newUserVec = self.shuffleEig(userEigVal, userEigVec, shuffleSeq)
         newUserScales = self.shuffleList(userScales,shuffleSeq)
@@ -442,11 +456,50 @@ class EllipsoidMessage(object):
 
         for iterator,otherAxisIndex in enumerate([other1Index,other2Index]):
             if not self._isAxisAlligned(qRoted[iterator],qTarget,longOrShortIndex,otherAxisIndex):
-                print("nog steeds niet alligned,\nGEEN IDEE HOE\nFOK HET\nschrap de trial")
+                logwarn("nog steeds niet alligned,\nGEEN IDEE HOE\nFOK HET\nschrap de trial")
 
         # find angle in de middle of the two found rotations
         qExpNew = self.slerp(qRoted[0],qRoted[1],[0.5])[0]
+
+        # if user oval and experiment oval, projection should not be needed therefore use: only qCorrected
         return qExpNew, qCorrected
+
+    def rotate2DofOval(self, q, q_target, long_axis_index):
+        axis = [0,0,0]
+        axis[long_axis_index] = 1
+        _,r1,r2 = self._getRemainingIndices(long_axis_index)
+        m_target = self.matrixFromQuat(q_target)
+
+        q_corrected = []
+        ax_1 = []
+        ax_2 = []
+        quadrant = np.pi/2.0 # 90 degrees
+        angles = [0, quadrant, 2*quadrant, 3*quadrant]
+        for angle in angles:
+            q_rotated = self.rotateQuatOverOneAxis(q,axis,angle)
+            m_rotated = self.matrixFromQuat(q_rotated)
+            ax_1 = np.dot(m_rotated[:,r1],m_target[:,r1])
+            ax_2 = np.dot(m_rotated[:,r1],m_target[:,r1])
+            if ax_1 > np.cos(quadrant/2.0) and ax_2 > np.cos(quadrant/2.0):
+                # print("quart_angle {}".format(np.cos(quadrant/2.0)))
+                print("ax_1 {}".format(ax_1))
+                print("ax_2 {}".format(ax_2))
+                q_corrected = q_rotated
+                break
+            else:
+
+                continue
+        if len(q_corrected) == 0:
+            logwarn("rotation was not corrected, trial should be eliminated")
+            logwarn("ax_1 {}".format(ax_1))
+            logwarn("ax_2 {}".format(ax_2))
+            q_corrected = [0,0,0,1]
+
+
+
+        return q_corrected
+
+
 
     # renamed change check 
     def _getAxisIndicesOfEllipses(self,scales,axis='long'):
@@ -506,13 +559,29 @@ class EllipsoidMessage(object):
         else:
             return True
 
+    def getOvalShuffledScales(self,exp_scales,user_scales):
+        se = np.argsort(exp_scales).tolist()
+        su = np.argsort(user_scales).tolist()
+        shuffleSequence = [0,0,0]
+        if su != se:
+            shuffleSequence[se[0]] = su[0] 
+            shuffleSequence[se[1]] = su[1]
+            shuffleSequence[se[2]] = su[2]
+            print("oval shuffleSequence found is {}".format(shuffleSequence))
+            new_user_scales = self.shuffleList(user_scales, shuffleSequence)
+            return new_user_scales
+        else:
+            return user_scales
+
+
+
     # remove some print statements, eigValues is not Used except that it needs to be an input for another function
     # Also, adjust formula to rotate also over the shortest axis
     def getShuffleSequence(self,scaleExp,scaleUser,eigValues,eigVectors,axis='long'):
         # function returns a sequence list with indexes that can be used to shuffle the eigValues,eigVectors positions
         # and thereby checks if the relocated eigVectors is an valid rotation 
-        print("initial scales Exp: {} \nscales user: {}".format(scaleExp,scaleUser))
-        print("initial eigVectors: \n{}".format(eigVectors))
+        print("Experiment Scales: {} \nUser Scales: {}".format(scaleExp,scaleUser))
+        print("initial User eigVectors: \n{}".format(eigVectors))
 
         # Star with unknown shuffleSequence
         shuffleSequence = ['x','y','z']
@@ -535,7 +604,10 @@ class EllipsoidMessage(object):
 
 
         # check if shuffle is necessary 
-        if shuffleImaxOrMin == shuffleVmaxOrMin:
+        se = np.argsort(scaleExp).tolist()
+        su = np.argsort(scaleUser).tolist()
+        if se == su and len(scaleUser)==len(set(scaleUser)):
+        # if shuffleImaxOrMin == shuffleVmaxOrMin: # this fails
             # print("specified principial axis are alligned, no shuffle needed")
             shuffleSequence = [0,1,2]
             print("no shuffling")
@@ -644,12 +716,16 @@ class EllipsoidMessage(object):
         # return newAngle
         return absoluteAngle
 
-    def errorOfScales(self,axes1,axes2,to_principle_axis=False):
+    def errorOfScales(self,axes1,axes2,to_principle_axis=False,expShape='pannenkoek'):
     	# percentage is the absolute difference of axes 1 and 2 devided by axes 1
     	# therefor axes 1 is the reference axes of which the error is expressed
         # if half == True uses half of the input axes
         # When the axis are not sorted on size, this function does that
         # returns errorVec, percVec, (half) axis1, (half) axis2
+        print('scales Exp')
+        print(axes1)
+        print('scales user')
+        print(axes2)
 
         axes1 = np.array(axes1)
         axes2 = np.array(axes2)
@@ -661,9 +737,9 @@ class EllipsoidMessage(object):
 
         s1 = np.argsort(axes1).tolist()
         s2 = np.argsort(axes2).tolist()
-        if s1 != s2:
+        if (s1 != s2) and (expShape != 'pannenkoek'):
             print("Cehck if axes are equally sorted, Axes1: {} and Axes2: {} sorted?\n{} , {}".format(axes1,axes2,s1,s2))
-            print("Sorting manually small to large")
+            logwarn("Sorting manually small to large")
             # set axis 2 in the same order as axis one
             axes1 = np.array(self.shuffleList(axes1,s1))
             axes2 = np.array(self.shuffleList(axes2,s2))
@@ -790,6 +866,18 @@ class EllipsoidMessage(object):
 
         return qToZero, q1ToZero, T1_0
 
+    def quatAndScalesToStiffnessMat(self, quats, scales):
+        # function that creates stiffness matrix based on quaternion and scales
+        eigenValues=0.5*np.array(scales)
+        # eigenValues = [0.5*scale for scale in scales]
+        eigVectorMatrix = self.matrixFromQuat(quats)
+
+        # convert quats to rotation matrix
+        stiffness_matrix = self.eigDecompositionToMatrix(eigVectorMatrix, eigenValues)
+
+        return stiffness_matrix
+
+
 
 
 
@@ -799,28 +887,45 @@ if __name__ == "__main__":
     # ###### 
     EM = EllipsoidMessage() 
 
+    q_ee,p_ee = [-0.5, 0.5, 0.5, 0.5], [0,0,1]
 
-    qstart = [0,0,0,1]
-    q_ee = [ 0.7071068, 0, 0, 0.7071068 ] # world z axis is EE y axis
-
-    q_rot_w = [ 0, 0, -0.0871557, 0.9961947 ] # -10 degrees over world z axis
-    q_rot_l = [ 0, -0.0871557, 0, 0.9961947 ] # 10 degrees over locale y axis (same rotation as seen from world frame)
-
-    # rotate qee with 10 degress over world z axis
-    q_rotated_w = quaternion_multiply(q_rot_w,q_ee) # this is correct!
-
-    # rotate qee with 10 degrees over local y axis 
-    q_rotated_l = quaternion_multiply(q_ee,q_rot_l) # this is Also correct!
-
-    print(q_rotated_w)
-    print(q_rotated_l)
+    position = [-0.5,0,0]
+    quats = [0,0,0,1]
+    scales = [0.0848528137, 0.0848528137, 0.3956820257]
+    K = EM.quatAndScalesToStiffnessMat(quats,scales)
+    print(K)
 
     init_node("test_ellipses",anonymous=False)
-    while not is_shutdown(): 
+    ellipsPub = Publisher("ellips_visual", Marker, queue_size=2)
+    ellipsoid_msg = EM.getEllipsoidMsg('wrist_ft_tool_link', 'e', 0, position, quats, scales, [0.25,0.74,0.25,1])
 
-        EM.broadcastEllipsoidAxis([0.5,0.5,0.5],q_ee,"world","wrist_ft_tool_link")
-        EM.broadcastEllipsoidAxis([0.5,0.5,0.7],q_rotated_w,"world","w_rot")
-        EM.broadcastEllipsoidAxis([0.5,0.5,0.9],q_rotated_l,"world","l_rot")
+
+    # qstart = [0,0,0,1]
+    # q_ee = [ 0.7071068, 0, 0, 0.7071068 ] # world z axis is EE y axis
+
+    # q_rot_w = [ 0, 0, -0.0871557, 0.9961947 ] # -10 degrees over world z axis
+    # q_rot_l = [ 0, -0.0871557, 0, 0.9961947 ] # 10 degrees over locale y axis (same rotation as seen from world frame)
+
+    # # rotate qee with 10 degress over world z axis
+    # q_rotated_w = quaternion_multiply(q_rot_w,q_ee) # this is correct!
+
+    # # rotate qee with 10 degrees over local y axis 
+    # q_rotated_l = quaternion_multiply(q_ee,q_rot_l) # this is Also correct!
+
+    # print(q_rotated_w)
+    # print(q_rotated_l)
+
+
+    while not is_shutdown(): 
+        EM.broadcastEllipsoidAxis(p_ee, q_ee, 'world', 'wrist_ft_tool_link') # 
+        EM.broadcastEllipsoidAxis(position, quats, 'wrist_ft_tool_link', 'ellips') # 
+        ellipsPub.publish(ellipsoid_msg)
+
+
+
+    #     EM.broadcastEllipsoidAxis([0.5,0.5,0.5],q_ee,"world","wrist_ft_tool_link")
+    #     EM.broadcastEllipsoidAxis([0.5,0.5,0.7],q_rotated_w,"world","w_rot")
+    #     EM.broadcastEllipsoidAxis([0.5,0.5,0.9],q_rotated_l,"world","l_rot")
 
     # wrist_ft_tool_link = [-0.5, 0.5, 0.5, 0.5]
 
