@@ -340,7 +340,7 @@ class SimpleExperiment(object):
         # textPosOr = [-0.3,0,-0.6]
         textHeightSH = 0.1
         idSh = 1
-        rgbSh = self._getColorText(shapeAcc)
+        rgbSh = self._getColorText(shapeAcc,'shape')
         shapeStr = self._feedBackText("Shape",shapeAcc,False)
 
         coeff = 0.88
@@ -348,7 +348,7 @@ class SimpleExperiment(object):
         # textPosOr = [textPosSh[0]+1.5*textHeightSH, textPosSh[1]+1.5*textHeightSH, textPosSh[2]-0.05]
         textHeightOr = textHeightSH*coeff # because this text is closer to the camera make smaller
         idOr = 2
-        rgbOr = self._getColorText(rotationAcc)
+        rgbOr = self._getColorText(rotationAcc,'orientation')
         orientationsStr = self._feedBackText("Orientation",rotationAcc,False)
 
         lifeTime = 3 # sec
@@ -396,11 +396,18 @@ class SimpleExperiment(object):
         return message
 
 
-    def _getColorText(self,acc):
+    def _getColorText(self,acc,metric):
         color = []
-        if acc >= 90.0:
+        upper, lower = [], []
+        if metric == 'shape':
+            lower, upper = 85, 92.5
+        elif metric == 'orientation':
+            lower, upper = 70, 85
+
+
+        if acc >= upper:
             color = [0.25,0.74,0.25,1] # 64, 191, 64 green
-        elif acc >= 80.0 and acc < 90:
+        elif acc >= lower and acc < upper:
         # elif 90.0 < acc <= 80:
             color = [1,0.457,0.102,1] # 255, 117, 26 orange
         else:
