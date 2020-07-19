@@ -277,7 +277,7 @@ class EllipsoidMessage(object):
         return vr;
 
     def relativeRotationQuat(self,q1,q2):
-        # from q1 to q2
+        ''' from q1 to q2 e.g. q2 = qr*q1 '''
         q1Inv = self.inverseQuat(q1)
         qr = quaternion_multiply(q2,q1Inv)
         return qr
@@ -866,9 +866,9 @@ class EllipsoidMessage(object):
 
         return qToZero, q1ToZero, T1_0
 
-    def quatAndScalesToStiffnessMat(self, quats, scales):
+    def quatAndScalesToMat(self, quats, scales):
         # function that creates stiffness matrix based on quaternion and scales
-        eigenValues=0.5*np.array(scales)
+        eigenValues=0.5*np.array(scales) # dit is niet correct!!!! dit is principle axis en niet de eigenvalues!!
         # eigenValues = [0.5*scale for scale in scales]
         eigVectorMatrix = self.matrixFromQuat(quats)
 
@@ -878,26 +878,129 @@ class EllipsoidMessage(object):
         return stiffness_matrix
 
 
+    def angleToPercentage(self, angle, deg=True):
+        """ input angle in deg or rad and set deg=False """
+        if deg == False:
+            angle = angle*57.29577951308232
+        return 100 - (angle*10)/9.0
+    def percToAngle(self, perc, deg=True):
+        angle = -(perc - 100)*9/10.0
+        if deg == False:
+            angle = angle/57.29577951308232
+        return angle
+        
+    def angleToProjection(self, angle, deg=True, axis_length=1):
+        if deg == True:
+            angle = angle/57.29577951308232     # to rad   
+        return axis_length*np.cos(angle)
+
+    def projectionToAngle(self, proj, deg=True):
+        angle = np.arccos(proj) # returns rad
+        if deg == True:
+            angle = angle*57.29577951308232   
+        return angle
+
+    # def()
+
+    def projectScales(self, ref_quat, ref_scale, q,s):
+        # scales are diameter of ellipsoid e.g. 2*principle axis
+        # quats are orientations wrt to the same fram e.g. EE frame
+        # ref is the frame onto which the scales are projected
+
+        prinAx_ref = np.diag(ref_scale)
+        prinAx = np.diag(s)
+
+        q_to_ref = self.relativeRotationQuat(q, ref_quat)
+        rotm_to_ref = self.matrixFromQuat(q_to_ref)
+
+        Vecs = np.dot(rotm_to_ref,prinAx).transpose() #column scales in ref_frame
+
+        # projects vec on other vec and returns a vec
+        projVec = lambda x,y: y*np.dot(x,y)/np.dot(y,y) # x on y
 
 
+        projMat = np.zeros((3,3))
+        for j,ref_axis in enumerate([prinAx_ref[:,0],prinAx_ref[:,1],prinAx_ref[:,2]]):
+            projVecs_on_ref_i = np.zeros(3)
+            for i in range(3):
+                projV_on_refi = projVec(Vecs[:,i], ref_axis) # proj v1 on ref 1
+                projVecs_on_ref_i +=projV_on_refi
+            projMat[:,j] = projVecs_on_ref_i
+
+
+        # find the difference between two matrices
+        diff = np.diag(projMat) - np.diag(prinAx_ref) 
+
+        # find the percentual difference
+        percentualDiff = abs(diff)/np.diag(prinAx_ref)*100 
+
+
+        # print('vecs in reference frame')
+        # print(Vecs)
+        # print('\nprinciple axis reference matrix:')
+        # print(prinAx_ref)
+        # print('\nProjection of scales on reference scales')
+        # print(projMat)
+        # print('\nDifference of reference scales and projected scales')
+        # print(diff)
+        # print('\nPercentual difference')
+        # print(percentualDiff)
+
+        return np.diag(projMat).tolist(), diff.tolist(), percentualDiff.tolist()
+
+        
 
 
 if __name__ == "__main__":  
 
     # ###### 
-    EM = EllipsoidMessage() 
+    EM = EllipsoidMessage()
 
-    q_ee,p_ee = [-0.5, 0.5, 0.5, 0.5], [0,0,1]
+    ref_quat = [0,0,0,1]
+    # quat = [ 0.3162278, 0, 0, 0.9486833 ]
+    quat = [ 0.258819, 0, 0, 0.9659258 ] #30
 
-    position = [-0.5,0,0]
-    quats = [0,0,0,1]
-    scales = [0.0848528137, 0.0848528137, 0.3956820257]
-    K = EM.quatAndScalesToStiffnessMat(quats,scales)
-    print(K)
+    # ref_scale = [0.0848528137424, 0.0848528137424, 0.5176021638285544]
+    ref_scale = [1,1,1]
+    # scale = [0.0848528137424, 0.0848528137424, 0.45]
+    scale = [1,1,1]
 
-    init_node("test_ellipses",anonymous=False)
-    ellipsPub = Publisher("ellips_visual", Marker, queue_size=2)
-    ellipsoid_msg = EM.getEllipsoidMsg('wrist_ft_tool_link', 'e', 0, position, quats, scales, [0.25,0.74,0.25,1])
+    a,b,c = EM.projectScales(ref_quat, ref_scale, quat, scale)
+
+    angle = 30
+    deg2rad = lambda deg: deg/57.29577951308232   
+    c = np.cos(deg2rad(angle))
+    s = np.sin(deg2rad(angle))
+    print('\n')
+    x = 1
+    # y = c*scale[1] - s*scale[2]
+    # y = 0.5*np.sqrt(3) -0.5
+    # z = c*scale[2] + s*scale[1]
+    # z = 0.5*np.sqrt(3) +0.5
+    # print([x,y,z])
+    # proj = 0.9
+    # angle = EM.projectionToAngle(proj)
+    # print(angle)
+    # perc = EM.angleToPercentage(angle)
+    # print(perc)
+
+    perc = 70
+    angle =EM.percToAngle(perc)
+    print(angle)
+    proj = EM.angleToProjection(angle)
+    print(proj)
+
+    # q_ee,p_ee = [-0.5, 0.5, 0.5, 0.5], [0,0,1]
+
+    # position = [-0.5,0,0]
+    # quats = [0,0,0,1]
+    # scales = [0.0848528137, 0.0848528137, 0.3956820257]
+    # K = EM.quatAndScalesToStiffnessMat(quats,scales)
+    # print(K)
+
+    # init_node("test_ellipses",anonymous=False)
+    # ellipsPub = Publisher("ellips_visual", Marker, queue_size=2)
+    # ellipsoid_msg = EM.getEllipsoidMsg('wrist_ft_tool_link', 'e', 0, position, quats, scales, [0.25,0.74,0.25,1])
 
 
     # qstart = [0,0,0,1]
@@ -916,10 +1019,10 @@ if __name__ == "__main__":
     # print(q_rotated_l)
 
 
-    while not is_shutdown(): 
-        EM.broadcastEllipsoidAxis(p_ee, q_ee, 'world', 'wrist_ft_tool_link') # 
-        EM.broadcastEllipsoidAxis(position, quats, 'wrist_ft_tool_link', 'ellips') # 
-        ellipsPub.publish(ellipsoid_msg)
+    # while not is_shutdown(): 
+    #     EM.broadcastEllipsoidAxis(p_ee, q_ee, 'world', 'wrist_ft_tool_link') # 
+    #     EM.broadcastEllipsoidAxis(position, quats, 'wrist_ft_tool_link', 'ellips') # 
+    #     ellipsPub.publish(ellipsoid_msg)
 
 
 
