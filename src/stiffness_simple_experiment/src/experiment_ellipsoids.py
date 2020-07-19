@@ -7,7 +7,7 @@ import numpy as np
 class ExperimentInfo(object):
 	def __init__(self,experimentNr=1,PracticeRun=False):
 		# generates 2 sizes based on min/max values and coefficent
-		self.minSize, self.maxSize = 0.0848528137424, 0.5
+		self.minSize, self.maxSize = 0.0848528137424, 0.5656854249492381 #= max =  lambdamax(=0.2)* 2.0*sqrt(2.0)= 0.03,0.2 =0.5656854249492381
 		self.smallCoeff, self.largeCoeff = 0.4, 0.9
 		#  small = minSize + smallCoeff*(maxSize-minSize)
 		#  large = minSize + largeCoeff*(maxSize-minSize)
@@ -177,6 +177,7 @@ class ExperimentInfo(object):
 						'scale': scales,
 						'orientation': orientations
 						}
+		infoSequence['orientation'][0] = [0.7071067813133527, 0.0, 0.0, 0.7071067810597423]
 		return infoSequence
 
 	def experiment2DofFrontReal(self):
@@ -300,6 +301,7 @@ class ExperimentInfo(object):
 						'scale': sclaes2Dof,
 						'orientation': orientaitons2Dof
 						}
+		infoSequence['orientation'][0] = [0.7071067813133527, 0.0, 0.0, 0.7071067810597423]
 		return infoSequence
 
 
@@ -332,7 +334,7 @@ class ExperimentInfo(object):
 
 	def experiment1DofFrontPractice_new(self):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
-		amountOfOrientations, repetitionsEllips = [4, 4]  
+		amountOfOrientations, repetitionsEllips = [4, 2]  
 		# varied size axis
 		sizeAxis = [0,0,1]
 		# rotation axis
@@ -382,7 +384,7 @@ class ExperimentInfo(object):
 
 	def experiment1DofTopPractice_new(self):
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
-		amountOfOrientations, repetitionsEllips = [4, 4]  
+		amountOfOrientations, repetitionsEllips = [4, 2]  
 		# varied size axis
 		sizeAxis = [0,0,1]
 		# rotation axis
@@ -401,6 +403,7 @@ class ExperimentInfo(object):
 						'scale': scales,
 						'orientation': orientations
 						}
+		infoSequence['orientation'][0] = [0.7071067813133527, 0.0, 0.0, 0.7071067810597423]
 		return infoSequence
 
 	def experiment2DofFrontPractice(self):
@@ -437,7 +440,7 @@ class ExperimentInfo(object):
 		######### 1DOF settings #########
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
 		# amountDistinctEllips, repetitionsEllips = [4, 5]  
-		amountOfOrientations, repetitionsEllips = [4, 4]  
+		amountOfOrientations, repetitionsEllips = [4, 2]  
 		# varied size axis
 		sizeAxis = [0,0,1]
 		# rotation axis
@@ -452,7 +455,7 @@ class ExperimentInfo(object):
 		######### 2DOF #########
 		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
 		######## ADD 10 PANCACKES TO IT  ########
-		amountSmallPan, amountLargePan = [4,4] 
+		amountSmallPan, amountLargePan = [2,2] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
 															self.minSize, self.maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
@@ -498,7 +501,7 @@ class ExperimentInfo(object):
 		######### experiment1DofTopReal #########
 		######### 1DOF settings #########
 		# total amount of ellipses = amountDistinctEllips * repetitionsEllips
-		amountOfOrientations, repetitionsEllips = [4, 4]  
+		amountOfOrientations, repetitionsEllips = [4, 2]  
 		# varied size axis
 		sizeAxis = [0,0,1]
 		# rotation axis
@@ -513,7 +516,7 @@ class ExperimentInfo(object):
 		######### 2DOF #########
 		######## USE THE SIGAR FROM 1DOF CASE AND TURN INTO 2DOF OVALS  ########
 		######## ADD 10 PANCACKES TO IT  ########
-		amountSmallPan, amountLargePan = [4,4] 
+		amountSmallPan, amountLargePan = [2,2] 
 		sclaes2Dof, orientaitons2Dof = self.experiment2DoF_2(scales1DoF, orientations1DoF, rotationAxis, 
 															self.minSize, self.maxSize, self.smallCoeff, self.largeCoeff,
 																amountSmallPan, amountLargePan)
@@ -524,6 +527,7 @@ class ExperimentInfo(object):
 						'scale': sclaes2Dof,
 						'orientation': orientaitons2Dof
 						}
+		infoSequence['orientation'][0] = [0.7071067813133527, 0.0, 0.0, 0.7071067810597423]
 		return infoSequence
 
 
@@ -879,8 +883,9 @@ class ExperimentInfo(object):
 if __name__ == "__main__":  
 	pass
 	# print(20*'=1=')
-	# EI = ExperimentInfo(4,False)
-	# EI.freeForAll()
+	# EI = ExperimentInfo(2,False)
+	# print(EI.data['scale'])
+
 	# EI.experiment1Dof_new()
 	# print(20*'--')
 	# EI = ExperimentInfo(2,True)
