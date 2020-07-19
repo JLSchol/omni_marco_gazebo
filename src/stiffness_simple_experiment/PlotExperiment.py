@@ -132,6 +132,12 @@ class PlotSimpleExperiment():
 		for key,value in zip(keys,values):
 			self.exp_scales[key] = value
 
+		self.projected_scales = dict(self.user_scales)
+		keys = [ 'title', 'yAxes']
+		values = ["Projected Scales", ['projected_scales.x','projected_scales.y','projected_scales.z']]
+		for key,value in zip(keys,values):
+			self.projected_scales[key] = value
+
 		self.or_user_scales = dict(self.exp_scales)
 		keys = [ 'title', 'yAxes']
 		values = ["User Scales original", ["field.original_user_scales.x","field.original_user_scales.y","field.original_user_scales.z"]]
@@ -274,6 +280,13 @@ class PlotSimpleExperiment():
 		for fig,fig_name in zip(figs,fig_names):
 			fig.savefig(path.join(out_dir,(fig_name+extension)))
 
+	def saveFigs2(self,figs,fig_names,out_dirs,extension='.png'):
+		for fig,fig_name,out_dir in zip(figs,fig_names,out_dirs):
+			print(fig)
+			print(fig_name)
+			print(out_dir)
+			fig.savefig(path.join(out_dir,(fig_name+extension)))
+
 	def setColor(self,bp_dict,colorList=['red','blue','green']):
 		for element in bp_dict.keys():
 
@@ -282,11 +295,18 @@ class PlotSimpleExperiment():
 				for i,line2D in enumerate(bp_dict[element]):
 					line2D.set_facecolor(colorList[i])
 
-	def BoxPlotGroup2axisTypes(self,dfList,column_names,tick_labels):
+	def BoxPlotGroup2axisTypes(self,dfList,column_names,tick_labels,part='All'):
 		# TO DO
 		# add title
 		# get legend on nice position
 		# add sample size on top?
+		getData = []
+		clean = lambda series: series.dropna().tolist()
+		if part == 'All':
+			getData = lambda df, part, fields: [clean(df.loc[:,field]) for field in fields]
+		else:
+			getData = lambda df, part, fields: [clean(df.loc[part,field]) for field in fields]
+
 
 		colors = ['red','blue','green']
 
@@ -300,7 +320,9 @@ class PlotSimpleExperiment():
 		p1=1 # skip zero tick of box plot
 		tick_values=[]
 		for df in dfList:
-			ys = [df.loc[:,name].dropna().tolist() for name in column_names]
+			# print(part)
+			ys = getData(df,part,column_names)
+			# ys = [df.loc[:,name].dropna().tolist() for name in column_names]
 
 			p2=p1+1 # move p2 1 tick to the right of p1
 			p3=p2+1 # move p3 1 tick to the right of p2
@@ -377,3 +399,15 @@ class PlotSimpleExperiment():
 		return fig
 
 		
+
+	def boxPlotExpMetric(self,exp_data):
+		fig,ax = plt.subplots()
+		
+		
+		bp = ax.boxplot(exp_data[0],exp_data[1],exp_data[2],exp_data[3])
+
+		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
+		# ax.set_xticks(tick_values)
+		ax.set_xticklabels(tick_labels)
+
+		return fig
