@@ -38,7 +38,7 @@ class ParticipantData():
 		#					}
 
 		# Set keys for dictionair: data
-		self.data_keys = ['participant_info'] + self.exp_IDs
+		self.data_keys = ['participant_info'] + self.exp_IDs + ['vanDerLaan']
 		# initialize dictionair 
 		self.data = dict.fromkeys(self.data_keys)
 		for exp_ID in self.exp_IDs:
@@ -154,6 +154,9 @@ class ParticipantData():
 		complete_df = pd.concat(ms_list,axis=1)
 		return complete_df
 
+	def setVanDerLaan(self,scores):
+		keys = [1,2,3,4,5,6,7,8,9]
+		self.data['vanDerLaan'] = dict(zip(keys, scores))
 
 
 
@@ -207,6 +210,7 @@ if __name__ == "__main__":
 
 
 	PD = ParticipantData(exp_IDs, part_info_file_path, partx_txt_paths, paths_csvdirs, csvfile_paths, topics)
+	PD.addVanDerLaan(scores)
 
 
 	# PD.setParticipantInfo(part_info_file_path)
