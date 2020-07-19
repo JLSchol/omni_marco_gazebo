@@ -3,6 +3,8 @@ from os import path
 from numpy import where
 import numpy as np
 import sys
+from copy import deepcopy
+from stiffness_visualization.ellipsoid_message import EllipsoidMessage
 from ManageDataDirectories import ManageDataDirectories
 from PlotExperiment import PlotSimpleExperiment
 from ParticipantData import ParticipantData
@@ -20,8 +22,10 @@ except ImportError:
 
 class ProcessSimpleExperiment():
 	def __init__(self):
-		self.topic = 'simple_experiment'
-		self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
+		self.vanderLaanScores = [
+							[3,4,3,3,2,2,2,4,4] ]
+		# self.topic = 'simple_experiment'
+		# self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
 		self.exp_id = {
 						1: '1_DoF_Front_Practice',
 						2: '1_DoF_Front_Real',
@@ -34,6 +38,15 @@ class ProcessSimpleExperiment():
 		}
 		self.uniqueEllipsoids = []
 		self.IDstrings = []
+		self.all_data = []
+		self.all_dfs = []
+		self.all_real_exp_dfs = []
+		self.all_prac_exp_dfs = []
+		self.all_types_dfs = []
+		self.part_name_list = []
+		self.real_exp_dfs = []
+		self.prac_exp_dfs = []
+		self.types_dfs = []
 		# need variables that store part names, data, other stuff in list for easy acces all over the code
 		
 
@@ -93,7 +106,7 @@ class ProcessSimpleExperiment():
 		return textList
 
 
-	def add1Or2Dof(self, df, trial_amount_1Dof=20, trial_amount_2Dof=30):
+	def add1Or2Dof(self, df):
 		# excluding fake trial
 		# scales = df["field.experiment_scales.x","field.experiment_scales.y","field.experiment_scales.z"].iloc[0]
 		scales = df.loc[1,["field.experiment_scales.x","field.experiment_scales.y","field.experiment_scales.z"]].tolist()
@@ -289,6 +302,9 @@ class ProcessSimpleExperiment():
 
 		return textList
 
+	def removeFailed001Trials(self,df):
+		indices = df.index[df['field.trial_time'] <= 0.02].tolist()
+		self.removeIncorrectTrials(df, indices)
 
 	def removeIncorrectTrials(self, df, indices):
 		for index in indices:
@@ -348,6 +364,9 @@ class ProcessSimpleExperiment():
 
 		return df2
 
+	def getExperimentDfsList(self, ):
+		pass
+
 	def getUniqueDfsList(self, df_uniques, df_exp_list):
 		types2DList=[]
 		column_names = df_uniques.columns.values
@@ -379,14 +398,162 @@ class ProcessSimpleExperiment():
 		# for i in range(len(df2DList)):
 		# 	df = df2DList[i][type_index]
 		# 	subList.append(df)
-		newdf = pd.concat(subList, ignore_index=True, keys=part_names)
+		newdf = pd.concat(subList, ignore_index=False, names=['participant','row_id'], keys=part_names)
 		# print(newdf)
 		return newdf
 
+	def getRowList(self, df, column_names):
+		return [row.tolist() for i,row in df[column_names].iterrows()]
+		
+	def addProjectedScales(self,df):
+		quat_exp_fields = ['field.experiment_orientation.x','field.experiment_orientation.y','field.experiment_orientation.z','field.experiment_orientation.w']
+		quat_user_fields = ['field.user_orientation.x','field.user_orientation.y','field.user_orientation.z','field.user_orientation.w']
+		scale_exp_fields = ['field.user_scales.x','field.user_scales.y','field.user_scales.z']
+		scale_user_fields = ['field.experiment_scales.x','field.experiment_scales.y','field.experiment_scales.z']
+
+		quats_exp = self.getRowList(df, quat_exp_fields)
+		scales_exp = self.getRowList(df, scale_exp_fields)
+		quats_usr = self.getRowList(df, quat_user_fields)
+		scales_usr = self.getRowList(df, scale_user_fields)
+		EM = EllipsoidMessage()
+		proj = [EM.projectScales(qe, se, qu, su)[0] for qe, se, qu, su in zip(quats_exp,scales_exp,quats_usr,scales_usr)]
+		proj_error = [EM.projectScales(qe, se, qu, su)[1] for qe, se, qu, su in zip(quats_exp,scales_exp,quats_usr,scales_usr)]
+		# proj = out[0]
+		# proj_error = out[1]
+		# proj_error = [EM.projectScales(qe, se, qu, su)[1] for qe, se, qu, su in zip(quats_exp,scales_exp,quats_usr,scales_usr)]
+		# print(proj)
+		self.addColumns(df, ['projected_scales.x','projected_scales.y','projected_scales.z'], np.array(proj).T.tolist(), [13,14,15])
+		self.addColumns(df, ['projected_error.x','projected_error.y','projected_error.z'], np.array(proj_error).T.tolist(), [13,14,15])
+
+		# print(df[['projected_scales.x','projected_scales.y','projected_scales.z']].values)
+
+	def main(self):
+		########## THE GETTING DATA DICTIONAIR PART ##########
+		# single participant
+		# get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
+		MD = ManageDataDirectories()
+
+		self.all_data = []
+
+		partName = lambda nr: 'part_' + str(nr)
+		self.part_name_list = []
+		for part_nr in [1]: # loop over participant folders
+			part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
+
+			exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
+			topics = ["simple_experiment_data"]
+			# get relavant directories containing the files
+			partx_info_file_path, _, partx_csvdir_paths, partx_txt_paths, _ = MD.getAllPathsOfParticipant(part_dir, MD.csv_dir_list)
+			csvfile_paths = MD.getFilesInDirList(partx_csvdir_paths,".csv")
+
+			# set the files in one dictionari
+			part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
+			# add van der laan scores
+			part_x.setVanDerLaan(self.vanderLaanScores[part_nr-1])
+			# data = part_x.data
+			self.all_data.append(part_x)
+			self.all_data.append(deepcopy(part_x))
+			self.part_name_list.append(partName(part_nr))
+			self.part_name_list.append(partName(2))
+
+		# we now have a dictionair With all the participants information
 
 
-	def main():
-		pass
+		# GET LIST OF ALL THE DFS
+		self.all_dfs = [] 
+		for part_x in self.all_data: # loop over all participants containing the participant data class
+			exp_data = {
+							1: part_x.data['1L']['simple_experiment_data'],
+							2: part_x.data['1R']['simple_experiment_data'],
+							3: part_x.data['2L']['simple_experiment_data'],
+							4: part_x.data['2R']['simple_experiment_data'],
+							5: part_x.data['3L']['simple_experiment_data'],
+							6: part_x.data['3R']['simple_experiment_data'],
+							7: part_x.data['4L']['simple_experiment_data'],
+							8: part_x.data['4R']['simple_experiment_data'],
+						}
+			self.all_dfs.append(exp_data)
+
+
+		# REMOVE ALL THE FIRST TRIALS
+		for part_x_data in self.all_data:
+			self.removeFirstTrials(part_x_data.data)
+
+		#  ADD COLUMNS AND REMOVE INCORRECT TRIALS THAT ARE SKIPPED
+		for part_x_dfs_dict in self.all_dfs:
+			for df in part_x_dfs_dict.values():
+				self.add1Or2Dof(df)
+				self.addSmallOrLarge(df)
+				self.addType(df)
+				self.addRotationAxis(df)
+				self.addRotation(df)
+				self.addProjectedScales(df)
+				self.removeFailed001Trials(df)
+
+		# IF NEED REMOVE TRIALS MANUALLY
+		# self.removeIncorrectTrials(df, indices)
+
+		
+		# CREAT CONVINEANT LIST per experiment
+		# all_real_exp_dfs[PARTICIPANT],[realExp] = df 		--> size([part_amount,4real])
+		# all_real_exp_dfs[PARTICIPANT],[practiceExp] = df 	--> size([part_amount,4prac])
+		for part_x_dfs_dict in self.all_dfs:
+			real_dfs = [part_x_dfs_dict[2],part_x_dfs_dict[4],part_x_dfs_dict[6],part_x_dfs_dict[8]]
+			prac_dfs = [part_x_dfs_dict[2],part_x_dfs_dict[4],part_x_dfs_dict[6],part_x_dfs_dict[8]]
+			self.all_real_exp_dfs.append(real_dfs)
+			self.all_prac_exp_dfs.append(prac_dfs)
+		# print(self.all_real_exp_dfs)
+		# print(len(self.all_real_exp_dfs)) # amount of participants
+		# print(len(self.all_real_exp_dfs[0])) # amount of experiments
+
+		# CREAT CONVINEANT LIST PER ELLIPSOID TYPE
+		# sort types together and put in one big 
+		self.uniqueEllipsoids, self.IDstrings = self.getUniqueEllipsCombinations(
+						[self.all_dfs[0][2], self.all_dfs[0][4], self.all_dfs[0][6], self.all_dfs[0][8]] )
+		# get all the types per
+		self.all_types_dfs = []
+		for part_x_dfs_dict in self.all_dfs:
+			experiments = [ part_x_dfs_dict[2], part_x_dfs_dict[4], part_x_dfs_dict[6], part_x_dfs_dict[8] ]
+			type_Dfs_part_x = self.getUniqueDfsList(self.uniqueEllipsoids, experiments)
+			# print(len(typesDfs_part_x)) # length of nr of types with 4 dataframes
+			self.all_types_dfs.append(type_Dfs_part_x) # length of nr participants
+		# print(self.all_types_dfs)
+		# print(len(self.all_types_dfs)) # amount of part
+		# print(len(self.all_types_dfs[0])) # amount of types
+
+
+
+		# CONCAT ALL THE PARTICIPANTS for the 4 experiments
+		# self.all_real_exp_dfs = [self.all_real_exp_dfs,self.all_real_exp_dfs]
+		for i in range(len(self.all_real_exp_dfs[0])):  # loop over index of the experiments conditions
+			concat_real_i = self.concatDfForMultiplePart(self.all_real_exp_dfs, i, self.part_name_list) # concats ellipse type i=0,1,2,3 ... 19
+			concat_prac_i = self.concatDfForMultiplePart(self.all_prac_exp_dfs, i, self.part_name_list) # concats ellipse type i=0,1,2,3 ... 19
+			self.real_exp_dfs.append(concat_real_i)	
+			self.prac_exp_dfs.append(concat_prac_i)	
+		# print(len(self.real_exp_dfs)) # 4
+		# print(len(self.real_exp_dfs[0])) # part*amount of trials of that condition
+		# print(self.real_exp_dfs[0])
+		# print(self.real_exp_dfs[0].index)
+		# print(self.real_exp_dfs[0].loc[:,:])
+		# print(self.real_exp_dfs[0].loc['part_1'])
+		# print(self.real_exp_dfs[0].loc['part_2'])
+
+
+
+		# CONCAT OVER ALL THE PARTICIPANTS for the types
+		for i in range(len(self.all_types_dfs[0])):  # loop over index of the ellipsoid types
+			concat_type_x = self.concatDfForMultiplePart(self.all_types_dfs, i, self.part_name_list) # concats ellipse type i=0,1,2,3 ... 19
+			self.types_dfs.append(concat_type_x)	
+		# print(self.types_dfs[0].index)
+		# print(self.types_dfs[0].loc[:,:])
+		# print(self.types_dfs[0].loc['part_1'])
+
+		# concat all_exp, all_types over all participants
+		# combined_type_x = self.concatDfForMultiplePart(typesDf, i, part_name_list)
+
+
+
+
 
 def combineData(dfList):
 	pass
@@ -394,12 +561,15 @@ def combineData(dfList):
 
 
 if __name__ == "__main__":
+	proces = ProcessSimpleExperiment()
+	proces.main()
+	sys.exit()
 	########## THE GETTING DATA DICTIONAIR PART ##########
 	# single participant
 	# get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
 	MD = ManageDataDirectories()
 	part_data_list = []
-	for part_nr in [5,6]:
+	for part_nr in [1]:
 		part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
 
 		exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
@@ -410,7 +580,6 @@ if __name__ == "__main__":
 
 		# set the files in one dictionari
 		part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
-		# data = part_x.data
 		part_data_list.append(part_x)
 
 
@@ -419,7 +588,9 @@ if __name__ == "__main__":
 	# also initialize the plot class already
 	plot_exp = PlotSimpleExperiment()
 
-	# testData = part_data_list[1].data['1R']['simple_experiment_data']
+	# testData = part_data_list[0].data['2R']['simple_experiment_data']
+	# proces.addProjectedScales(testData)
+
 	# proces.add1Or2Dof(testData)
 	# proces.addSmallOrLarge(testData)
 	# proces.addType(testData)
@@ -431,14 +602,15 @@ if __name__ == "__main__":
 	# print(testData.loc[:,['DoF','size','type','rotation_axis','rotation']])
 	# print(testData['field.experiment_scales.x'])
 
+	# sys.exit()
 	
 	data = []
 	typesDf=[]
 	# print(part_data_list[2].data['1L']['simple_experiment_data'])
 	# loop over the participants
-	for part_nr,part_x in enumerate([part_data_list[1]]): 
-		# part_nr += 1 # start at 1 ipv 0
-		part_nr = 6 # start at 1 ipv 0
+	for part_nr,part_x in enumerate(part_data_list): 
+		part_nr += 1 # start at 1 ipv 0
+		# part_nr = 6 # start at 1 ipv 0
 		# part_nr = 3 # only for exploring part 3
 		data = part_x.data
 
@@ -484,24 +656,25 @@ if __name__ == "__main__":
 
 
 			print(exp_nr)
-			if exp_nr%2==0: # only real experiments
-				t1,t2 = 20,30
-				if part_nr ==3 or part_nr ==4:
-					t1,t2 = 32,40
-				proces.add1Or2Dof(exp_data[exp_nr],t1,t2)
-				proces.addSmallOrLarge(exp_data[exp_nr])
-				proces.addType(exp_data[exp_nr])
-				proces.addRotationAxis(exp_data[exp_nr])
-				proces.addRotation(exp_data[exp_nr])
+			# if exp_nr%2==0: # only real experiments
+			# 	t1,t2 = 20,30
+			# 	if part_nr ==3 or part_nr ==4:
+			# 		t1,t2 = 32,40
+			proces.add1Or2Dof(exp_data[exp_nr])
+			proces.addSmallOrLarge(exp_data[exp_nr])
+			proces.addType(exp_data[exp_nr])
+			proces.addRotationAxis(exp_data[exp_nr])
+			proces.addRotation(exp_data[exp_nr])
+			proces.addProjectedScales(exp_data[exp_nr])
 				# print(exp_data[exp_nr].columns.values)
 			
 
 			# REMOVE INCORRECT TRIALS
 			# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
-			if exp_nr == 7 and part_nr == 2:
-				proces.removeIncorrectTrials(exp_data[exp_nr], [1,9])
-			if exp_nr == 2 and part_nr == 1:
-				proces.removeIncorrectTrials(exp_data[exp_nr], [1,4])
+			# if exp_nr == 7 and part_nr == 2:
+			# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,9])
+			# if exp_nr == 2 and part_nr == 1:
+			# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,4])
 			# if 
 			# print(exp_data[nr].loc[3,:])
 
@@ -516,101 +689,106 @@ if __name__ == "__main__":
 			# initialize plot class
 			
 
-		# 	# plot types (1-6) 
-		# 	# shapes
-		# 	fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[proces.exp_id[exp_nr]],12)
-		# 	fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-		# 	fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-		# 	# rotations
-		# 	fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[proces.exp_id[exp_nr]],12)
-		# 	fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-		# 	fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			# plot types (1-6) 
+			# shapes
+			fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+			fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			# rotations
+			fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+			fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+			fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
 
-		# 	type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
-		# 	type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
-		# 	'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
-		# 	plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
-		# 	plt.close('all')
+			type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
+			type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
+			'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
+			plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
+			plt.close('all')
 
-		# 	# (1) plot trial times
-		# 	# copy and set custom legends
-		# 	time1_info = dict(plot_exp.trial_time) 
-		# 	time1_info['legends'] = [proces.exp_id[exp_nr]]
-		# 	# plot using custom legend
-		# 	fig_time,ax_time = plot_exp.singlePlotDf(exp_data[exp_nr], time1_info)
+			# (1) plot trial times
+			# copy and set custom legends
+			time1_info = dict(plot_exp.trial_time) 
+			time1_info['legends'] = [proces.exp_id[exp_nr]]
+			# plot using custom legend
+			fig_time,ax_time = plot_exp.singlePlotDf(exp_data[exp_nr], time1_info)
 
-		# 	# add trial times plot from other experiment (1-2)
-		# 	# set new color for line
-		# 	# time2_info = dict(time1_info)
-		# 	# time2_info['colors'] = ['r']
-		# 	# time2_info['legends'] = [proces.exp_id[exp_nr]]
-		# 	# # add line to figure using other color
-		# 	# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[exp_nr], time2_info)
+			# add trial times plot from other experiment (1-2)
+			# set new color for line
+			# time2_info = dict(time1_info)
+			# time2_info['colors'] = ['r']
+			# time2_info['legends'] = [proces.exp_id[exp_nr]]
+			# # add line to figure using other color
+			# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[exp_nr], time2_info)
 
-		# 	# (2) plot accuracy
-		# 	acc_info = dict(plot_exp.accuracy)
-		# 	acc_info['title'] = proces.exp_id[exp_nr]
-		# 	fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[exp_nr], acc_info)
+			# (2) plot accuracy
+			acc_info = dict(plot_exp.accuracy)
+			acc_info['title'] = proces.exp_id[exp_nr]
+			fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[exp_nr], acc_info)
 
-		# 	# (3) plot shape error (diameter)
-		# 	shape_error_info = dict(plot_exp.shape_error)
-		# 	shape_error_info['title'] = proces.exp_id[exp_nr]
-		# 	fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[exp_nr], shape_error_info)
+			# (3) plot shape error (diameter)
+			shape_error_info = dict(plot_exp.shape_error)
+			shape_error_info['title'] = proces.exp_id[exp_nr]
+			fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[exp_nr], shape_error_info)
 
-		# 	# (4) plot average shape error (diameter)
-		# 	avg_shape_error_info = dict(plot_exp.avg_shape_error)
-		# 	fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[exp_nr], avg_shape_error_info)
+			# (4) plot average shape error (diameter)
+			avg_shape_error_info = dict(plot_exp.avg_shape_error)
+			fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[exp_nr], avg_shape_error_info)
 
-		# 	# (5) plot angle
-		# 	angle_info = dict(plot_exp.abs_angle)
-		# 	fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[exp_nr], angle_info)
+			# (5) plot angle
+			angle_info = dict(plot_exp.abs_angle)
+			fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[exp_nr], angle_info)
 
-		# 	# (6) plot user scales
-		# 	user_scales_info = dict(plot_exp.user_scales)
-		# 	fig_us, ax_us = plot_exp.singlePlotDf(exp_data[exp_nr], user_scales_info)
+			# (6) plot user scales
+			user_scales_info = dict(plot_exp.user_scales)
+			fig_us, ax_us = plot_exp.singlePlotDf(exp_data[exp_nr], user_scales_info)
 
-		# 	# (7) plot experiment scales
-		# 	exp_scales_info = dict(plot_exp.exp_scales)
-		# 	fig_es, ax_es = plot_exp.singlePlotDf(exp_data[exp_nr], exp_scales_info)
+			# (7) plot projected scales
+			proj_scales_info = dict(plot_exp.projected_scales)
+			fig_ps, ax_ps = plot_exp.singlePlotDf(exp_data[exp_nr], proj_scales_info)
+			
+			# (8) plot experiment scales
+			exp_scales_info = dict(plot_exp.exp_scales)
+			fig_es, ax_es = plot_exp.singlePlotDf(exp_data[exp_nr], exp_scales_info)
 
-		# 	# (8) plot originals experiment scales
-		# 	or_exp_scales_info = dict(plot_exp.or_user_scales)
-		# 	fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_scales_info)
 
-		# 	# (9) plot user quats
-		# 	user_quats_info = dict(plot_exp.user_quats)
-		# 	fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[exp_nr], user_quats_info)
+			# (9) plot originals experiment scales
+			or_exp_scales_info = dict(plot_exp.or_user_scales)
+			fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_scales_info)
 
-		# 	# (10) plot experiment quats
-		# 	exp_quats_info = dict(plot_exp.exp_quats)
-		# 	fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[exp_nr], exp_quats_info)
+			# (10) plot user quats
+			user_quats_info = dict(plot_exp.user_quats)
+			fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[exp_nr], user_quats_info)
 
-		# 	# (11) plot originals experiment quats
-		# 	or_exp_quats_info = dict(plot_exp.or_user_quats)
-		# 	fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_quats_info)
+			# (11) plot experiment quats
+			exp_quats_info = dict(plot_exp.exp_quats)
+			fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[exp_nr], exp_quats_info)
 
-		# 	basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
-		# 	basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
-		# 	"7_exp_scales","8_exp_scales_original","9_user_quats","10_exp_quats","11_user_quats_original"]
-		# 	plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
-		# 	plt.close('all')
-		# 	print('RUSTAAAGH!!!, plotjes worden gemaakt')
-		# if part_nr == 6:
+			# (12) plot originals experiment quats
+			or_exp_quats_info = dict(plot_exp.or_user_quats)
+			fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_quats_info)
 
-		# 	sys.exit()
+			basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_ps,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
+			basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
+			"7_proj_scales","8_exp_scales","9_exp_scales_original","10_user_quats","11_exp_quats","12_user_quats_original"]
+			plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
+			plt.close('all')
+			print('RUSTAAAGH!!!, plotjes worden gemaakt')
+		# if part_nr == 1:
+
+		sys.exit()
 		# 	print('not stopped?')			
 
 		# Create list with uniqe ellipsoids
 		# only for the real trials
 		# only need to do this once
 
-		if part_nr == 6:
+		if part_nr == 1:
 			# proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations([exp_data[2],exp_data[4],exp_data[6],exp_data[8]])
 			proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations(
-				[part_data_list[1].data['1R']['simple_experiment_data'],
-				part_data_list[1].data['2R']['simple_experiment_data'],
-				part_data_list[1].data['3R']['simple_experiment_data'],
-				part_data_list[1].data['4R']['simple_experiment_data']])
+				[part_data_list[0].data['1R']['simple_experiment_data'],
+				part_data_list[0].data['2R']['simple_experiment_data'],
+				part_data_list[0].data['3R']['simple_experiment_data'],
+				part_data_list[0].data['4R']['simple_experiment_data']])
 			# print(proces.IDstrings)
 			# print(proces.uniqueEllipsoids)
 
@@ -651,9 +829,9 @@ if __name__ == "__main__":
 	# create name string
 	partName = lambda nr: 'part_' + str(nr)
 	means_std_per_part = [] # list with means and std per participant in pandas df
-	for part_nr,part_x in enumerate([part_data_list[1]]): # for loop over the participants
-		# part_nr += 1 # start at part_1 (no patient zero this time)
-		part_nr=6
+	for part_nr,part_x in enumerate([part_data_list[0]]): # for loop over the participants
+		part_nr += 1 # start at part_1 (no patient zero this time)
+		# part_nr=6
 		part_name_list.append(partName(part_nr))
 		exp_data = {
 						1: part_x.data['1L']['simple_experiment_data'],
@@ -709,8 +887,8 @@ if __name__ == "__main__":
 		exp_data.append(exp_x_data)
 
 	# wie = 'jelle'
-	# wie = 'jasper'
-	wie = 'jasper2'
+	wie = 'jasper'
+	# wie = 'jasper2'
 	# wie = 'iedereen'
 	out_dir = []
 	if wie == 'jelle':
