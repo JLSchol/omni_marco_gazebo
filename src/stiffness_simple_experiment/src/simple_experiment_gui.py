@@ -137,7 +137,7 @@ class GuiWindow(Frame):
 		entryPartAge = Entry(self.master, bg='white', textvariable=self.participantAge)
 		self.participantAge.trace('w',self.partAgeCB)
 		entryPartAge.place(relx=(bw +col1),rely=row3+2*bh,relwidth=0.1,relheight=bh)
-		comboOptionExp = ttk.Combobox(self.master,values=['1h','10h','1d','10d','1w','10w','more'] ,textvariable=self.experience)
+		comboOptionExp = ttk.Combobox(self.master,values=['none','1h','10h','1d','1w','10w','more'] ,textvariable=self.experience)
 		self.experience.trace('w',self.experianceCB)
 		comboOptionExp.place(relx=(col1+bw),rely=row3+3*bh,relwidth=0.1,relheight=bh)
 		saveParticipantButton = Button(self.master, text="save info", command=self.saveParticipantInfoCB)
