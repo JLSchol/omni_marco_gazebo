@@ -22,8 +22,13 @@ except ImportError:
 
 class ProcessSimpleExperiment():
 	def __init__(self):
-		self.vanderLaanScores = [
-							[3,4,3,3,2,2,2,4,4] ]
+		# important! These scores represent the indices of the ticked boxes 1 till 5
+		# The scores still have to be calclulated from these indices!!!
+		self.vanderLaanTickedBoxes = [
+							[1,2,4,2,2,2,1,2,3]. 			# Participant 1
+							[1,2,5,1,1,5,1,5,2],			# Participant 1
+							[2,2,3,4,4,4,2,4,1] 			# Participant 1
+							]
 		# self.topic = 'simple_experiment'
 		# self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
 		self.exp_id = {
@@ -449,12 +454,12 @@ class ProcessSimpleExperiment():
 			# set the files in one dictionari
 			part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
 			# add van der laan scores
-			part_x.setVanDerLaan(self.vanderLaanScores[part_nr-1])
+			part_x.setVanDerLaan(self.vanderLaanTickedBoxes[part_nr-1])
 			# data = part_x.data
 			self.all_data.append(part_x)
-			self.all_data.append(deepcopy(part_x))
+			# self.all_data.append(deepcopy(part_x))
 			self.part_name_list.append(partName(part_nr))
-			self.part_name_list.append(partName(2))
+			# self.part_name_list.append(partName(2))
 
 		# we now have a dictionair With all the participants information
 

@@ -192,32 +192,32 @@ if __name__ == "__main__":
 	process = ProcessSimpleExperiment()
 	process.main()
 
-	# base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
-	# AE.generateRawDataPlots(process.all_dfs,base_path_raw)
-
-	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	# AE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path)
-
-	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	# AE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path)
+	base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
+	AE.generateRawDataPlots(process.all_dfs,base_path_raw)
 
 	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	print(process.real_exp_dfs[0].columns.values)
+	AE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path)
+
+	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	AE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path)
+
+	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# print(process.real_exp_dfs[0].columns.values)
 	# plt.figure();
 	# bp = process.real_exp_dfs[0].loc[:,['field.error_sorted_principle_axes.x', 'field.error_sorted_principle_axes.y', 'field.error_sorted_principle_axes.z']].plot.box()
 
 	# for i in [0,1,2,3]:
-	i = 0
-	bp = process.real_exp_dfs[i].loc['part_1',['field.error_sorted_principle_axes.x', 'field.error_sorted_principle_axes.y', 'field.error_sorted_principle_axes.z']].plot.box()
-	bp = process.real_exp_dfs[i].loc['part_1',['projected_error.x', 'projected_error.y', 'projected_error.z']].plot.box()
-	bp = process.real_exp_dfs[i].loc['part_1',['field.shape']].plot.box()
-	bp = process.real_exp_dfs[i].loc['part_1',['field.absolute_angle']].plot.box()
+	# i = 0
+	# bp = process.real_exp_dfs[i].loc['part_1',['field.error_sorted_principle_axes.x', 'field.error_sorted_principle_axes.y', 'field.error_sorted_principle_axes.z']].plot.box()
+	# bp = process.real_exp_dfs[i].loc['part_1',['projected_error.x', 'projected_error.y', 'projected_error.z']].plot.box()
+	# bp = process.real_exp_dfs[i].loc['part_1',['field.shape']].plot.box()
+	# bp = process.real_exp_dfs[i].loc['part_1',['field.absolute_angle']].plot.box()
 	# bp = process.real_exp_dfs[i].loc['part_1',['']].plot.box()
-	plt.show()
+	# plt.show()
 
 
-	fields = []
-	AE.generateBoxMetrics(process.real_exp_dfs, fields, process.part_name_list, base_path)
+	# fields = []
+	# AE.generateBoxMetrics(process.real_exp_dfs, fields, process.part_name_list, base_path)
 
 	# df2 = pd.DataFrame(np.random.rand(10, 4), columns=['a', 'b', 'c', 'd'])
 	# print(df2)
