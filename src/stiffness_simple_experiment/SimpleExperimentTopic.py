@@ -33,7 +33,9 @@ class ProcessSimpleExperiment():
 							[1,3,5,2,2,4,1,4,1],			# Participant 6
 							[2,3,4,2,2,4,2,4,2],			# Participant 7
 							[2,3,5,3,2,3,2,4,3]				# Participant 8
-							]								
+							]
+		self.usefull, self.satisfying = self.getVanderLaan(self.vanderLaanTickedBoxes)		
+					
 		# self.topic = 'simple_experiment'
 		# self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
 		self.exp_id = {
@@ -485,6 +487,21 @@ class ProcessSimpleExperiment():
 
 		return usefull_score, satisfying_score, converted_scores_list
 
+	def getVanderLaan(self, scores):
+		usefull_list = []
+		satisfying_list = []
+		for part_score in scores:
+			usefull_score, satis_score, _ = self.convertVanderLaanScores(part_score)
+			usefull_list.append(usefull_score)
+			satisfying_list.append(satis_score)
+
+		mean_usefull = np.mean(np.array(usefull_list))
+		std_usefull = np.std(np.array(usefull_list))
+
+		mean_satisfying = np.mean(np.array(satisfying_list))
+		std_satisfying = np.std(np.array(satisfying_list))
+
+		return (usefull_list, mean_usefull, std_usefull), (satisfying_list, mean_satisfying, std_satisfying)
 
 
 
@@ -623,24 +640,30 @@ def combineData(dfList):
 
 if __name__ == "__main__":
 	proces = ProcessSimpleExperiment()
-	usefull_list = []
-	satisfying_list = []
-	for part_vdl in proces.vanderLaanTickedBoxes:
-		useful, satis, converted = proces.convertVanderLaanScores(part_vdl)
-		usefull_list.append(useful)
-		satisfying_list.append(satis)
+	# usefull_list = []
+	# satisfying_list = []
+	# for part_vdl in proces.vanderLaanTickedBoxes:
+	# 	useful, satis, converted = proces.convertVanderLaanScores(part_vdl)
+	# 	print(converted)
+	# 	usefull_list.append(useful)
+	# 	satisfying_list.append(satis)
 
-	meanuse = np.mean(np.array(usefull_list))
-	stduse = np.std(np.array(usefull_list))
+	# meanuse = np.mean(np.array(usefull_list))
+	# stduse = np.std(np.array(usefull_list))
 
-	meansat = np.mean(np.array(satisfying_list))
-	stdsat = np.std(np.array(satisfying_list))
-	print('use')
-	print(meanuse)
-	print(stduse)
-	print('sat')
-	print(meansat)
-	print(stdsat)
+	# meansat = np.mean(np.array(satisfying_list))
+	# stdsat = np.std(np.array(satisfying_list))
+	# print('satisfying_list')
+	# print(satisfying_list)
+	# print('usefull_list')
+	# print(usefull_list)
+
+	# print('use')
+	# print(meanuse)
+	# print(stduse)
+	# print('sat')
+	# print(meansat)
+	# print(stdsat)
 
 	sys.exit()
 	proces.main()
