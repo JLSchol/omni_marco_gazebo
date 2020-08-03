@@ -25,10 +25,15 @@ class ProcessSimpleExperiment():
 		# important! These scores represent the indices of the ticked boxes 1 till 5
 		# The scores still have to be calclulated from these indices!!!
 		self.vanderLaanTickedBoxes = [
-							[1,2,4,2,2,2,1,2,3]. 			# Participant 1
-							[1,2,5,1,1,5,1,5,2],			# Participant 1
-							[2,2,3,4,4,4,2,4,1] 			# Participant 1
-							]
+							[1,2,4,2,2,2,1,2,3], 			# Participant 1
+							[1,2,5,1,1,5,1,5,2],			# Participant 2
+							[2,2,3,4,4,4,2,4,1], 			# Participant 3
+							[2,3,4,3,2,3,2,4,1],			# Participant 4
+							[2,4,3,5,3,2,3,3,1],			# Participant 5
+							[1,3,5,2,2,4,1,4,1],			# Participant 6
+							[2,3,4,2,2,4,2,4,2],			# Participant 7
+							[2,3,5,3,2,3,2,4,3]				# Participant 8
+							]								
 		# self.topic = 'simple_experiment'
 		# self.exp_IDs = ['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R']
 		self.exp_id = {
@@ -41,17 +46,18 @@ class ProcessSimpleExperiment():
 						7: '2_DoF_Horizon_Practice',
 						8: '2_DoF_Horizon_Real'
 		}
+		self.part_list = [1,2,3,4,5,6,7,8]
 		self.uniqueEllipsoids = []
-		self.IDstrings = []
-		self.all_data = []
-		self.all_dfs = []
-		self.all_real_exp_dfs = []
-		self.all_prac_exp_dfs = []
-		self.all_types_dfs = []
-		self.part_name_list = []
-		self.real_exp_dfs = []
-		self.prac_exp_dfs = []
-		self.types_dfs = []
+		self.IDstrings = []			# string containing the ticklabels e.g. [type_rotation_axis_size, cigar_45_y_large]
+		self.all_data = [] 			#  
+		self.all_dfs = [] 			# 2d list with containing df;s [participants, conditions(8)]
+		self.all_real_exp_dfs = [] 	# 2d list with containing df;s [participants, real_conditions(4)]
+		self.all_prac_exp_dfs = [] 	# 2d list with containing df;s [participants, prac_conditions(4)]
+		self.all_types_dfs = [] 	# 2d list with containing df;s [participants, types(36)]
+		self.part_name_list = [] 	# [part_1, part_2 etc] (folder names)
+		self.real_exp_dfs = []		# 1D list [exp1_df, exp2_df, exp3_df, exp4_df] containing all the realexpdf of all participatns
+		self.prac_exp_dfs = []		# 1D list [exp1_df, exp2_df, exp3_df, exp4_df] containing all the pracexpdf of all participatns
+		self.types_dfs = []			# 1D list [type1_df, type1_df, type1_df, .....] containing all the types of all participatns
 		# need variables that store part names, data, other stuff in list for easy acces all over the code
 		
 
@@ -432,6 +438,56 @@ class ProcessSimpleExperiment():
 
 		# print(df[['projected_scales.x','projected_scales.y','projected_scales.z']].values)
 
+	def convertVanderLaanScores(self, tick_box_list):
+		usefulness_items = [1,3,5,7,9]
+		satisfying_items = [2,4,6,8]
+
+		scores_left_right = [2, 1, 0, -1, -2]
+		scores_right_left = [-2, -1, 0, 1, 2]
+
+
+		if len(tick_box_list)!= 9:
+			print('tick_box_list {} is has not a length of 9 items'.format(tick_box_index))
+			return
+
+		converted_scores_list = []
+		usefull_scores = []
+		satisfying_scores = []
+		for item,tick_box_index in enumerate(tick_box_list):
+			item+=1
+			if tick_box_index not in [1,2,3,4,5]:
+				print('tick_box_index {} is not a int ranging in [1-5]'.format(tick_box_index))
+				return
+
+			if item in usefulness_items:
+				if item in [1,5,7,9]:
+					# print(scores_left_right[tick_box_index-1])
+					usefull_scores.append(scores_left_right[tick_box_index-1])
+					converted_scores_list.append(scores_left_right[tick_box_index-1])
+				elif item in [3]:
+					# print(scores_left_right[tick_box_index-1])
+					usefull_scores.append(scores_right_left[tick_box_index-1])
+					converted_scores_list.append(scores_right_left[tick_box_index-1])
+			elif item in satisfying_items:
+				if item in [2,4]:
+					satisfying_scores.append(scores_left_right[tick_box_index-1])
+					converted_scores_list.append(scores_left_right[tick_box_index-1])
+				elif item in [6,8]:
+					satisfying_scores.append(scores_right_left[tick_box_index-1])
+					converted_scores_list.append(scores_right_left[tick_box_index-1])
+
+			else:
+				print('item {} is not supposed to be in tick_box_list'.format(item))
+
+
+		usefull_score = sum(usefull_scores)/5.0
+		satisfying_score = sum(satisfying_scores)/4.0
+
+		return usefull_score, satisfying_score, converted_scores_list
+
+
+
+
 	def main(self):
 		########## THE GETTING DATA DICTIONAIR PART ##########
 		# single participant
@@ -442,7 +498,7 @@ class ProcessSimpleExperiment():
 
 		partName = lambda nr: 'part_' + str(nr)
 		self.part_name_list = []
-		for part_nr in [1]: # loop over participant folders
+		for part_nr in self.part_list: # loop over participant folders
 			part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
 
 			exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
@@ -567,8 +623,27 @@ def combineData(dfList):
 
 if __name__ == "__main__":
 	proces = ProcessSimpleExperiment()
-	proces.main()
+	usefull_list = []
+	satisfying_list = []
+	for part_vdl in proces.vanderLaanTickedBoxes:
+		useful, satis, converted = proces.convertVanderLaanScores(part_vdl)
+		usefull_list.append(useful)
+		satisfying_list.append(satis)
+
+	meanuse = np.mean(np.array(usefull_list))
+	stduse = np.std(np.array(usefull_list))
+
+	meansat = np.mean(np.array(satisfying_list))
+	stdsat = np.std(np.array(satisfying_list))
+	print('use')
+	print(meanuse)
+	print(stduse)
+	print('sat')
+	print(meansat)
+	print(stdsat)
+
 	sys.exit()
+	proces.main()
 	########## THE GETTING DATA DICTIONAIR PART ##########
 	# single participant
 	# get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
