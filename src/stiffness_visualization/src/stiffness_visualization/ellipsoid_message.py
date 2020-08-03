@@ -978,17 +978,18 @@ if __name__ == "__main__":
     # z = c*scale[2] + s*scale[1]
     # z = 0.5*np.sqrt(3) +0.5
     # print([x,y,z])
-    # proj = 0.9
-    # angle = EM.projectionToAngle(proj)
-    # print(angle)
-    # perc = EM.angleToPercentage(angle)
-    # print(perc)
 
-    perc = 70
-    angle =EM.percToAngle(perc)
-    print(angle)
-    proj = EM.angleToProjection(angle)
-    print(proj)
+    proj = 0.9
+    angle = EM.projectionToAngle(proj)
+    print(angle)    # 25.841932763167126
+    perc = EM.angleToPercentage(angle)
+    print(perc)     # 71.28674137425875
+
+    # perc = 70
+    # angle =EM.percToAngle(perc)
+    # print(angle)
+    # proj = EM.angleToProjection(angle)
+    # print(proj)
 
     # q_ee,p_ee = [-0.5, 0.5, 0.5, 0.5], [0,0,1]
 
