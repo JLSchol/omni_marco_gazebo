@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from SimpleExperimentTopic import ProcessSimpleExperiment
 from os import path
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
@@ -9,6 +10,7 @@ try:
 	from itertools import izip as zip
 except ImportError:
 	pass
+
 
 class PlotSimpleExperiment():
 	def __init__(self):
@@ -287,7 +289,7 @@ class PlotSimpleExperiment():
 			print(out_dir)
 			fig.savefig(path.join(out_dir,(fig_name+extension)))
 
-	def setColor(self,bp_dict,colorList=['red','blue','green']):
+	def setColor(self,bp_dict,colorList=['#d15a5a', '#4d67bf','#74cf70']):
 		for element in bp_dict.keys():
 
 			plt.setp(bp_dict[element], color='k')
@@ -308,7 +310,7 @@ class PlotSimpleExperiment():
 			getData = lambda df, part, fields: [clean(df.loc[part,field]) for field in fields]
 
 
-		colors = ['red','blue','green']
+		colors = ['#d15a5a', '#4d67bf','#74cf70']
 
 		fig,ax1 = plt.subplots()
 		ax1.set_ylabel('accuracy [%]')
@@ -340,6 +342,11 @@ class PlotSimpleExperiment():
 			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
 			tick_values.append(p2)
 			# label_list.append(label)
+		ax1.axhline(90, color=colors[0], lw=2)
+		ax1.axhline(90, color='black',ls='--',lw=2)
+
+		ax1.axhline(71.28, color=colors[1],lw=2)
+		ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		x_upper_lim = 4*len(dfList)
 
@@ -361,7 +368,7 @@ class PlotSimpleExperiment():
 		# get legend on nice position
 		# add sample size on top?
 
-		colors = ['red','blue','green']
+		colors = ['#d15a5a', '#4d67bf','#74cf70']
 
 		fig,ax1 = plt.subplots()
 		ax1.set_ylabel('accuracy [%]')
@@ -382,10 +389,17 @@ class PlotSimpleExperiment():
 			for key in bp.keys():
 				bp[key].extend(bp2[key])
 
+
 			# set color
 			self.setColor(bp,colors)
 			# updat position 1	
 			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
+
+		ax1.axhline(90, color=colors[0], lw=2)
+		ax1.axhline(90, color='black',ls='--',lw=2)
+
+		ax1.axhline(71.28, color=colors[1],lw=2)
+		ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		tick_values = [2, 6, 10, 14]
 		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
@@ -411,3 +425,369 @@ class PlotSimpleExperiment():
 		ax.set_xticklabels(tick_labels)
 
 		return fig
+
+	def generateRawDataPlots(self, all_dfs, base_path, plot_part='all'):
+		exp_id = {
+					1: '1_DoF_Front_Practice',
+					2: '1_DoF_Front_Real',
+					3: '2_DoF_Front_Practice',
+					4: '2_DoF_Front_Real',
+					5: '1_DoF_Horizon_Practice',
+					6: '1_DoF_Horizon_Real',
+					7: '2_DoF_Horizon_Practice',
+					8: '2_DoF_Horizon_Real'
+					}
+		part_nr = 0
+		for part_dfs in all_dfs: # for loop over all participants participants
+			part_nr +=1
+			for plot_part_nr in plot_part:
+				if plot_part == 'all' or plot_part_nr == part_nr: 
+					for exp_nr,df in part_dfs.items(): # loop over 8 conditions
+						# (1) plot trial times
+						# copy and set custom legends
+						time1_info = dict(self.trial_time) 
+						time1_info['legends'] = [exp_id[exp_nr]]
+						# plot using custom legend
+						fig_time,ax_time = self.singlePlotDf(df, time1_info)
+
+						# add trial times plot from other experiment (1-2)
+						# set new color for line
+						# time2_info = dict(time1_info)
+						# time2_info['colors'] = ['r']
+						# time2_info['legends'] = [exp_id[exp_nr]]
+						# # add line to figure using other color
+						# ax_time = self.addLineFromDfToPlot(ax_time, df, time2_info)
+
+						# (2) plot accuracy
+						acc_info = dict(self.accuracy)
+						acc_info['title'] = exp_id[exp_nr]
+						fig_acc, ax_acc = self.singlePlotDf(df, acc_info)
+
+						# (3) plot shape error (diameter)
+						shape_error_info = dict(self.shape_error)
+						shape_error_info['title'] = exp_id[exp_nr]
+						fig_shape, ax_shape = self.singlePlotDf(df, shape_error_info)
+
+						# (4) plot average shape error (diameter)
+						avg_shape_error_info = dict(self.avg_shape_error)
+						fig_avgShape, ax_avgShape = self.singlePlotDf(df, avg_shape_error_info)
+
+						# (5) plot angle
+						angle_info = dict(self.abs_angle)
+						fig_angle, ax_angle = self.singlePlotDf(df, angle_info)
+
+						# (6) plot user scales
+						user_scales_info = dict(self.user_scales)
+						fig_us, ax_us = self.singlePlotDf(df, user_scales_info)
+
+						# (7) plot projected scales
+						proj_scales_info = dict(self.projected_scales)
+						fig_ps, ax_ps = self.singlePlotDf(df, proj_scales_info)
+						
+						# (8) plot experiment scales
+						exp_scales_info = dict(self.exp_scales)
+						fig_es, ax_es = self.singlePlotDf(df, exp_scales_info)
+
+
+						# (9) plot originals experiment scales
+						or_exp_scales_info = dict(self.or_user_scales)
+						fig_oes, ax_oes = self.singlePlotDf(df, or_exp_scales_info)
+
+						# (10) plot user quats
+						user_quats_info = dict(self.user_quats)
+						fig_uq, ax_uq = self.singlePlotDf(df, user_quats_info)
+
+						# (11) plot experiment quats
+						exp_quats_info = dict(self.exp_quats)
+						fig_eq, ax_eq = self.singlePlotDf(df, exp_quats_info)
+
+						# (12) plot originals experiment quats
+						or_exp_quats_info = dict(self.or_user_quats)
+						fig_oeq, ax_oeq = self.singlePlotDf(df, or_exp_quats_info)
+
+						basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_ps,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
+						basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
+						"7_proj_scales","8_exp_scales","9_exp_scales_original","10_user_quats","11_exp_quats","12_user_quats_original"]
+						
+						out_dir = base_path + str(part_nr)+"/"+exp_id[exp_nr]
+
+						self.saveFigs(basic_figs,basic_names,out_dir,'.png')
+						plt.close('all')
+						print('RUSTAAAGH!!!, plotjes worden gemaakt')
+				else:
+					continue
+
+
+		plt.close('all')
+
+
+	def generateBoxExp(self, exp_dfs, part_list ,base_path, real='real'):
+		# some helpfull functions
+		clean = lambda series: series.dropna().tolist()
+		getPartData = lambda df, part, fields: [clean(df.loc[part,field]) for field in fields]
+		getAllPartData = lambda df, fields: [clean(df.loc[:,field]) for field in fields]
+		get_fig_name = lambda ID, ID2: 'box_time_accuracy_' + str(ID) + '_' + str(ID2)
+		get_out_dir = lambda base_path, ID, : base_path + str(ID)
+
+		# get plot data for the individual participnats and add to plot_data
+		plot_data = []
+		box_names = []
+		out_dirs = []
+		for part in part_list: # over participant names 'part_1, part_2 etc'
+			plot_data_part_x = []
+
+			for cond_i in exp_dfs: # over experiment conditions 1-4
+				metrics_i = getPartData(cond_i, part, ['field.shape_acc','field.orientation_acc','field.trial_time'])
+				plot_data_part_x.append(metrics_i)
+			
+			plot_data.append(plot_data_part_x)
+			box_names.append(get_fig_name(real,part))
+			out_dirs.append(get_out_dir(base_path,part))
+
+		# get plot data for the participants combined and add this to the end of plot data
+		plot_data_all_part = []
+		for cond_i in exp_dfs: # over experiment conditions 1-4
+			metrics_i = getAllPartData(cond_i, ['field.shape_acc','field.orientation_acc','field.trial_time'])
+			plot_data_all_part.append(metrics_i)
+		plot_data.append(plot_data_all_part)
+		box_names.append(get_fig_name(real,'All'))
+		out_dirs.append(get_out_dir(base_path,'All'))
+
+		# plot all figures with the combined data of particpant ad the end
+		box_figs = []
+		for fig_x_data in plot_data:
+			fig_x_time_acc = self.BoxPlotGroup2axis(fig_x_data[0], fig_x_data[1], fig_x_data[2], fig_x_data[3])
+			box_figs.append(fig_x_time_acc)
+		# plt.show()
+
+		self.saveFigs2(box_figs,box_names,out_dirs,'.png')
+		plt.close('all')
+
+		
+
+	def generateBoxTypes(self, types_dfs, id_strings, part_list, base_path):
+		fields = ['field.shape_acc','field.orientation_acc','field.trial_time']
+
+		get_fig_name = lambda ID: 'box_time_acc_type_' + str(ID) 
+		get_out_dir = lambda base_path, ID, : base_path + str(ID)
+
+		box_figs = []
+		partsPlusAll = part_list + ['All']
+		for part in partsPlusAll:
+			box_figs_part_x =[]
+			box_names = []
+			out_dirs = []
+			for [lower_i,upper_i,ID] in [[0,8,'exp1'],[8,18,'exp2'],[18,26,'exp3'],[26,36,'exp4'],[0,36,'all']]: 
+				figures_part_x_cond_i = self.BoxPlotGroup2axisTypes(
+								types_dfs[lower_i:upper_i],fields,id_strings[lower_i:upper_i],part)
+
+				if ID == 'all':
+					figures_part_x_cond_i.set_size_inches(20,8, forward=True)
+
+				box_figs_part_x.append(figures_part_x_cond_i)
+				name = get_fig_name(ID)
+				out_dir = get_out_dir(base_path, part)
+			
+				box_figs.append(box_figs_part_x)
+				box_names.append(name)
+				out_dirs.append(out_dir)
+
+			self.saveFigs2(box_figs_part_x,box_names,out_dirs,'.png')
+
+		plt.close('all')
+
+
+	def generateBoxMetrics(self,dfs, fields, parts, base_path):
+		pass
+
+	def plotVanDerLaan(self, usefulness, satisfying):
+		fig,ax = plt.subplots()
+
+		sc = ax.scatter(usefulness[0],satisfying[0], label='participants (n=8)')
+		ax.axhline(0,-2,2)
+		ax.axvline(0,-2,2)
+
+		title = "Van der Laan Questionnaire Scores"
+		ax.set_title(title,fontsize=18)
+
+		ax.legend()
+
+
+		ax.set_xlabel("usefulness ($\mu$={} $\pm$ $\sigma$={}) ".format(round(usefulness[1],2),round(usefulness[2],2),fontsize=14))
+		ax.set_ylabel("satisfying ($\mu$={} $\pm$ $\sigma$={}) ".format(round(satisfying[1],2),round(satisfying[2],2),fontsize=14))
+		# ax.set_ylabel('satisfying',fontsize=14)
+
+		ax.set_xlim(-2,2)
+		ax.set_ylim(-2,2)
+
+		# plt.show()
+		return fig
+
+	def barPlot2Axis(self, df_means, df_stds, part='all'):
+
+		colors = ['#d15a5a', '#4d67bf']
+		fig,ax1 = plt.subplots()
+		ax1.set_ylabel('error [-]')
+		ax1.set_ylim(0,1)
+		ax2 = ax1.twinx() # second axisObj that has x-axis in common
+		ax2.set_ylabel('angle [deg]')
+		ax2.set_ylim(0,90)
+		ax2.set_xlim(0,13)
+
+		width = 0.9
+
+		tick_values = [1, 4, 7, 10]
+		for exp_i_mean, exp_i_std, idx in zip(df_means, df_stds, tick_values):
+
+			mean1, std1 = exp_i_mean.loc[part,'normalizedErr'],exp_i_std.loc[part,'normalizedErr']
+			mean2, std2 = exp_i_mean.loc[part,'field.absolute_angle'],exp_i_std.loc[part,'field.absolute_angle']
+
+			bar1 = ax1.bar(idx, mean1, width=0.9, color=colors[0], lw=2)
+			ax1.errorbar(idx+width/2, mean1, yerr=std1, ecolor='black', elinewidth=2)
+
+			bar2 = ax2.bar(idx+1, mean2, width=0.9, color=colors[1], lw=2)
+			ax2.errorbar(idx+1+width/2, mean2, yerr=std2, ecolor='black', elinewidth=2)
+
+		ax1.axhline(0.1, color=colors[0], lw=2)
+		ax1.axhline(0.1, color='black',ls='--',lw=2)
+
+		ax2.axhline(25.84, color=colors[1],lw=2)
+		ax2.axhline(25.84, color='black',ls='--',lw=2)
+
+		tick_values = [2, 5, 8, 11]
+		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
+
+		ax2.set_xticks(tick_values)
+		ax2.set_xticklabels(tick_labels)
+		ax2.legend((bar1,bar2),('normalized error','angle'),loc='best')
+
+		return fig
+
+	def barPlot1Axis(self, df_means, df_stds, part='all'):
+		colors = ['#d15a5a', '#4d67bf']
+		fig,ax = plt.subplots()
+		ax.set_ylabel('accuracy [%]')
+		ax.set_ylim(0,100)
+		ax.set_xlim(0,13)
+		tick_values = [1, 4, 7, 10]
+		width = 0.9
+		for exp_i_mean, exp_i_std, idx in zip(df_means, df_stds, tick_values):
+			# if idx ==1:
+			# 	print(exp_i_mean.loc[:,'field.absolute_angle'])
+			# 	print(exp_i_std.loc[:,'field.absolute_angle'])
+			# 	print()
+			mean1, std1 = exp_i_mean.loc[part,'field.shape_acc'],exp_i_std.loc[part,'field.shape_acc']
+			mean2, std2 = exp_i_mean.loc[part,'field.orientation_acc'],exp_i_std.loc[part,'field.orientation_acc']
+
+			bar1 = ax.bar(idx, mean1, width=width, color=colors[0], lw=2)
+			ax.errorbar(idx+width/2, mean1, yerr=std1, ecolor='black', elinewidth=2)
+
+			bar2 = ax.bar(idx+1, mean2, width=width, color=colors[1], lw=2)
+			ax.errorbar(idx+1+width/2, mean2, yerr=std2, ecolor='black', elinewidth=2)
+
+		ax.axhline(90, color=colors[0], lw=2)
+		ax.axhline(90, color='black',ls='--',lw=2)
+
+		ax.axhline(71.28, color=colors[1],lw=2)
+		ax.axhline(71.28, color='black',ls='--',lw=2)
+
+		tick_values = [2, 5, 8, 11]
+		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
+
+		ax.set_xticks(tick_values)
+		ax.set_xticklabels(tick_labels)
+		ax.grid()
+		ax.legend((bar1,bar2),('size accuracy','orientation accuracy'),loc='best')
+		# plt.draw()
+		return fig
+
+	def generateVanDerLaan(self, usefulness, satisfying, out_dir):
+		fig = self.plotVanDerLaan(usefulness, satisfying)
+		self.saveFigs2([fig], ['van_der_laan'], [out_dir])
+		
+
+	def generateBarPlot1Axis(self, df_means, df_stds, part_list, base_path):
+		get_fig_name = lambda ID: 'bar_accuracy_exp_' + str(ID) 
+		get_out_dir = lambda base_path, ID, : base_path + str(ID)
+
+		bar_figs = []
+		bar_names = []
+		our_dirs = []
+		part_ids = part_list + ['all']
+		sub_dirs = part_list + ['All']
+		for part_id, part_sub_dir in zip(part_ids,sub_dirs):
+
+			bar_fig = self.barPlot1Axis(df_means, df_stds, part=part_id)
+
+			bar_figs.append(bar_fig)
+			bar_names.append(get_fig_name(part_id))
+			our_dirs.append(get_out_dir(base_path, part_sub_dir))
+
+		self.saveFigs2(bar_figs,bar_names,our_dirs,'.png')
+		plt.close('all')
+
+
+	def generateBarPlot2Axis(self, df_means, df_stds, part_list, base_path):
+		get_fig_name = lambda ID: 'bar_error_angle_exp_' + str(ID) 
+		get_out_dir = lambda base_path, ID, : base_path + str(ID)
+
+		bar_figs = []
+		bar_names = []
+		our_dirs = []
+		part_ids = part_list + ['all']
+		sub_dirs = part_list + ['All']
+		for part_id, part_sub_dir in zip(part_ids,sub_dirs):
+
+			bar_fig = self.barPlot2Axis(df_means, df_stds, part=part_id)
+
+			bar_figs.append(bar_fig)
+			bar_names.append(get_fig_name(part_id))
+			our_dirs.append(get_out_dir(base_path, part_sub_dir))
+
+		self.saveFigs2(bar_figs,bar_names,our_dirs,'.png')
+		plt.close('all')
+
+if __name__ == "__main__":
+	PSE = PlotSimpleExperiment()
+	process = ProcessSimpleExperiment()
+	process.main()
+	# print(process.means_real_exp)
+	# print(type(process.means_real_exp))
+	# for exp_means, exp_stds in zip(process.means_real_exp, process.stds_real_exp)
+	# 	angles_mean = exp_means.loc['all','field.absolute_angle']
+	# 	angles_std = exp_stds.loc['all','field.absolute_angle']
+	# print(angles)
+	# process.stds_real_exp
+	# for part in ['part_1','part_2','part_3','part_4','part_5','part_6','part_7','part_8','all']:
+		# PSE.barPlot1Axis(process.means_real_exp, process.stds_real_exp, part)
+		# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, part)
+	# PSE.barPlot1Axis(process.means_real_exp, process.stds_real_exp, 'all')
+	# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, 'all')
+
+	# plt.show()
+	# out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+	# PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
+	# plt.close()
+
+
+	# base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
+	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw, [8]) # if want to add specific participant(s)
+	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
+	# plt.close()
+
+
+	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
+	# plt.close()
+
+	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
+	# plt.close()
+
+	# PSE.generateBarPlot1Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
+	PSE.generateBarPlot2Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
+	plt.close()
+
+	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# # PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
+	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, ['part_8'], base_path) # if want to add specific participant(s)
+	# plt.close()

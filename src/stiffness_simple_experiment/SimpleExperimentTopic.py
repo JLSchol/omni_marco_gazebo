@@ -6,7 +6,7 @@ import sys
 from copy import deepcopy
 from stiffness_visualization.ellipsoid_message import EllipsoidMessage
 from ManageDataDirectories import ManageDataDirectories
-from PlotExperiment import PlotSimpleExperiment
+# from PlotExperiment import PlotSimpleExperiment
 from ParticipantData import ParticipantData
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
@@ -60,6 +60,9 @@ class ProcessSimpleExperiment():
 		self.real_exp_dfs = []		# 1D list [exp1_df, exp2_df, exp3_df, exp4_df] containing all the realexpdf of all participatns
 		self.prac_exp_dfs = []		# 1D list [exp1_df, exp2_df, exp3_df, exp4_df] containing all the pracexpdf of all participatns
 		self.types_dfs = []			# 1D list [type1_df, type1_df, type1_df, .....] containing all the types of all participatns
+		self.means_real_exp = []	# [exp1_df, exp2_df, exp3_df, exp4_df] for df_index = [part_1, part_2 .... alll]
+		self.stds_real_exp = [] 	# 
+		self.means_stds_types = []
 		# need variables that store part names, data, other stuff in list for easy acces all over the code
 		
 
@@ -440,6 +443,21 @@ class ProcessSimpleExperiment():
 
 		# print(df[['projected_scales.x','projected_scales.y','projected_scales.z']].values)
 
+	def addNormalizedShapeError(self,df):
+		error_fields = ['field.error_sorted_principle_axes.x','field.error_sorted_principle_axes.y','field.error_sorted_principle_axes.z']
+		ref_ellips_size_fields = ['field.experiment_scales.x','field.experiment_scales.y','field.experiment_scales.z']
+
+		error = self.getRowList(df, error_fields)
+		ref_ellips_size = self.getRowList(df, ref_ellips_size_fields)
+
+		normalizeErr = lambda e, ref: np.array(e)/np.array(ref)
+
+		normError = [np.mean(normalizeErr(e, ref)) for e, ref in zip(error, ref_ellips_size)]
+
+		self.addColumns(df, ['normalizedErr'], [normError], [10])
+
+		
+
 	def convertVanderLaanScores(self, tick_box_list):
 		usefulness_items = [1,3,5,7,9]
 		satisfying_items = [2,4,6,8]
@@ -502,6 +520,13 @@ class ProcessSimpleExperiment():
 		std_satisfying = np.std(np.array(satisfying_list))
 
 		return (usefull_list, mean_usefull, std_usefull), (satisfying_list, mean_satisfying, std_satisfying)
+
+	def getMeanStdsDfs(self, df):
+		dfm = df.mean(level='participant')
+		dfs = df.std(level='participant')
+		dfm.loc['all',:] = df.mean()
+		dfs.loc['all',:] = df.std()
+		return (dfm, dfs)
 
 
 
@@ -566,6 +591,7 @@ class ProcessSimpleExperiment():
 				self.addRotationAxis(df)
 				self.addRotation(df)
 				self.addProjectedScales(df)
+				self.addNormalizedShapeError(df)
 				self.removeFailed001Trials(df)
 
 		# IF NEED REMOVE TRIALS MANUALLY
@@ -629,6 +655,12 @@ class ProcessSimpleExperiment():
 		# concat all_exp, all_types over all participants
 		# combined_type_x = self.concatDfForMultiplePart(typesDf, i, part_name_list)
 
+		self.means_stds_real_exp = []
+		for df in self.real_exp_dfs:
+			means, stds = self.getMeanStdsDfs(df)
+			self.means_real_exp.append(means)
+			self.stds_real_exp.append(stds)
+			
 
 
 
@@ -639,455 +671,458 @@ def combineData(dfList):
 
 
 if __name__ == "__main__":
-	proces = ProcessSimpleExperiment()
-	# usefull_list = []
-	# satisfying_list = []
-	# for part_vdl in proces.vanderLaanTickedBoxes:
-	# 	useful, satis, converted = proces.convertVanderLaanScores(part_vdl)
-	# 	print(converted)
-	# 	usefull_list.append(useful)
-	# 	satisfying_list.append(satis)
+	# pass
+	process = ProcessSimpleExperiment()
+	process.main()
 
-	# meanuse = np.mean(np.array(usefull_list))
-	# stduse = np.std(np.array(usefull_list))
+	# # usefull_list = []
+	# # satisfying_list = []
+	# # for part_vdl in process.vanderLaanTickedBoxes:
+	# # 	useful, satis, converted = process.convertVanderLaanScores(part_vdl)
+	# # 	print(converted)
+	# # 	usefull_list.append(useful)
+	# # 	satisfying_list.append(satis)
 
-	# meansat = np.mean(np.array(satisfying_list))
-	# stdsat = np.std(np.array(satisfying_list))
-	# print('satisfying_list')
-	# print(satisfying_list)
-	# print('usefull_list')
-	# print(usefull_list)
+	# # meanuse = np.mean(np.array(usefull_list))
+	# # stduse = np.std(np.array(usefull_list))
 
-	# print('use')
-	# print(meanuse)
-	# print(stduse)
-	# print('sat')
-	# print(meansat)
-	# print(stdsat)
+	# # meansat = np.mean(np.array(satisfying_list))
+	# # stdsat = np.std(np.array(satisfying_list))
+	# # print('satisfying_list')
+	# # print(satisfying_list)
+	# # print('usefull_list')
+	# # print(usefull_list)
 
-	sys.exit()
-	proces.main()
-	########## THE GETTING DATA DICTIONAIR PART ##########
-	# single participant
-	# get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
-	MD = ManageDataDirectories()
-	part_data_list = []
-	for part_nr in [1]:
-		part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
-
-		exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
-		topics = ["simple_experiment_data"]
-		# get relavant directories containing the files
-		partx_info_file_path, _, partx_csvdir_paths, partx_txt_paths, _ = MD.getAllPathsOfParticipant(part_dir, MD.csv_dir_list)
-		csvfile_paths = MD.getFilesInDirList(partx_csvdir_paths,".csv")
-
-		# set the files in one dictionari
-		part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
-		part_data_list.append(part_x)
-
-
-	########## THE PROCESSING PART ##########
-	proces = ProcessSimpleExperiment()
-	# also initialize the plot class already
-	plot_exp = PlotSimpleExperiment()
-
-	# testData = part_data_list[0].data['2R']['simple_experiment_data']
-	# proces.addProjectedScales(testData)
-
-	# proces.add1Or2Dof(testData)
-	# proces.addSmallOrLarge(testData)
-	# proces.addType(testData)
-	# proces.addRotationAxis(testData)
-	# proces.addRotation(testData)
-	# proces.getUniqueEllipsCombinations([testData])
-	# print(testData.columns.values)
-	# print(testData.loc[:,['type','field.experiment_scales.x','field.experiment_scales.z']])
-	# print(testData.loc[:,['DoF','size','type','rotation_axis','rotation']])
-	# print(testData['field.experiment_scales.x'])
+	# # print('use')
+	# # print(meanuse)
+	# # print(stduse)
+	# # print('sat')
+	# # print(meansat)
+	# # print(stdsat)
 
 	# sys.exit()
+	# process.main()
+	# ########## THE GETTING DATA DICTIONAIR PART ##########
+	# # single participant
+	# # get relavant directories, experiment_name abreviations, to set the data in the ParticipantData class
+	# MD = ManageDataDirectories()
+	# part_data_list = []
+	# for part_nr in [1]:
+	# 	part_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/part_'+str(part_nr)
+
+	# 	exp_IDs = MD.experiment_IDs # ['1L','1R','2L','2R','3L','3R','4L','4R']
+	# 	topics = ["simple_experiment_data"]
+	# 	# get relavant directories containing the files
+	# 	partx_info_file_path, _, partx_csvdir_paths, partx_txt_paths, _ = MD.getAllPathsOfParticipant(part_dir, MD.csv_dir_list)
+	# 	csvfile_paths = MD.getFilesInDirList(partx_csvdir_paths,".csv")
+
+	# 	# set the files in one dictionari
+	# 	part_x = ParticipantData(exp_IDs, partx_info_file_path, partx_txt_paths, partx_csvdir_paths, csvfile_paths, topics)
+	# 	part_data_list.append(part_x)
+
+
+	# ########## THE PROCESSING PART ##########
+	# proces = ProcessSimpleExperiment()
+	# # also initialize the plot class already
+	# plot_exp = PlotSimpleExperiment()
+
+	# # testData = part_data_list[0].data['2R']['simple_experiment_data']
+	# # proces.addProjectedScales(testData)
+
+	# # proces.add1Or2Dof(testData)
+	# # proces.addSmallOrLarge(testData)
+	# # proces.addType(testData)
+	# # proces.addRotationAxis(testData)
+	# # proces.addRotation(testData)
+	# # proces.getUniqueEllipsCombinations([testData])
+	# # print(testData.columns.values)
+	# # print(testData.loc[:,['type','field.experiment_scales.x','field.experiment_scales.z']])
+	# # print(testData.loc[:,['DoF','size','type','rotation_axis','rotation']])
+	# # print(testData['field.experiment_scales.x'])
+
+	# # sys.exit()
 	
-	data = []
-	typesDf=[]
-	# print(part_data_list[2].data['1L']['simple_experiment_data'])
-	# loop over the participants
-	for part_nr,part_x in enumerate(part_data_list): 
-		part_nr += 1 # start at 1 ipv 0
-		# part_nr = 6 # start at 1 ipv 0
-		# part_nr = 3 # only for exploring part 3
-		data = part_x.data
+	# data = []
+	# typesDf=[]
+	# # print(part_data_list[2].data['1L']['simple_experiment_data'])
+	# # loop over the participants
+	# for part_nr,part_x in enumerate(part_data_list): 
+	# 	part_nr += 1 # start at 1 ipv 0
+	# 	# part_nr = 6 # start at 1 ipv 0
+	# 	# part_nr = 3 # only for exploring part 3
+	# 	data = part_x.data
 
-		exp_data = {
-						1: data['1L']['simple_experiment_data'],
-						2: data['1R']['simple_experiment_data'],
-						3: data['2L']['simple_experiment_data'],
-						4: data['2R']['simple_experiment_data'],
-						5: data['3L']['simple_experiment_data'],
-						6: data['3R']['simple_experiment_data'],
-						7: data['4L']['simple_experiment_data'],
-						8: data['4R']['simple_experiment_data'],
-		}
-		# REMOVE ALL FIRST TRIALS
-		proces.removeFirstTrials(part_x.data)
+	# 	exp_data = {
+	# 					1: data['1L']['simple_experiment_data'],
+	# 					2: data['1R']['simple_experiment_data'],
+	# 					3: data['2L']['simple_experiment_data'],
+	# 					4: data['2R']['simple_experiment_data'],
+	# 					5: data['3L']['simple_experiment_data'],
+	# 					6: data['3R']['simple_experiment_data'],
+	# 					7: data['4L']['simple_experiment_data'],
+	# 					8: data['4R']['simple_experiment_data'],
+	# 	}
+	# 	# REMOVE ALL FIRST TRIALS
+	# 	proces.removeFirstTrials(part_x.data)
 
-		# loop over the experiments
-		for exp_nr in proces.exp_id.keys(): 
-			# this is a bit outdated process?
-			if exp_nr == 1 or exp_nr == 2 or exp_nr == 5 or exp_nr == 6: # 1 DOF
-				# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 1DOF
-				size_id_list = proces.getSizeID1DoF(exp_data[exp_nr]) #returns dataframe
-				rot_id_list = proces.getRotIDText(exp_data[exp_nr])
-				proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list,rot_id_list], [5,6])
-			elif exp_nr == 3 or exp_nr == 4 or exp_nr == 7 or exp_nr == 8: # 2 DOF
-				# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 2DOF
-				size_id_list2 = proces.getSizeID2DoF(exp_data[exp_nr]) 
-				rot_id_list2 = proces.getRotIDText(exp_data[exp_nr])
-				proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list2,rot_id_list2], [5,6])
-
-
-
-			# FIX NEW DF SUCH THAT IT CAN BE PLOTTED (CAREFULL WEIRD PROCESS BELOW)
-			size_dfs, uniques_sizes = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'size_type')
-			rot_dfs, uniques_rot = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'rot_type')
-			# creates dfs for every field in fieldList with index being the uniques and columns being the index of the 
-			# createNewDFs(newColumns,dfs,dfs_column_ids):
-
-			[size_time_df,size_accShape_df,size_accRot_df] = proces.createNewDFs(uniques_sizes,size_dfs,[
-												'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
-			[rot_time_df,rot_accShape_df,rot_accRot_df] = proces.createNewDFs(uniques_rot,rot_dfs,[
-												'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
+	# 	# loop over the experiments
+	# 	for exp_nr in proces.exp_id.keys(): 
+	# 		# this is a bit outdated process?
+	# 		if exp_nr == 1 or exp_nr == 2 or exp_nr == 5 or exp_nr == 6: # 1 DOF
+	# 			# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 1DOF
+	# 			size_id_list = proces.getSizeID1DoF(exp_data[exp_nr]) #returns dataframe
+	# 			rot_id_list = proces.getRotIDText(exp_data[exp_nr])
+	# 			proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list,rot_id_list], [5,6])
+	# 		elif exp_nr == 3 or exp_nr == 4 or exp_nr == 7 or exp_nr == 8: # 2 DOF
+	# 			# ADD COLLOMNS THAT IDENTIFY THE TYPE OF THE ELLIPSOID 2DOF
+	# 			size_id_list2 = proces.getSizeID2DoF(exp_data[exp_nr]) 
+	# 			rot_id_list2 = proces.getRotIDText(exp_data[exp_nr])
+	# 			proces.addColumns(exp_data[exp_nr], ['size_type','rot_type'], [size_id_list2,rot_id_list2], [5,6])
 
 
-			print(exp_nr)
-			# if exp_nr%2==0: # only real experiments
-			# 	t1,t2 = 20,30
-			# 	if part_nr ==3 or part_nr ==4:
-			# 		t1,t2 = 32,40
-			proces.add1Or2Dof(exp_data[exp_nr])
-			proces.addSmallOrLarge(exp_data[exp_nr])
-			proces.addType(exp_data[exp_nr])
-			proces.addRotationAxis(exp_data[exp_nr])
-			proces.addRotation(exp_data[exp_nr])
-			proces.addProjectedScales(exp_data[exp_nr])
-				# print(exp_data[exp_nr].columns.values)
+
+	# 		# FIX NEW DF SUCH THAT IT CAN BE PLOTTED (CAREFULL WEIRD PROCESS BELOW)
+	# 		size_dfs, uniques_sizes = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'size_type')
+	# 		rot_dfs, uniques_rot = proces.filterOnUniqueColumnValues(exp_data[exp_nr],'rot_type')
+	# 		# creates dfs for every field in fieldList with index being the uniques and columns being the index of the 
+	# 		# createNewDFs(newColumns,dfs,dfs_column_ids):
+
+	# 		[size_time_df,size_accShape_df,size_accRot_df] = proces.createNewDFs(uniques_sizes,size_dfs,[
+	# 											'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
+	# 		[rot_time_df,rot_accShape_df,rot_accRot_df] = proces.createNewDFs(uniques_rot,rot_dfs,[
+	# 											'field.trial_time',"field.shape_acc","field.orientation_acc"]) #returns a list
+
+
+	# 		print(exp_nr)
+	# 		# if exp_nr%2==0: # only real experiments
+	# 		# 	t1,t2 = 20,30
+	# 		# 	if part_nr ==3 or part_nr ==4:
+	# 		# 		t1,t2 = 32,40
+	# 		proces.add1Or2Dof(exp_data[exp_nr])
+	# 		proces.addSmallOrLarge(exp_data[exp_nr])
+	# 		proces.addType(exp_data[exp_nr])
+	# 		proces.addRotationAxis(exp_data[exp_nr])
+	# 		proces.addRotation(exp_data[exp_nr])
+	# 		proces.addProjectedScales(exp_data[exp_nr])
+	# 			# print(exp_data[exp_nr].columns.values)
 			
 
-			# REMOVE INCORRECT TRIALS
-			# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
-			# if exp_nr == 7 and part_nr == 2:
-			# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,9])
-			# if exp_nr == 2 and part_nr == 1:
-			# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,4])
-			# if 
-			# print(exp_data[nr].loc[3,:])
+	# 		# REMOVE INCORRECT TRIALS
+	# 		# Set trials that are failed to None; specify manually the trial number e.g. 2 and 17
+	# 		# if exp_nr == 7 and part_nr == 2:
+	# 		# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,9])
+	# 		# if exp_nr == 2 and part_nr == 1:
+	# 		# 	proces.removeIncorrectTrials(exp_data[exp_nr], [1,4])
+	# 		# if 
+	# 		# print(exp_data[nr].loc[3,:])
 
 
 		
 
 
-			########## THE PLOTTING PART ##########
-			# set output directory for figures
-			base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
-			out_dir = base_path + str(part_nr)+"/"+proces.exp_id[exp_nr]
-			# initialize plot class
+	# 		########## THE PLOTTING PART ##########
+	# 		# set output directory for figures
+	# 		base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
+	# 		out_dir = base_path + str(part_nr)+"/"+proces.exp_id[exp_nr]
+	# 		# initialize plot class
 			
 
-			# plot types (1-6) 
-			# shapes
-			fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[proces.exp_id[exp_nr]],12)
-			fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-			fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-			# rotations
-			fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[proces.exp_id[exp_nr]],12)
-			fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
-			fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+	# 		# plot types (1-6) 
+	# 		# shapes
+	# 		fig_s_t,ax_s_t = plot_exp.plotTypes(size_time_df,'Trial time vs Shape',16,'Size Type [-]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+	# 		fig_s_as,ax_s_ac = plot_exp.plotTypes(size_accShape_df,'Shape Accuracy vs Shape',16,'Size Type [-]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+	# 		fig_s_ao,ax_s_ao = plot_exp.plotTypes(size_accRot_df,'Orientation Accuracy vs Shape',16,'Size Type [-]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+	# 		# rotations
+	# 		fig_r_t,ax_st = plot_exp.plotTypes(rot_time_df,'Trial time vs Orientation',16,'Orientation Type [deg]','Time [s]',14,[proces.exp_id[exp_nr]],12)
+	# 		fig_r_as,ax_st = plot_exp.plotTypes(rot_accShape_df,'Shape Accuracy vs Orientation',16,'Orientation Type [deg]','Shape Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
+	# 		fig_r_ao,ax_st = plot_exp.plotTypes(rot_accRot_df,'Orientation Accuracy vs Orientation',16,'Orientation Type [deg]','Orientation Accuracy [%]',14,[proces.exp_id[exp_nr]],12)
 
-			type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
-			type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
-			'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
-			plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
-			plt.close('all')
+	# 		type_figs = [fig_s_t,fig_s_as,fig_s_ao,fig_r_t,fig_r_as,fig_r_ao]
+	# 		type_names = ['typeSize_vs_time','typeSize_vs_accShape','typeSize_vs_accRot','typeOrientation_vs_time',
+	# 		'typeOrientation_vs_accShape','typeOrientation_vs_accRot']
+	# 		plot_exp.saveFigs(type_figs,type_names,out_dir,'.png')
+	# 		plt.close('all')
 
-			# (1) plot trial times
-			# copy and set custom legends
-			time1_info = dict(plot_exp.trial_time) 
-			time1_info['legends'] = [proces.exp_id[exp_nr]]
-			# plot using custom legend
-			fig_time,ax_time = plot_exp.singlePlotDf(exp_data[exp_nr], time1_info)
+	# 		# (1) plot trial times
+	# 		# copy and set custom legends
+	# 		time1_info = dict(plot_exp.trial_time) 
+	# 		time1_info['legends'] = [proces.exp_id[exp_nr]]
+	# 		# plot using custom legend
+	# 		fig_time,ax_time = plot_exp.singlePlotDf(exp_data[exp_nr], time1_info)
 
-			# add trial times plot from other experiment (1-2)
-			# set new color for line
-			# time2_info = dict(time1_info)
-			# time2_info['colors'] = ['r']
-			# time2_info['legends'] = [proces.exp_id[exp_nr]]
-			# # add line to figure using other color
-			# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[exp_nr], time2_info)
+	# 		# add trial times plot from other experiment (1-2)
+	# 		# set new color for line
+	# 		# time2_info = dict(time1_info)
+	# 		# time2_info['colors'] = ['r']
+	# 		# time2_info['legends'] = [proces.exp_id[exp_nr]]
+	# 		# # add line to figure using other color
+	# 		# ax_time = plot_exp.addLineFromDfToPlot(ax_time, exp_data[exp_nr], time2_info)
 
-			# (2) plot accuracy
-			acc_info = dict(plot_exp.accuracy)
-			acc_info['title'] = proces.exp_id[exp_nr]
-			fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[exp_nr], acc_info)
+	# 		# (2) plot accuracy
+	# 		acc_info = dict(plot_exp.accuracy)
+	# 		acc_info['title'] = proces.exp_id[exp_nr]
+	# 		fig_acc, ax_acc = plot_exp.singlePlotDf(exp_data[exp_nr], acc_info)
 
-			# (3) plot shape error (diameter)
-			shape_error_info = dict(plot_exp.shape_error)
-			shape_error_info['title'] = proces.exp_id[exp_nr]
-			fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[exp_nr], shape_error_info)
+	# 		# (3) plot shape error (diameter)
+	# 		shape_error_info = dict(plot_exp.shape_error)
+	# 		shape_error_info['title'] = proces.exp_id[exp_nr]
+	# 		fig_shape, ax_shape = plot_exp.singlePlotDf(exp_data[exp_nr], shape_error_info)
 
-			# (4) plot average shape error (diameter)
-			avg_shape_error_info = dict(plot_exp.avg_shape_error)
-			fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[exp_nr], avg_shape_error_info)
+	# 		# (4) plot average shape error (diameter)
+	# 		avg_shape_error_info = dict(plot_exp.avg_shape_error)
+	# 		fig_avgShape, ax_avgShape = plot_exp.singlePlotDf(exp_data[exp_nr], avg_shape_error_info)
 
-			# (5) plot angle
-			angle_info = dict(plot_exp.abs_angle)
-			fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[exp_nr], angle_info)
+	# 		# (5) plot angle
+	# 		angle_info = dict(plot_exp.abs_angle)
+	# 		fig_angle, ax_angle = plot_exp.singlePlotDf(exp_data[exp_nr], angle_info)
 
-			# (6) plot user scales
-			user_scales_info = dict(plot_exp.user_scales)
-			fig_us, ax_us = plot_exp.singlePlotDf(exp_data[exp_nr], user_scales_info)
+	# 		# (6) plot user scales
+	# 		user_scales_info = dict(plot_exp.user_scales)
+	# 		fig_us, ax_us = plot_exp.singlePlotDf(exp_data[exp_nr], user_scales_info)
 
-			# (7) plot projected scales
-			proj_scales_info = dict(plot_exp.projected_scales)
-			fig_ps, ax_ps = plot_exp.singlePlotDf(exp_data[exp_nr], proj_scales_info)
+	# 		# (7) plot projected scales
+	# 		proj_scales_info = dict(plot_exp.projected_scales)
+	# 		fig_ps, ax_ps = plot_exp.singlePlotDf(exp_data[exp_nr], proj_scales_info)
 			
-			# (8) plot experiment scales
-			exp_scales_info = dict(plot_exp.exp_scales)
-			fig_es, ax_es = plot_exp.singlePlotDf(exp_data[exp_nr], exp_scales_info)
+	# 		# (8) plot experiment scales
+	# 		exp_scales_info = dict(plot_exp.exp_scales)
+	# 		fig_es, ax_es = plot_exp.singlePlotDf(exp_data[exp_nr], exp_scales_info)
 
 
-			# (9) plot originals experiment scales
-			or_exp_scales_info = dict(plot_exp.or_user_scales)
-			fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_scales_info)
+	# 		# (9) plot originals experiment scales
+	# 		or_exp_scales_info = dict(plot_exp.or_user_scales)
+	# 		fig_oes, ax_oes = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_scales_info)
 
-			# (10) plot user quats
-			user_quats_info = dict(plot_exp.user_quats)
-			fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[exp_nr], user_quats_info)
+	# 		# (10) plot user quats
+	# 		user_quats_info = dict(plot_exp.user_quats)
+	# 		fig_uq, ax_uq = plot_exp.singlePlotDf(exp_data[exp_nr], user_quats_info)
 
-			# (11) plot experiment quats
-			exp_quats_info = dict(plot_exp.exp_quats)
-			fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[exp_nr], exp_quats_info)
+	# 		# (11) plot experiment quats
+	# 		exp_quats_info = dict(plot_exp.exp_quats)
+	# 		fig_eq, ax_eq = plot_exp.singlePlotDf(exp_data[exp_nr], exp_quats_info)
 
-			# (12) plot originals experiment quats
-			or_exp_quats_info = dict(plot_exp.or_user_quats)
-			fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_quats_info)
+	# 		# (12) plot originals experiment quats
+	# 		or_exp_quats_info = dict(plot_exp.or_user_quats)
+	# 		fig_oeq, ax_oeq = plot_exp.singlePlotDf(exp_data[exp_nr], or_exp_quats_info)
 
-			basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_ps,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
-			basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
-			"7_proj_scales","8_exp_scales","9_exp_scales_original","10_user_quats","11_exp_quats","12_user_quats_original"]
-			plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
-			plt.close('all')
-			print('RUSTAAAGH!!!, plotjes worden gemaakt')
-		# if part_nr == 1:
+	# 		basic_figs = [fig_time,fig_acc,fig_shape,fig_avgShape,fig_angle,fig_us,fig_ps,fig_es,fig_oes,fig_uq,fig_eq,fig_oeq]
+	# 		basic_names = ["1_trial_time","2_accuracy","3_scale_error","4_average_scales","5_angle","6_user_scales",
+	# 		"7_proj_scales","8_exp_scales","9_exp_scales_original","10_user_quats","11_exp_quats","12_user_quats_original"]
+	# 		plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
+	# 		plt.close('all')
+	# 		print('RUSTAAAGH!!!, plotjes worden gemaakt')
+	# 	# if part_nr == 1:
 
-		sys.exit()
-		# 	print('not stopped?')			
+	# 	sys.exit()
+	# 	# 	print('not stopped?')			
 
-		# Create list with uniqe ellipsoids
-		# only for the real trials
-		# only need to do this once
+	# 	# Create list with uniqe ellipsoids
+	# 	# only for the real trials
+	# 	# only need to do this once
 
-		if part_nr == 1:
-			# proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations([exp_data[2],exp_data[4],exp_data[6],exp_data[8]])
-			proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations(
-				[part_data_list[0].data['1R']['simple_experiment_data'],
-				part_data_list[0].data['2R']['simple_experiment_data'],
-				part_data_list[0].data['3R']['simple_experiment_data'],
-				part_data_list[0].data['4R']['simple_experiment_data']])
-			# print(proces.IDstrings)
-			# print(proces.uniqueEllipsoids)
+	# 	if part_nr == 1:
+	# 		# proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations([exp_data[2],exp_data[4],exp_data[6],exp_data[8]])
+	# 		proces.uniqueEllipsoids, proces.IDstrings = proces.getUniqueEllipsCombinations(
+	# 			[part_data_list[0].data['1R']['simple_experiment_data'],
+	# 			part_data_list[0].data['2R']['simple_experiment_data'],
+	# 			part_data_list[0].data['3R']['simple_experiment_data'],
+	# 			part_data_list[0].data['4R']['simple_experiment_data']])
+	# 		# print(proces.IDstrings)
+	# 		# print(proces.uniqueEllipsoids)
 
 		
-		experiments = [ exp_data[2], exp_data[4], exp_data[6], exp_data[8] ]
-		typesDf_part_x = proces.getUniqueDfsList(proces.uniqueEllipsoids, experiments)
-		# print(typesDf_part_x)
-		typesDf.append(typesDf_part_x)
+	# 	experiments = [ exp_data[2], exp_data[4], exp_data[6], exp_data[8] ]
+	# 	typesDf_part_x = proces.getUniqueDfsList(proces.uniqueEllipsoids, experiments)
+	# 	# print(typesDf_part_x)
+	# 	typesDf.append(typesDf_part_x)
 		
-		# print(self.IDstrings)
-		# print(self.uniqueEllipsoids)
-		# sys.exit()
+	# 	# print(self.IDstrings)
+	# 	# print(self.uniqueEllipsoids)
+	# 	# sys.exit()
 
 
-	# print(len(typesDf)) # 2
-	# print(len(typesDf[0])) # 20
-	# more advanced plots
-	# boxplots
+	# # print(len(typesDf)) # 2
+	# # print(len(typesDf[0])) # 20
+	# # more advanced plots
+	# # boxplots
 
 
 
-	############## GET DATA OF EACH PARTICIPANT ##############
-	# initialize some names and properties
-	column_names = ['Exp1_Shape','Exp1_Orientation','Exp1_Trial_time',
-	'Exp2_Shape','Exp2_Orientation','Exp2_Trial_time',
-	'Exp3_Shape','Exp3_Orientation','Exp3_Trial_time',
-	'Exp4_Shape','Exp4_Orientation','Exp4_Trial_time']
+	# ############## GET DATA OF EACH PARTICIPANT ##############
+	# # initialize some names and properties
+	# column_names = ['Exp1_Shape','Exp1_Orientation','Exp1_Trial_time',
+	# 'Exp2_Shape','Exp2_Orientation','Exp2_Trial_time',
+	# 'Exp3_Shape','Exp3_Orientation','Exp3_Trial_time',
+	# 'Exp4_Shape','Exp4_Orientation','Exp4_Trial_time']
 
-	y_axes_names = ['Acc [%]','Time [s]']
-	x_tick_labels = ['experiment 1', 'experiment 2', 'experiment 3', 'experiment 4']
-	x_ticks = range(len(x_tick_labels))
+	# y_axes_names = ['Acc [%]','Time [s]']
+	# x_tick_labels = ['experiment 1', 'experiment 2', 'experiment 3', 'experiment 4']
+	# x_ticks = range(len(x_tick_labels))
 
-	# data that is interesting to keep
-	keep_list = ['field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+	# # data that is interesting to keep
+	# keep_list = ['field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
 
-	# get name and data per participant
-	part_name_list = []
-	# create name string
-	partName = lambda nr: 'part_' + str(nr)
-	means_std_per_part = [] # list with means and std per participant in pandas df
-	for part_nr,part_x in enumerate([part_data_list[0]]): # for loop over the participants
-		part_nr += 1 # start at part_1 (no patient zero this time)
-		# part_nr=6
-		part_name_list.append(partName(part_nr))
-		exp_data = {
-						1: part_x.data['1L']['simple_experiment_data'],
-						2: part_x.data['1R']['simple_experiment_data'],
-						3: part_x.data['2L']['simple_experiment_data'],
-						4: part_x.data['2R']['simple_experiment_data'],
-						5: part_x.data['3L']['simple_experiment_data'],
-						6: part_x.data['3R']['simple_experiment_data'],
-						7: part_x.data['4L']['simple_experiment_data'],
-						8: part_x.data['4R']['simple_experiment_data'],
-		}
-		experiments = [ exp_data[2], exp_data[4], exp_data[6], exp_data[8] ]
-	################## GET MEANS AND STDS OF ONE PARTICIPANT FOR ALL PARTICIPANTS ################## 
-		# get from from data class
-		part_avgstds = part_x.getMeanAndStds(experiments)
-		# drop unimportant rows
-		part_avgstds = part_avgstds.transpose()[keep_list]
-		# add to list
-		means_std_per_part.append( part_avgstds )
-	# create, rename and shape one df from list of dfs
-	mean_stds_all_part = pd.concat(means_std_per_part, axis=0, keys=part_name_list)
-	mean_stds_all_part = mean_stds_all_part.reset_index()
-	mean_stds_all_part.rename(columns = {'level_0':'participants', 'level_1':'calc'},inplace=True)
-	mean_stds_all_part = mean_stds_all_part.pivot_table(index='participants', columns='calc', values=keep_list)
+	# # get name and data per participant
+	# part_name_list = []
+	# # create name string
+	# partName = lambda nr: 'part_' + str(nr)
+	# means_std_per_part = [] # list with means and std per participant in pandas df
+	# for part_nr,part_x in enumerate([part_data_list[0]]): # for loop over the participants
+	# 	part_nr += 1 # start at part_1 (no patient zero this time)
+	# 	# part_nr=6
+	# 	part_name_list.append(partName(part_nr))
+	# 	exp_data = {
+	# 					1: part_x.data['1L']['simple_experiment_data'],
+	# 					2: part_x.data['1R']['simple_experiment_data'],
+	# 					3: part_x.data['2L']['simple_experiment_data'],
+	# 					4: part_x.data['2R']['simple_experiment_data'],
+	# 					5: part_x.data['3L']['simple_experiment_data'],
+	# 					6: part_x.data['3R']['simple_experiment_data'],
+	# 					7: part_x.data['4L']['simple_experiment_data'],
+	# 					8: part_x.data['4R']['simple_experiment_data'],
+	# 	}
+	# 	experiments = [ exp_data[2], exp_data[4], exp_data[6], exp_data[8] ]
+	# ################## GET MEANS AND STDS OF ONE PARTICIPANT FOR ALL PARTICIPANTS ################## 
+	# 	# get from from data class
+	# 	part_avgstds = part_x.getMeanAndStds(experiments)
+	# 	# drop unimportant rows
+	# 	part_avgstds = part_avgstds.transpose()[keep_list]
+	# 	# add to list
+	# 	means_std_per_part.append( part_avgstds )
+	# # create, rename and shape one df from list of dfs
+	# mean_stds_all_part = pd.concat(means_std_per_part, axis=0, keys=part_name_list)
+	# mean_stds_all_part = mean_stds_all_part.reset_index()
+	# mean_stds_all_part.rename(columns = {'level_0':'participants', 'level_1':'calc'},inplace=True)
+	# mean_stds_all_part = mean_stds_all_part.pivot_table(index='participants', columns='calc', values=keep_list)
 
-	################## GET MEANS OF THE MEANS AND STDS OF THE PARTICIPANTS ################## 
-	average_of_means_stds = mean_stds_all_part.mean(axis=0)
-	average_of_means_stds = average_of_means_stds.reset_index()
-	average_of_means_stds.rename(columns = {'level_0':'metrics', 0:'data'}, inplace=True)
-	average_of_means_stds = average_of_means_stds.pivot_table(index='metrics',columns='calc',values='data')
-	# print(average_of_means_stds.iloc[:,0:4])
+	# ################## GET MEANS OF THE MEANS AND STDS OF THE PARTICIPANTS ################## 
+	# average_of_means_stds = mean_stds_all_part.mean(axis=0)
+	# average_of_means_stds = average_of_means_stds.reset_index()
+	# average_of_means_stds.rename(columns = {'level_0':'metrics', 0:'data'}, inplace=True)
+	# average_of_means_stds = average_of_means_stds.pivot_table(index='metrics',columns='calc',values='data')
+	# # print(average_of_means_stds.iloc[:,0:4])
 
 
-	################## GET MEANS AND STDS OF THE TOTAL TRIALS ################## 
-	# get means/stds of all trials
-	# keep_list = ['size_type','rot_type','field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
-	experiments = ['1R', '2R', '3R', '4R']
-	topic = 'simple_experiment_data'
-	keep_list = ['field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+	# ################## GET MEANS AND STDS OF THE TOTAL TRIALS ################## 
+	# # get means/stds of all trials
+	# # keep_list = ['size_type','rot_type','field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
+	# experiments = ['1R', '2R', '3R', '4R']
+	# topic = 'simple_experiment_data'
+	# keep_list = ['field.trial_nr','field.trial_time','field.shape_acc','field.orientation_acc','field.shape','field.absolute_angle']
 	
 
-	exp_data = [] # list of 4 experiments df
-	for i, experiment in enumerate(experiments):
+	# exp_data = [] # list of 4 experiments df
+	# for i, experiment in enumerate(experiments):
 
-		# get data of experiment_x for all participants
-		dfList = []
-		for i, part_x in enumerate(part_data_list): 
-			dx = part_x.data[experiment][topic][keep_list]
-			dfList.append(dx)
-		# add participants to exp x
-		exp_x_data = pd.concat(dfList,axis=0,keys=part_name_list)
-		# print(exp_x_data)	
-		exp_data.append(exp_x_data)
+	# 	# get data of experiment_x for all participants
+	# 	dfList = []
+	# 	for i, part_x in enumerate(part_data_list): 
+	# 		dx = part_x.data[experiment][topic][keep_list]
+	# 		dfList.append(dx)
+	# 	# add participants to exp x
+	# 	exp_x_data = pd.concat(dfList,axis=0,keys=part_name_list)
+	# 	# print(exp_x_data)	
+	# 	exp_data.append(exp_x_data)
 
-	# wie = 'jelle'
-	wie = 'jasper'
-	# wie = 'jasper2'
-	# wie = 'iedereen'
-	out_dir = []
-	if wie == 'jelle':
-		exp_data = [exp_x_data.loc[ part_name_list[1], :] for exp_x_data in exp_data]
-		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_2"
-	elif wie == 'jasper':
-		exp_data = [exp_x_data.loc[ part_name_list[0], :] for exp_x_data in exp_data]
-		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_1"
-	elif wie == 'jasper2':
-		exp_data = [exp_x_data.loc[ part_name_list[0], :] for exp_x_data in exp_data]
-		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_6"
-	else:
-		out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
-		pass
+	# # wie = 'jelle'
+	# wie = 'jasper'
+	# # wie = 'jasper2'
+	# # wie = 'iedereen'
+	# out_dir = []
+	# if wie == 'jelle':
+	# 	exp_data = [exp_x_data.loc[ part_name_list[1], :] for exp_x_data in exp_data]
+	# 	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_2"
+	# elif wie == 'jasper':
+	# 	exp_data = [exp_x_data.loc[ part_name_list[0], :] for exp_x_data in exp_data]
+	# 	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_1"
+	# elif wie == 'jasper2':
+	# 	exp_data = [exp_x_data.loc[ part_name_list[0], :] for exp_x_data in exp_data]
+	# 	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_6"
+	# else:
+	# 	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+	# 	pass
 
-	# remove nans and convert to list for each experiment
-	getData = lambda df,name: df[name].dropna().tolist()
-	exp1 = [getData(exp_data[0],'field.shape_acc'), getData(exp_data[0],'field.orientation_acc'), getData(exp_data[0],'field.trial_time')]
-	exp2 = [getData(exp_data[1],'field.shape_acc'), getData(exp_data[1],'field.orientation_acc'), getData(exp_data[1],'field.trial_time')]
-	exp3 = [getData(exp_data[2],'field.shape_acc'), getData(exp_data[2],'field.orientation_acc'), getData(exp_data[2],'field.trial_time')]
-	exp4 = [getData(exp_data[3],'field.shape_acc'), getData(exp_data[3],'field.orientation_acc'), getData(exp_data[3],'field.trial_time')]
+	# # remove nans and convert to list for each experiment
+	# getData = lambda df,name: df[name].dropna().tolist()
+	# exp1 = [getData(exp_data[0],'field.shape_acc'), getData(exp_data[0],'field.orientation_acc'), getData(exp_data[0],'field.trial_time')]
+	# exp2 = [getData(exp_data[1],'field.shape_acc'), getData(exp_data[1],'field.orientation_acc'), getData(exp_data[1],'field.trial_time')]
+	# exp3 = [getData(exp_data[2],'field.shape_acc'), getData(exp_data[2],'field.orientation_acc'), getData(exp_data[2],'field.trial_time')]
+	# exp4 = [getData(exp_data[3],'field.shape_acc'), getData(exp_data[3],'field.orientation_acc'), getData(exp_data[3],'field.trial_time')]
 
 
-	# Boxplottypes
-	# combine participants
-	################## PLOT BOXPLOT types ##################
-	all_types_all_part = []
-	# all_types_part_0 = typesDf[0] 
-	# all_types_part_1 = typesDf[1] 
-	all_types_part_2 = typesDf[0] 
+	# # Boxplottypes
+	# # combine participants
+	# ################## PLOT BOXPLOT types ##################
+	# all_types_all_part = []
+	# # all_types_part_0 = typesDf[0] 
+	# # all_types_part_1 = typesDf[1] 
+	# all_types_part_2 = typesDf[0] 
 
-	for i in range(len(typesDf[0])):  # loop over index of the ellipsoid types
-		combined_type_x = proces.concatDfForMultiplePart(typesDf, i, part_name_list) # concats ellipse type i=0,1,2,3 ... 19
-		all_types_all_part.append(combined_type_x)
+	# for i in range(len(typesDf[0])):  # loop over index of the ellipsoid types
+	# 	combined_type_x = proces.concatDfForMultiplePart(typesDf, i, part_name_list) # concats ellipse type i=0,1,2,3 ... 19
+	# 	all_types_all_part.append(combined_type_x)
 
-	# print(all_types_all_part[4:10])
-	# .loc[:,['DoF','size','type','rotation_axis','rotation']]
-	# fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
-	# fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
-	# fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
-	# fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
-	# fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
+	# # print(all_types_all_part[4:10])
+	# # .loc[:,['DoF','size','type','rotation_axis','rotation']]
+	# # fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
+	# # fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
+	# # fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
+	# # fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
+	# # fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_all_part,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
+	# # fig_time_acc_types_5.set_size_inches(20,8, forward=True)
+	# # fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
+	# # fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
+	# # fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
+	# # fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
+	# # fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
+	# # fig_time_acc_types_5.set_size_inches(20,8, forward=True)
+	# # fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
+	# # fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
+	# # fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
+	# # fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
+	# # fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
+	# # fig_time_acc_types_5.set_size_inches(20,8, forward=True)
+	# fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[0:8],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:8])
+	# fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[8:18],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[8:18])
+	# fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[18:26],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[18:26])
+	# fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[26:36],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[26:36])
+	# fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
 	# fig_time_acc_types_5.set_size_inches(20,8, forward=True)
-	# fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
-	# fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
-	# fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
-	# fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
-	# fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_0,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
-	# fig_time_acc_types_5.set_size_inches(20,8, forward=True)
-	# fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[0:4],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:4])
-	# fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[4:10],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[4:10])
-	# fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[10:14],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[10:14])
-	# fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1[14:20],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[14:20])
-	# fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_1,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
-	# fig_time_acc_types_5.set_size_inches(20,8, forward=True)
-	fig_time_acc_types_1 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[0:8],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[0:8])
-	fig_time_acc_types_2 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[8:18],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[8:18])
-	fig_time_acc_types_3 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[18:26],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[18:26])
-	fig_time_acc_types_4 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2[26:36],['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings[26:36])
-	fig_time_acc_types_5 = plot_exp.BoxPlotGroup2axisTypes(all_types_part_2,['field.shape_acc','field.orientation_acc','field.trial_time'],proces.IDstrings)
-	fig_time_acc_types_5.set_size_inches(20,8, forward=True)
 	
-	box_figs = [fig_time_acc_types_1,fig_time_acc_types_2,fig_time_acc_types_3,fig_time_acc_types_4,fig_time_acc_types_5]
-	box_names = ["types_exp_1","types_exp_2","types_exp_3","types_exp_4","types_exp_all"]
-	plot_exp.saveFigs(box_figs,box_names,out_dir,'.png')
-	# plt.show()
-	plt.close('all')
+	# box_figs = [fig_time_acc_types_1,fig_time_acc_types_2,fig_time_acc_types_3,fig_time_acc_types_4,fig_time_acc_types_5]
+	# box_names = ["types_exp_1","types_exp_2","types_exp_3","types_exp_4","types_exp_all"]
+	# plot_exp.saveFigs(box_figs,box_names,out_dir,'.png')
+	# # plt.show()
+	# plt.close('all')
 
 
-	# print(all_types_all_part[0].columns.values)
-	# print(all_types_all_part[0].index.values)
-	# print(all_types_all_part[0][all_types_all_part[0]=='part_1'].head(1))
+	# # print(all_types_all_part[0].columns.values)
+	# # print(all_types_all_part[0].index.values)
+	# # print(all_types_all_part[0][all_types_all_part[0]=='part_1'].head(1))
 
-	################## PLOT BOXPLOT ##################
-	fig_time_acc = plot_exp.BoxPlotGroup2axis(exp1,exp2,exp3,exp4)
+	# ################## PLOT BOXPLOT ##################
+	# fig_time_acc = plot_exp.BoxPlotGroup2axis(exp1,exp2,exp3,exp4)
 
-	box_figs = [fig_time_acc]
-	box_names = ["box_time_accuracy"]
-	plot_exp.saveFigs(box_figs,box_names,out_dir,'.png')
-	plt.close('all')
-
-
+	# box_figs = [fig_time_acc]
+	# box_names = ["box_time_accuracy"]
+	# plot_exp.saveFigs(box_figs,box_names,out_dir,'.png')
+	# plt.close('all')
 
 
 
-	################## OTHER ##################
-	# plt.draw()
-	# check what kind of set attributes the ax class has
 
-	# ax_getters = [getter for getter in dir(ax) if 'get' in getter]
-	# print(ax_getters)
 
-	# check what kind of set attributes the ax class has
-	# ax_setters = [setter for setter in dir(ax) if 'set' in setter]
-	# print(ax_setters)
+	# ################## OTHER ##################
+	# # plt.draw()
+	# # check what kind of set attributes the ax class has
 
-	# # check what kind of set attributes the fig class has
-	# fig_setter = [setter for setter in dir(fig) if 'set' in setter]
-	# print(fig_setter)
+	# # ax_getters = [getter for getter in dir(ax) if 'get' in getter]
+	# # print(ax_getters)
+
+	# # check what kind of set attributes the ax class has
+	# # ax_setters = [setter for setter in dir(ax) if 'set' in setter]
+	# # print(ax_setters)
+
+	# # # check what kind of set attributes the fig class has
+	# # fig_setter = [setter for setter in dir(fig) if 'set' in setter]
+	# # print(fig_setter)
