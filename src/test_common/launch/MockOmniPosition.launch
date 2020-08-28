@@ -5,17 +5,19 @@
 
     <!--Seperate lists by comma and in between brackets (e.g. [5.0, 4.3])!!-->
     <!--amplitude of omni around lockposition-->
-    <arg name="amplitudes"            default="[0.15, 0.30]" />   <!--"[0.04, 0.08, 0.12]"-->
+    <arg name="amplitudes"            default="[0, 0.04, 0.15, 0.35, 0]" />   <!--"[0.04, 0.08, 0.12]"-->
     <!--oscillation per second of time-->
-    <arg name="frequencies"            default="[0.5, 1]" />    <!--"[1, 2, 4]"-->
+    <arg name="frequencies"            default="[1,1,1,1,1]" />    <!--"[1, 2, 4]"-->
     <!--amount of oscillations-->  
-    <arg name="periods"            default="[3, 6]" />          <!---"[2, 4, 8]"-->
+    <arg name="periods"            default="[2, 2, 2, 2, 2]" />          <!---"[2, 4, 8]"-->
     <!---time of sinusoid = 1/f * periods-->
     
     <!-- set angle_xy to 90 to wiggle y-axis (omni) -->
     <!-- set angle_xy to zero to make circles WERKT NIET--> 
     <!-- set angle_xy in deg to make of diagonal wiggles --> 
-    <arg name="angle_xy"            default="45" /> 
+    <arg name="angle_xy"            default="90" /> 
+    <arg name="rate"            default="100" /> 
+    
 
 
     <node name="mock_omni_position" pkg="test_common" type="MockOmniPosition.py" output="screen">
@@ -28,6 +30,9 @@
         <rosparam param="periods" subst_value="True">$(arg periods)</rosparam>
 
         <param name="angle_xy"     value="$(arg angle_xy)"/>    
+
+        <param name="rate"     value="$(arg rate)"/>    
+        
 
     </node>
 

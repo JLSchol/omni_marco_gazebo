@@ -34,8 +34,11 @@ class sendMockOmniPosition():
         self._angle_xy = get_param("~angle_xy")
         self._angle_xy = float(self._angle_xy)
 
+        self._rate = get_param("~rate")
+        self._rate = float(self._rate)
+
     def run(self):
-        rosRate = Rate(60)
+        rosRate = Rate(self._rate)
 
         while not is_shutdown():
             buttonMsg = self._setButton()
@@ -49,8 +52,8 @@ class sendMockOmniPosition():
 
     def _setButton(self):
 
-        return PhantomButtonEvent(  grey_button=1, 
-                                    white_button=1   )        
+        return PhantomButtonEvent(  grey_button=True, 
+                                    white_button=True   )        
 
 
     def _setLockState(self):
@@ -72,6 +75,8 @@ class sendMockOmniPosition():
         #     z = 0
 
         return LockState(       lock=True,
+                                lock_grey=True, 
+                                lock_white=False,
                                 lock_position=Point(0,0,0), 
                                 current_position=Point(x,y,z)   )  
                             

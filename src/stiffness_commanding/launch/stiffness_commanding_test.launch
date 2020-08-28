@@ -1,7 +1,17 @@
  <launch>
+ <arg name="virtual_marker_name"          value="virtual_marker"/> 
  <include file="$(find haptic_device_2_marker)/launch/omni_2_marker_test.launch">  
+    <arg name="lambda_min" default="0.034"/>
+    <arg name="lambda_max" default="0.204"/>
  </include>
 
  <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch">  
+    <arg name="virtual_marker_name"     default="$(arg virtual_marker_name)"/>
+    <!--Tune parameters-->
+    <arg name="min_robot_stiffness" default="100"/>
+    <arg name="max_robot_stiffness" default="1000"/>
+    <arg name="lambda_min" default="0.034"/> <!--0.68*0.05--> <!--lambda = 1/sqrt(2)*wiggle amplitude-->
+    <arg name="lambda_max" default="0.204"/> <!--0.68*0.3-->
+    <arg name="window_length" default="100"/>
  </include>
  </launch>
