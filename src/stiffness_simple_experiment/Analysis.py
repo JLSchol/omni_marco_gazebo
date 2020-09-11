@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 from SimpleExperimentTopic import ProcessSimpleExperiment
 from PlotExperiment import PlotSimpleExperiment
+from scipy import stats
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from copy import deepcopy
+import itertools
 
 class AnalyseSimpleExperiment():
 	def __init__(self):
@@ -188,9 +191,130 @@ class AnalyseSimpleExperiment():
 		
 		plot_exp = PlotSimpleExperiment()
 
+	def getAverageOfMetricPerConditionDf(self,dfs,exclude_index, metric):
+		filtered = []
+		for df in dfs:
+			x = df.loc[df.index != exclude_index, metric]
+			filtered.append(x)
+		df = pd.DataFrame(index = filtered[0].index)
+		df['1_dof_v'] = filtered[0]
+		df['2_dof_v'] = filtered[1]
+		df['1_dof_h'] = filtered[2]
+		df['2_dof_h'] = filtered[3]
+
+		return df
+		
+	def stackTwoConditions(self,df,pair1,pair2):
+		s11 = df[pair1[0]]
+		s12 = df[pair1[1]]
+		s21 = df[pair2[0]]
+		s22 = df[pair2[1]]
+
+		p1 = pd.concat([s11,s12])
+		p2 = pd.concat([s21,s22])
+
+		df = pd.DataFrame(index = p1.index)
+		df[pair1[2]] = p1
+		df[pair2[2]] = p2
+
+		return df
+
+	def getAverageDfs(self,dfs,metric):
+		fourConditions = self.getAverageOfMetricPerConditionDf(dfs, 'all', metric)
+
+		dof1ID = ['1_dof_v','1_dof_h','1_dof']
+		dof2ID = ['2_dof_v','2_dof_h','2_dof']
+		verticalID = ['1_dof_v','2_dof_v','vertical']
+		horizontalID = ['1_dof_h','2_dof_h','horizontal']
+
+		dofConditions = self.stackTwoConditions(fourConditions,dof1ID,dof2ID)
+		planesConditions = self.stackTwoConditions(fourConditions,verticalID,horizontalID)
+
+		return fourConditions, dofConditions, planesConditions
+
+	def doDepTTestOnaverages(self,dof_and_planes, dof, planes):
+		print('\naverages:')
+		print(dof_and_planes)
+		print("\n1v with 2v:")
+		print(stats.ttest_rel(dof_and_planes['1_dof_v'],dof_and_planes['2_dof_v']))
+		print("\n1v with 1h:")
+		print(stats.ttest_rel(dof_and_planes['1_dof_v'],dof_and_planes['1_dof_h']))
+		print("\n1h with 2h:")
+		print(stats.ttest_rel(dof_and_planes['1_dof_h'],dof_and_planes['2_dof_h']))
+		print("\n2v with 2h:")
+		print(stats.ttest_rel(dof_and_planes['2_dof_v'],dof_and_planes['2_dof_h']))
+		print("\n1dof with 2dof:")
+		print(stats.ttest_rel(dof['1_dof'],dof['2_dof']))
+		print("\nvertical with horizontal:")
+		print(stats.ttest_rel(planes['vertical'],planes['horizontal']))
+
+	def getSamplesOfMetrics(self, dfs, metric):
+		serie_list = []
+		# create df 1Dof vs 2 df
+		for df in dfs:
+			x = df.loc[:,metric]
+			serie_list.append(x)
+
+		dof_1_v = serie_list[0]
+		dof_2_v = serie_list[1]
+		dof_1_h = serie_list[2]
+		dof_2_h = serie_list[3]
+
+		p1 = pd.concat([dof_1_v,dof_1_v])
+		p2 = pd.concat([dof_2_v,dof_2_h])
+
+		pv = pd.concat([dof_1_v,dof_2_v])
+		ph = pd.concat([dof_1_h,dof_2_h])
+
+		return serie_list, [p1,p2], [pv,ph]
+
+	def doIndepTTestOntrials(self, dof_and_planes, dof, plane, metric):
+
+		print('\ndependent TTest:')
+		print(metric)
+		for ID, x in zip(['1_dof_v','2_dof_v','1_dof_h','2_dof_h'],dof_and_planes):
+			print('\nCondition: {}'.format(ID))
+			print(len(x.values))
+			print(x.describe())
+
+		print('hoi')
+		textString = lambda t,p: "Independent T: {}, PValue: {}".format(t,p)
+		# column_name = lambda base,ID: str(base) +'_'+ str(ID+1) 
+
+		print("\n1v with 2v:")
+		t1v2v, p1v2v = stats.ttest_ind(dof_and_planes[0],dof_and_planes[1], equal_var='False', nan_policy='omit')
+		print(textString(t1v2v, p1v2v))
+
+		print("\n1v with 1h:")
+		t1v1h, p1v1h = stats.ttest_ind(dof_and_planes[0],dof_and_planes[2], equal_var='False', nan_policy='omit')
+		print(textString(t1v1h, p1v1h))
+
+		print("\n1h with 2h:")
+		t1h2h, p1h2h = stats.ttest_ind(dof_and_planes[2],dof_and_planes[3], equal_var='False', nan_policy='omit')
+		print(textString(t1h2h, p1h2h))
+
+		print("\n2v with 2h:")
+		t2v2h, p2v2h = stats.ttest_ind(dof_and_planes[1],dof_and_planes[3], equal_var='False', nan_policy='omit')
+		print(textString(t2v2h, p2v2h))
+
+		print("\n1dof with 2dof:")
+		t12, p12 = stats.ttest_ind(dof[0],dof[1], equal_var='False', nan_policy='omit')
+		print(textString(t12, p12))
+
+		print("\nvertical with horizontal:")
+		tvh, pvh = stats.ttest_ind(plane[0],plane[1], equal_var='False', nan_policy='omit')
+		print(textString(tvh, pvh))
+
+		columns = ['p12','t12','pvh','tvh','p1v2v','t1v2v','p1v1h','t1v1h','p1h2h','t1h2h','p2v2h','t2v2h']
+		data = [p12,t12,pvh,tvh,p1v2v,t1v2v,p1v1h,t1v1h,p1h2h,t1h2h,p2v2h,t2v2h]
+		indeptstats = pd.DataFrame(index=[metric], columns=columns)
+		indeptstats.loc[metric,:] = data
+
+		return indeptstats
 
 
-
+	def dfToCsv(self):
+		pass
 
 if __name__ == "__main__":
 	AE = AnalyseSimpleExperiment()
@@ -198,28 +322,89 @@ if __name__ == "__main__":
 	PSE = PlotSimpleExperiment()
 	process.main()
 
-	# plot_part_nrs = [5]
-	# part_string = ['part_' + str(nr) for nr in plot_part_nrs]
+
+# Inspect data 
+# print('inspect')
+# df = process.means_real_exp[0]
+# print(inspect.head(5))
+# print(df.index.values)
+# print(df.columns.values)
+
+
+
+######## plot all metrics nice with seaborn #######
+dof_and_planes, dof, plane = AE.getSamplesOfMetrics(process.real_exp_dfs,'normalizedErr')
+PSE.singleMetric(dof_and_planes,'shape [-]')
+dof_and_planes, dof, plane = AE.getSamplesOfMetrics(process.real_exp_dfs,'field.absolute_angle')
+PSE.singleMetric(dof_and_planes,'angle [deg]')
+dof_and_planes, dof, plane = AE.getSamplesOfMetrics(process.real_exp_dfs,'field.trial_time')
+PSE.singleMetric(dof_and_planes,'time [s]')
+
+
+
+######## Do statistics for all trials with independent ttest ########
+# 1 vs 2 dof
+metrics = ['field.shape_acc','field.orientation_acc','field.trial_time','normalizedErr','field.absolute_angle']
+depStatsList = []
+dof_and_planes=[]
+for metric in metrics:
+	dof_and_planes, dof, plane = AE.getSamplesOfMetrics(process.real_exp_dfs,metric)
+	stats_metricx = AE.doIndepTTestOntrials(dof_and_planes, dof, plane, metric)
+	depStatsList.append(stats_metricx)
+depTStats = pd.concat(depStatsList)
+depTStats.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/depTStats.csv')
 
 
 
 
-	base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
-	PSE.generateRawDataPlots(process.all_dfs,base_path_raw, [8]) # if want to add specific participant(s)
-	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
-	plt.close()
 
-	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	# PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
-	# print(process.part_name_list)
-	# print(process.real_exp_dfs[0].index.values)
-	PSE.generateBoxExp(process.real_exp_dfs, ['part_8'], base_path) # if want to add specific participant(s)
-	plt.close()
 
-	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
-	PSE.generateBoxTypes(process.types_dfs, process.IDstrings, ['part_8'], base_path) # if want to add specific participant(s)
-	plt.close()
+
+
+
+
+
+######## Do statistics for the averages of 1vs2 dof en hor vs vertical with dependent ttest########
+# field = 'field.shape_acc'
+# metrics = ['field.shape_acc','field.absolute_angle','field.trial_time','field.absolute_angle','normalizedErr']
+# metric = 'field.absolute_angle'
+# dof_and_planes, dof, planes = AE.getAverageDfs(process.means_real_exp,metric)
+# AE.doDepTTestOnaverages(dof_and_planes, dof, planes)
+
+
+
+######## CREATE DF THAT HOLDS MEANS AND STD FOR EACH PARTICIPANT ##########
+	# df = pd.DataFrame(index = process.means_real_exp[0].index)
+	# column_name = lambda base,ID: str(base) +'_'+ str(ID+1) 
+	# for i in [0,1,2,3]:
+	# 	df[column_name('time_mean',i)] = process.means_real_exp[i]['field.trial_time']
+	# 	df[column_name('time_std',i)] = process.stds_real_exp[i]['field.trial_time']
+	# 	df[column_name('shape_mean',i)] = process.means_real_exp[i]['field.shape_acc']
+	# 	df[column_name('shape_std',i)] = process.stds_real_exp[i]['field.shape_acc']
+	# 	df[column_name('orientation_mean',i)] = process.means_real_exp[i]['field.orientation_acc']
+	# 	df[column_name('orientation_std',i)] = process.stds_real_exp[i]['field.orientation_acc']
+
+	# df.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/means_std_conditions_metrics.csv')
+
+
+
+	####### OLD PLOTTING, MOVED TO PlotExperiment.py #######
+	# base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
+	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw, [8]) # if want to add specific participant(s)
+	# # PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
+	# plt.close()
+
+	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# # PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
+	# # print(process.part_name_list)
+	# # print(process.real_exp_dfs[0].index.values)
+	# PSE.generateBoxExp(process.real_exp_dfs, ['part_8'], base_path) # if want to add specific participant(s)
+	# plt.close()
+
+	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# # PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
+	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, ['part_8'], base_path) # if want to add specific participant(s)
+	# plt.close()
 
 	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
 	# print(process.real_exp_dfs[0].columns.values)

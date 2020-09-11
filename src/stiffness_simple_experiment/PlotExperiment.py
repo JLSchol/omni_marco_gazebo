@@ -10,7 +10,9 @@ try:
 	from itertools import izip as zip
 except ImportError:
 	pass
-
+import seaborn as sns
+import itertools
+import pandas as pd
 
 class PlotSimpleExperiment():
 	def __init__(self):
@@ -313,11 +315,12 @@ class PlotSimpleExperiment():
 		colors = ['#d15a5a', '#4d67bf','#74cf70']
 
 		fig,ax1 = plt.subplots()
+		ax1.set_title('Performance measures per trial type',fontsize=18)
 		ax1.set_ylabel('accuracy [%]')
-		ax1.set_ylim(50,100)
+		ax1.set_ylim(40,100)
 		ax2 = ax1.twinx() # second axisObj that has x-axis in common
 		ax2.set_ylabel('time [s]')
-		ax2.set_ylim(0,20)
+		ax2.set_ylim(0,35)
 
 		p1=1 # skip zero tick of box plot
 		tick_values=[]
@@ -343,10 +346,10 @@ class PlotSimpleExperiment():
 			tick_values.append(p2)
 			# label_list.append(label)
 		ax1.axhline(90, color=colors[0], lw=2)
-		ax1.axhline(90, color='black',ls='--',lw=2)
+		# ax1.axhline(90, color='black',ls='--',lw=2)
 
 		ax1.axhline(71.28, color=colors[1],lw=2)
-		ax1.axhline(71.28, color='black',ls='--',lw=2)
+		# ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		x_upper_lim = 4*len(dfList)
 
@@ -355,7 +358,7 @@ class PlotSimpleExperiment():
 		ax2.set_xlim(0,x_upper_lim)
 
 		ax2.legend([bp["boxes"][0],bp["boxes"][1],bp["boxes"][2]],['shape [%]','orientation [%]','trial time [s]'],
-						loc='lower left',fontsize='10')
+						loc='center left',fontsize='10')
 
 		ax1.set_xticklabels(tick_labels,rotation=70)
 		# ax1.set_xmargin()
@@ -363,19 +366,17 @@ class PlotSimpleExperiment():
 		return fig
 
 	def BoxPlotGroup2axis(self,exp1,exp2,exp3,exp4):
-		# TO DO
-		# add title
-		# get legend on nice position
-		# add sample size on top?
+		# add sample size+significance on top?
 
 		colors = ['#d15a5a', '#4d67bf','#74cf70']
 
 		fig,ax1 = plt.subplots()
+		ax1.set_title('Performance measures per condition',fontsize=18)
 		ax1.set_ylabel('accuracy [%]')
-		ax1.set_ylim(50,100)
+		ax1.set_ylim(40,100)
 		ax2 = ax1.twinx() # second axisObj that has x-axis in common
 		ax2.set_ylabel('time [s]')
-		ax2.set_ylim(0,20)
+		ax2.set_ylim(0,35)
 
 		p1=1 # skip zero tick of box plot
 		for exp_i, exp_x in enumerate([exp1,exp2,exp3,exp4]):
@@ -396,10 +397,10 @@ class PlotSimpleExperiment():
 			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
 
 		ax1.axhline(90, color=colors[0], lw=2)
-		ax1.axhline(90, color='black',ls='--',lw=2)
+		# ax1.axhline(90, color='black',ls='--',lw=2)
 
 		ax1.axhline(71.28, color=colors[1],lw=2)
-		ax1.axhline(71.28, color='black',ls='--',lw=2)
+		# ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		tick_values = [2, 6, 10, 14]
 		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
@@ -408,7 +409,7 @@ class PlotSimpleExperiment():
 		ax2.set_xlim(0,16)
 
 		ax2.legend([bp["boxes"][0],bp["boxes"][1],bp["boxes"][2]],['shape','orientation','trial time'],
-						loc='lower left',fontsize='10')
+						loc='center left',fontsize='10')
 
 		return fig
 
@@ -610,7 +611,7 @@ class PlotSimpleExperiment():
 		title = "Van der Laan Questionnaire Scores"
 		ax.set_title(title,fontsize=18)
 
-		ax.legend()
+		ax.legend(loc='upper left')
 
 
 		ax.set_xlabel("usefulness ($\mu$={} $\pm$ $\sigma$={}) ".format(round(usefulness[1],2),round(usefulness[2],2),fontsize=14))
@@ -627,6 +628,7 @@ class PlotSimpleExperiment():
 
 		colors = ['#d15a5a', '#4d67bf']
 		fig,ax1 = plt.subplots()
+		ax1.set_title('Accuracy metrics per condition ',fontsize=18)
 		ax1.set_ylabel('error [-]')
 		ax1.set_ylim(0,1)
 		ax2 = ax1.twinx() # second axisObj that has x-axis in common
@@ -666,6 +668,7 @@ class PlotSimpleExperiment():
 	def barPlot1Axis(self, df_means, df_stds, part='all'):
 		colors = ['#d15a5a', '#4d67bf']
 		fig,ax = plt.subplots()
+		ax.set_title('Accuracy measure per condition ',fontsize=18)
 		ax.set_ylabel('accuracy [%]')
 		ax.set_ylim(0,100)
 		ax.set_xlim(0,13)
@@ -747,11 +750,108 @@ class PlotSimpleExperiment():
 		self.saveFigs2(bar_figs,bar_names,our_dirs,'.png')
 		plt.close('all')
 
+	
+	def BoxPlotGroup2axisPerPart(self,exp1,exp2,exp3,exp4):
+		# TO DO
+		# add title
+		# get legend on nice position
+		# add sample size on top?
+
+		colors = ['#d15a5a', '#4d67bf','#74cf70']
+
+		fig,ax1 = plt.subplots()
+		ax1.set_ylabel('accuracy [%]')
+		ax1.set_ylim(50,100)
+		ax2 = ax1.twinx() # second axisObj that has x-axis in common
+		ax2.set_ylabel('time [s]')
+		ax2.set_ylim(0,20)
+
+		p1=1 # skip zero tick of box plot
+		for exp_i, exp_x in enumerate([exp1,exp2,exp3,exp4]):
+			# update position 2,3
+			p2=p1+1 # move p2 1 tick to the right of p1
+			p3=p2+1 # move p3 1 tick to the right of p2
+
+			bp = ax1.boxplot([exp_x[0],exp_x[1]], positions=[p1, p2], widths=0.4, patch_artist=True)	
+			bp2 = ax2.boxplot(exp_x[2], positions=[p3], widths=0.4, patch_artist=True)	
+			# add bp2 to bp
+			for key in bp.keys():
+				bp[key].extend(bp2[key])
+
+
+			# set color
+			self.setColor(bp,colors)
+			# updat position 1	
+			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
+
+		ax1.axhline(90, color=colors[0], lw=2)
+		ax1.axhline(90, color='black',ls='--',lw=2)
+
+		ax1.axhline(71.28, color=colors[1],lw=2)
+		ax1.axhline(71.28, color='black',ls='--',lw=2)
+
+		tick_values = [2, 6, 10, 14]
+		tick_labels = ['1 DoF vertical', '2 DoF vertical', '1 DoF horizontal', '2 DoF horizontal']
+		ax2.set_xticks(tick_values)
+		ax2.set_xticklabels(tick_labels)
+		ax2.set_xlim(0,16)
+
+		ax2.legend([bp["boxes"][0],bp["boxes"][1],bp["boxes"][2]],['shape','orientation','trial time'],
+						loc='lower left',fontsize='10')
+
+		return fig
+
+
+	def singleMetric(self,dof_and_planes,metric):
+		
+		# df = pd.DataFrame((_ for _ in itertools.izip_longest(*[dof1v,dof2v,dof1h,dof2h])), columns=['dof1v', 'dof2v', 'dof1h', 'dof2h'])
+		dfList=[]
+		dofs = ['1_dof','2_dof','1_dof','2_dof']
+		planes = ['vertical','vertical','horizontal','horizontal']
+		for serie,dof,plane in zip(dof_and_planes,dofs,planes):
+			df = pd.DataFrame()
+			df[metric] = serie
+			df['Dof'] = dof
+			df['Plane'] = plane
+			dfList.append(df)
+		newdf = pd.concat(dfList)
+
+		sns.boxplot(y=metric, x='Dof', data=newdf, palette='colorblind', hue='Plane')
+
+
+		# print(df.columns.values)
+		# print(df.loc[:,'DOF'])
+
+		# labels = ['1 dof', '2 dof']
+
+		# sns.boxplot(data=dof2v, position)
+		# sns.boxplot(ax=ax,data=dof2v)
+		# print(type(bp))
+
+		# ax.set_xticks=[1,3]
+		# ax.set_xticklabels=labels
+		plt.show()
+
+		
+
+
+	def horVsVertView(self):
+		pass
+
 if __name__ == "__main__":
 	PSE = PlotSimpleExperiment()
 	process = ProcessSimpleExperiment()
 	process.main()
+
+	## DIT IS WORK IN PROGRESS nog aangepast worden
+	# exp1 = 
 	# print(process.means_real_exp)
+	# PSE.BoxPlotGroup2axisPerPart(process.means_real_exp)
+
+
+
+
+	## SHOW BAR PLOTS
 	# print(type(process.means_real_exp))
 	# for exp_means, exp_stds in zip(process.means_real_exp, process.stds_real_exp)
 	# 	angles_mean = exp_means.loc['all','field.absolute_angle']
@@ -759,34 +859,41 @@ if __name__ == "__main__":
 	# print(angles)
 	# process.stds_real_exp
 	# for part in ['part_1','part_2','part_3','part_4','part_5','part_6','part_7','part_8','all']:
-		# PSE.barPlot1Axis(process.means_real_exp, process.stds_real_exp, part)
-		# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, part)
+	# 	PSE.barPlot1Axis(process.means_real_exp, process.stds_real_exp, part)
+	# 	PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, part)
 	# PSE.barPlot1Axis(process.means_real_exp, process.stds_real_exp, 'all')
 	# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, 'all')
-
 	# plt.show()
-	# out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
-	# PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
-	# plt.close()
 
+	# GENERATE VAN DER LAAN PLOTS
+	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+	PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
+	plt.close()
 
+	## GENERATE RAW DATA PLOTS
 	# base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
 	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw, [8]) # if want to add specific participant(s)
 	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
 	# plt.close()
 
-
+	# # GENERATE BOXPLOTS PER CONDITION
 	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	# PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
-	# plt.close()
+	PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
+	plt.close()
 
-	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
-	# plt.close()
+	# GENERATE BOXPLOTS PER TRIAL TYPE
+	PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
+	plt.close()
 
-	# PSE.generateBarPlot1Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
+	# GENERATE BAR PLOTS
+	PSE.generateBarPlot1Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
 	PSE.generateBarPlot2Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
 	plt.close()
 
+
+
+
+	## OLD FOR WHEN ONLY ADDING ONE PARTICIPANT TO BOXPLOTS
 	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
 	# # PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
 	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, ['part_8'], base_path) # if want to add specific participant(s)
