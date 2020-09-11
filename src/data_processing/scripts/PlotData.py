@@ -99,11 +99,68 @@ class PlotData(object):
 
 		return fig,ax
 
+	def getWiggleStiffnessFig(self, df1,df2):
+		f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+		
+		
+
+		# get the info
+		# title = figureInfo.get('title')
+		# legend = figureInfo.get('legend')
+		# X = figureInfo.get('xAxis')
+		# Ys = figureInfo.get('yAxis')
+		# xlabel = figureInfo.get('xLabel')
+		# ylabel = figureInfo.get('yLabel')
+
+
+		# set in figure
+		# ax.set_title(title)
+		# for i, Y in enumerate(Ys):
+		# 	x = map(lambda x: x,  df[X])
+		# 	y = map(lambda x: x,  df[Y])
+		# 	ax.plot(x,y,label=legend[i])
+		# ax.set_xlabel(xlabel)
+		# ax.set_ylabel(ylabel)
+		# ax.legend(loc='best')
+		# ax.grid()
+		# x = range(0,len(df1['field.F32MA.data0']))/1000
+		# x = [i/1000 for i in range(0,len(df1['field.F32MA.data0']))]
+		ax1.set_title('Stiffness Variations',fontsize=18)
+		ax1.plot(df1['timeVec'],df1['field.F32MA.data0'],linewidth=2,color='black')
+		ax1.legend([r'$K_{xx}$'],loc='best',fontsize=14)
+		ax1.set_xlim(2.61,10.61)
+		ax1.set_ylim(0,1100)
+		# ax1.set_xlabel('time [s]')
+		ax1.set_ylabel('stiffness [N/m]',fontsize=14)
+		
+		# print(x)
+		ax1.grid()
+		# print(df2.columns.values)
+		# ax2.set_title('Perturbation Signal',fontsize=18)
+		ax2.plot(df2['timeVec'],df2['field.current_position.y'],linewidth=2,color='black')
+		ax2.set_xlim(2.61,10.61)
+		ax2.axhline(y=0.05,linestyle='--',color='red')
+		ax2.axhline(y=0.3,linestyle='-.',color='blue')
+		ax2.axhline(y=-0.05,linestyle='--',color='red')
+		ax2.axhline(y=-0.3,linestyle='-.',color='blue')
+		ax2.set_xlabel('time [s]',fontsize=14)
+		ax2.set_ylabel('deviation [m]',fontsize=14)
+		ax2.legend([r'$x_{hd}$',r'$w_{min}$',r'$w_{max}$'],loc='best',fontsize=14)
+		ax2.grid()
+		
+
+
+		return f,ax1,ax2
+
+
+
+
+
 
 
 if __name__== "__main__":
 
-	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/test","202002061043_D30_W200_L0.03_0.2_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
+	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202008280234_D20_W100_L0.034_0.204_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
 	csvsPandas,csvNames,yamlDict,yamlNames = IF.importAll()
 
 	# load files in the process class
@@ -111,32 +168,43 @@ if __name__== "__main__":
 	# process dict and csvs
 	paramDict = PF.trimParamDict(yamlDict[1],['rosdistro','roslaunch','run_id','rosversion'])
 	csvsPandas,csvAndTfNames = PF.processCsvs(csvsPandas,csvNames)
-	# print(csvAndTfNames)
+	print(csvAndTfNames)
 
 	# set class variables not necessary
 	PF.setParams(csvsPandas,csvAndTfNames,paramDict)
 
 	# get list of things I want to plot
 	# print(len(csvAndTfNames))
-	dfList = [csvsPandas[3],csvsPandas[6],csvsPandas[10],csvsPandas[13],csvsPandas[14]]
-	nameList = [csvAndTfNames[3],csvAndTfNames[6],csvAndTfNames[10],csvAndTfNames[13],csvAndTfNames[14]]
+	dfList = [csvsPandas[0],csvsPandas[1]]
+	nameList = [csvAndTfNames[0],csvAndTfNames[1]]
 	print(nameList)
 
-	
+	# print(dfList[0])
+	# print(type(dfList[0]))
 	# init classes
 	TI = PlotTopicInfo()
 	PD = PlotData()
 
 	info = TI.getInfo(nameList[0])
-	fig,ax = PD.simpleFigure(dfList[0],info)
-	fig,ax = PD.addSubPlot(dfList[1],TI.getInfo(nameList[1]),fig,ax)
-	fig,ax = PD.addSubPlot(dfList[2],TI.getInfo(nameList[2]),fig,ax)
-	xx =ax.get_lines()
-	x_data = xx[0].get_data()[0]
-	y_data = xx[0].get_data()[1]
+	PD.getWiggleStiffnessFig(csvsPandas[0],csvsPandas[1])
 
-	fi2 = plt.figure
-	fi2.plot(x_data,y_data)
+	# fig,ax = PD.simpleFigure(dfList[0],info)
+	# fig,ax = PD.addSubPlot(dfList[1],TI.getInfo(nameList[1]),fig,ax)
+
+
+
+
+
+	# ax.get
+
+	# fig,ax = PD.addSubPlot(dfList[2],TI.getInfo(nameList[2]),fig,ax)
+	# xx =ax.get_lines()
+	# x_data = xx[0].get_data()[0]
+	# y_data = xx[0].get_data()[1]
+
+	# fi2 = plt.figure
+	# fi2.show()
+	# fi2.plot(x_data,y_data)
 	# plt.plot(xx)
 	# plt.plot(3lines)
 	# left  = 0.125  # the left side of the subplots of the figure
