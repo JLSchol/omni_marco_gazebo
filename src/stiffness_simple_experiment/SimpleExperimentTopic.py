@@ -132,6 +132,21 @@ class ProcessSimpleExperiment():
 		else:
 			df[label] = '1_DoF'
 
+	def addVerticalOrHowizontal(self, df):
+		plane=[]
+
+		if (df['field.experiment_orientation.x']==0.0).all():
+			plane = 'vertical'
+		elif (df['field.experiment_orientation.y']==0.0).all():
+			plane = 'horizontal'
+		else:
+			print('not 0 for all orientation (x and y) for all trials ?!?!')
+
+		df['plane'] = plane
+
+
+
+
 
 		# length_df = len(df)
 
@@ -319,13 +334,24 @@ class ProcessSimpleExperiment():
 		return textList
 
 	def removeFailed001Trials(self,df):
+		# print(df.index)
+		# print(df.loc[1,'field.trial_time'])
+		# print(type(df.loc[1,'field.trial_time']))
 		indices = df.index[df['field.trial_time'] <= 0.02].tolist()
-		self.removeIncorrectTrials(df, indices)
+		# print(indices)
+		# print(df.index[df['field.trial_time'] <= 0.02])
+		columns = df.columns.values
+		to_delete = ['participant','DoF','plane','size','rotation_axis','rotation','type']
+		none_columns = [value for value in columns if not value in to_delete]
 
-	def removeIncorrectTrials(self, df, indices):
+		if not len(indices) == 0:
+			self.removeIncorrectTrials(df, indices, none_columns)
+
+	def removeIncorrectTrials(self, df, indices, none_columns):
+		columns = df.index.values.tolist()
 		for index in indices:
-			df.loc[index, :] = None
-
+			df.loc[index, none_columns] = None
+			
 
 	def addColumns(self, df, column_labels, data_lists, insert_list):
 		for label, data, index in zip(column_labels,data_lists,insert_list):
@@ -443,7 +469,7 @@ class ProcessSimpleExperiment():
 
 		# print(df[['projected_scales.x','projected_scales.y','projected_scales.z']].values)
 
-	def addNormalizedShapeError(self,df):
+	def addNormalizedShapeError(self,df): # check the calculation of this function and compare with average error 'field.shape' !!!
 		error_fields = ['field.error_sorted_principle_axes.x','field.error_sorted_principle_axes.y','field.error_sorted_principle_axes.z']
 		ref_ellips_size_fields = ['field.experiment_scales.x','field.experiment_scales.y','field.experiment_scales.z']
 
@@ -454,7 +480,22 @@ class ProcessSimpleExperiment():
 
 		normError = [np.mean(normalizeErr(e, ref)) for e, ref in zip(error, ref_ellips_size)]
 
+		# # Test if normalizedErr found matches percetage
+		# print('normError')
+		# print(normError)
+		# # check if corresponds with percentage
+		# print('to_perc')
+		# to_perc = lambda x,y: x/y*100
+		# perc = [100 - np.mean(to_perc(e, ref)) for e, ref in zip(np.array(error), np.array(ref_ellips_size))]
+		# print(perc)
+
 		self.addColumns(df, ['normalizedErr'], [normError], [10])
+
+
+
+	def checkPerc(self, normErrorValue, shapePerc):
+		pass
+		# convert normErrorValue to shape perc
 
 		
 
@@ -524,6 +565,14 @@ class ProcessSimpleExperiment():
 	def getMeanStdsDfs(self, df):
 		dfm = df.mean(level='participant')
 		dfs = df.std(level='participant')
+		# print(dfm)
+		dfmm = dfm.mean()
+		dfms = dfm.std()
+		# dfm.loc['mean_of_means'] = dfmm
+		# dfs.loc['std_of_means'] = dfms
+		# print(dfms)
+
+
 		dfm.loc['all',:] = df.mean()
 		dfs.loc['all',:] = df.std()
 		return (dfm, dfs)
@@ -584,15 +633,19 @@ class ProcessSimpleExperiment():
 
 		#  ADD COLUMNS AND REMOVE INCORRECT TRIALS THAT ARE SKIPPED
 		for part_x_dfs_dict in self.all_dfs:
-			for df in part_x_dfs_dict.values():
+
+			for df,expnr in zip(part_x_dfs_dict.values(),part_x_dfs_dict.keys()):
+				# print(expnr)
 				self.add1Or2Dof(df)
+				self.addVerticalOrHowizontal(df)
 				self.addSmallOrLarge(df)
 				self.addType(df)
 				self.addRotationAxis(df)
 				self.addRotation(df)
 				self.addProjectedScales(df)
-				self.addNormalizedShapeError(df)
+				self.addNormalizedShapeError(df) # check this function!!!
 				self.removeFailed001Trials(df)
+				# sys.exit()
 
 		# IF NEED REMOVE TRIALS MANUALLY
 		# self.removeIncorrectTrials(df, indices)
@@ -660,6 +713,10 @@ class ProcessSimpleExperiment():
 			means, stds = self.getMeanStdsDfs(df)
 			self.means_real_exp.append(means)
 			self.stds_real_exp.append(stds)
+			# print(means)
+			# print(self.means_real_exp)
+			# means_of_means = df.mean(level='participant')
+			# std_of_means = df.std(level='participant')
 			
 
 

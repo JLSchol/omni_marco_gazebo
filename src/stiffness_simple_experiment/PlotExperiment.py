@@ -3,8 +3,13 @@ from SimpleExperimentTopic import ProcessSimpleExperiment
 from os import path
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
+from matplotlib import rcParams
+
 from matplotlib.lines import Line2D  
+from matplotlib.text import Text
 from matplotlib.patches import Patch
+from matplotlib import tight_layout
+from matplotlib.font_manager import FontProperties
 # python 2.7
 try:
 	from itertools import izip as zip
@@ -801,42 +806,261 @@ class PlotSimpleExperiment():
 
 		return fig
 
+	# 
+	def singleMetricDofPlanes4box(self, df, p_dof, p_plane, fig_info, swarm, annotate=True):
 
-	def singleMetric(self,dof_and_planes,metric):
-		
+		fig, ax = plt.subplots()
+
+		# boxplot
+		sns.boxplot(x='DoF', y=fig_info['field'], hue='plane', data=df, palette='colorblind', ax=ax, showfliers=False)
+
+		# swarm plot
+		if swarm['plot']:
+			sns.swarmplot(ax=ax, x='DoF', y=fig_info['field'], hue='plane', 
+				size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
+																dodge=True, data=df, palette="colorblind")
+
+		fig, ax, xfrac = self.formatLegendBox(ax, fig)
+
+		if annotate:
+			self.annotateboxplot(fig, ax, [p_dof,p_plane], fig_info['field'], xfrac)
+
+		ax.set_title(fig_info['title'])
+		ax.set_ylabel(fig_info['yLabel'])
+		# ax.set_ylim(fig_info['yLim']) # only set lower limit		
+		# fig.set_size_inches(20,8, forward=True)
+		return fig
+
+	def singleMetricDofPlanesSizes2box(self, df, x, p_value, info, swarm):
+
+		fig, ax = plt.subplots()
+
+		# set order of plot
+		order = []
+		if x == 'DoF':
+			order = ['1_DoF', '2_DoF']
+		elif x == 'plane':
+			order = ['vertical', 'horizontal']
+		elif x == 'size':
+			order = ['small','large']
+
+		# plot boxplot
+		# print(df[x].unique())
+
+		sns.boxplot(data=df, x=x, y=info['field'], order=order,
+					ax=ax, palette='colorblind',  showfliers=False)
+		# plot swarm plot
+		sns.swarmplot(	data=df, x=x, y=info['field'], order=order,
+						size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
+						dodge=True,  palette="colorblind", ax=ax)
+		# annotate pvalue
+		if p_value <= 0.05:
+			self.topannotation(ax, p_value)
+
+		# set other figure properties
+		ax.set_title(info['title'])
+		ax.set_ylabel(info['yLabel'])
+		return fig
+
+	# def singleMetric(self, dof_and_planes, metric, yAxis, swarm):
+	def singleMetric(self, dof_and_planes, fig_info, swarm, annotate=True):
+
+		if not isinstance(dof_and_planes, list):
+			dof_and_planes = [dof_and_planes]
+			# yAxis = [yAxis]
+		# df should contan one column with scores
+		# and identifiers for the dat as dofs and planes in additional columns
 		# df = pd.DataFrame((_ for _ in itertools.izip_longest(*[dof1v,dof2v,dof1h,dof2h])), columns=['dof1v', 'dof2v', 'dof1h', 'dof2h'])
 		dfList=[]
 		dofs = ['1_dof','2_dof','1_dof','2_dof']
 		planes = ['vertical','vertical','horizontal','horizontal']
 		for serie,dof,plane in zip(dof_and_planes,dofs,planes):
 			df = pd.DataFrame()
-			df[metric] = serie
+			df[fig_info['yLabel']] = serie
 			df['Dof'] = dof
 			df['Plane'] = plane
 			dfList.append(df)
 		newdf = pd.concat(dfList)
 
-		sns.boxplot(y=metric, x='Dof', data=newdf, palette='colorblind', hue='Plane')
+		fig, ax = plt.subplots()
+
+		# boxplot
+		sns.boxplot(y=fig_info['yLabel'], x='Dof', data=newdf, palette='colorblind', hue='Plane', ax=ax, showfliers=False)
+
+		# swarm plot
+		if swarm['plot']:
+			sns.swarmplot(ax=ax, x="Dof", y=fig_info['yLabel'], hue="Plane", size=swarm['size'], 
+								marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
+									dodge=True, data=newdf, palette="colorblind")
 
 
-		# print(df.columns.values)
-		# print(df.loc[:,'DOF'])
+		fig, ax, xfrac = self.formatLegendBox(ax, fig)
 
-		# labels = ['1 dof', '2 dof']
+		if annotate:
+			self.annotateboxplot(fig, ax, swarm['tstats'], fig_info['field'], xfrac)
 
-		# sns.boxplot(data=dof2v, position)
-		# sns.boxplot(ax=ax,data=dof2v)
-		# print(type(bp))
+		ax.set_title(fig_info['title'])
+		ax.set_ylim(fig_info['yLim']) # only set lower limit		
+		# fig.set_size_inches(20,8, forward=True)
+		return fig
 
-		# ax.set_xticks=[1,3]
-		# ax.set_xticklabels=labels
-		plt.show()
+	# still in use?????? think not 
+	def singleMetricSize(self, df, x_field, fig_info, swarm=False):
 
+		fig, ax = plt.subplots()
+
+		# boxplot
+
+		# x = 'Dof' or 'plane'
+		# y = 'field.shape_acc' (field of the metric)
+		# hue = 'size'
+		print(fig_info)
+		sns.boxplot(data=df, x=x_field, y=fig_info['field'], hue='size', 
+					ax=ax, palette='colorblind',  showfliers=True)
+
+		# swarm plot
+		if swarm['plot']:
+			sns.swarmplot(	data=df, x=x_field, y=fig_info['field'], hue='size', 
+							size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
+							dodge=True,  palette="colorblind", ax=ax)
+
+
+		fig, ax, xfrac = self.formatLegendBox(ax, fig)
+
+
+		self.annotateboxplot(fig, ax, swarm['tstats'], fig_info['field'], xfrac)
+
+		ax.set_title(fig_info['title'])
+		ax.set_ylabel(fig_info['yLabel'])
+		# ax.set_ylim(fig_info['yLim']) # only set lower limit		
+		# fig.set_size_inches(20,8, forward=True)
+		# plt.show()
+		return fig
+
+	# used in sizeFigure 2 boxplots
+	def signelMetricSize2(self,df, stats, info, swarm):
+		x = 'size'
 		
+		fig, ax = plt.subplots()
+
+		sns.boxplot(data=df, x='size', y=info['field'], order=['small','large'],
+					ax=ax, palette='colorblind',  showfliers=True)
+
+		sns.swarmplot(	data=df, x=x, y=info['field'], order=['small','large'],
+						size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
+						dodge=True,  palette="colorblind", ax=ax)
 
 
-	def horVsVertView(self):
-		pass
+		p_value = stats.loc[info['field'],'psl']
+		if p_value <= 0.05:
+			self.topannotation(ax, p_value)
+
+		ax.set_title(info['title'])
+		ax.set_ylabel(info['yLabel'])
+		return fig
+		# ax.legend()
+		# handles, labels = ax.get_legend_handles_labels()
+		# print(handles)
+		# print(labels)
+		# legend = ax.legend(handles[0:2],labels[0:2], loc="best")
+
+	def formatLegendBox(self, ax, fig):
+		# Set Correct Legend
+		handles, labels = ax.get_legend_handles_labels()
+
+		legend_ofset = 0.46
+		x_anch = 1+legend_ofset
+		y_anch = 0.5
+		shrink_x = 1 - legend_ofset/x_anch
+
+		legend = ax.legend(handles[0:2],labels[0:2], loc="center right", bbox_to_anchor=(x_anch, y_anch), borderaxespad=0.)  # Set custom legend
+
+		box = ax.get_position()
+		ax.set_position([box.x0, box.y0, box.width*shrink_x, box.height])
+
+		legendBbox = legend.get_bbox_to_anchor()
+
+		return fig, ax, shrink_x
+
+
+	def annotateboxplot(self, fig, ax, p_values, metric, xfrac):
+
+		p12, pvh = [], []
+		if isinstance(p_values, list) :
+			p12, pvh = p_values[0], p_values[1]
+		else:
+
+			p12 = p_values.loc[metric,'p12']
+			pvh = p_values.loc[metric,'pvh']
+
+		significant = 0.05
+
+		if p12 <= significant:
+			self.topannotation(ax, p12)
+		if pvh <= significant:
+			self.legendannotation(ax, pvh, xfrac)#-.25, .25, maxval, p2)
+
+
+	def topannotation(self, ax, p, yrel1=0.9, yrel2=0.95):
+		# get x positions
+		[x1, x2] = ax.get_xticks()
+
+		# get y positions
+		[ymin, ymax] = ax.get_ybound()
+		h = ymax - ymin
+		[y1, y2] = [ymin + (yrel1*h), ymin + (yrel2*h)]
+
+		# plot line
+		x = [x1, x1, x2, x2]
+		y = [y1, y2, y2, y1]
+		line = Line2D(x,y, linewidth=1.5, color='black')
+		ax.add_line(line)
+
+		# plot significance text markers: ***
+		dotString = self.sigDots(p)
+		fontdict = {'size': 16, 'weight': 'bold'}
+		ax.text((x1+x2)*0.5, y2, dotString, fontdict=fontdict, ha='center', va='baseline')
+
+	def legendannotation(self, ax, p, xfrac):
+		arrowfraction = 0.3
+
+		arrowx  = xfrac + 0.01
+		arrowy0 = 0.46
+		arrowy1 = 0.54
+		arrowheight = arrowy1-arrowy0
+		arrowwidth  = arrowheight * arrowfraction
+
+		ann	= ax.annotate('', xy=(arrowx, arrowy0), xycoords='figure fraction',
+				xytext=(arrowx, arrowy1), textcoords='figure fraction',
+				fontsize=18,
+				fontweight='bold',
+				annotation_clip=False,
+				arrowprops=dict(arrowstyle="-",
+				connectionstyle="bar, fraction={}".format(arrowfraction),
+				lw=1.5,
+				ec="k"))
+		anndot = ax.annotate(self.sigDots(p), xy=(arrowx-arrowwidth, arrowy0+arrowheight*.5), xycoords='figure fraction',
+					textcoords='figure fraction',
+					# fontdict = {'size': 16, 'weight': 'bold'},
+					ha="center",
+					va="center",
+					fontsize=16,
+					fontweight='bold',
+					rotation=90,
+					annotation_clip=False)
+
+	def sigDots(self,p):
+		dotstr = ""
+		ding = '*'
+		# ding = u'\25CF'
+		if p<0.05:
+		    dotstr += ding
+		if p<0.01:
+		    dotstr += ding
+		if p<0.001:
+		    dotstr += ding
+
+		return dotstr
 
 if __name__ == "__main__":
 	PSE = PlotSimpleExperiment()
@@ -865,10 +1089,10 @@ if __name__ == "__main__":
 	# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, 'all')
 	# plt.show()
 
-	# GENERATE VAN DER LAAN PLOTS
-	out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
-	PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
-	plt.close()
+	# # GENERATE VAN DER LAAN PLOTS
+	# out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+	# PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
+	# plt.close()
 
 	## GENERATE RAW DATA PLOTS
 	# base_path_raw = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/part_"
@@ -876,19 +1100,19 @@ if __name__ == "__main__":
 	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
 	# plt.close()
 
-	# # GENERATE BOXPLOTS PER CONDITION
-	base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
-	PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
-	plt.close()
+	# # # GENERATE BOXPLOTS PER CONDITION
+	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
+	# PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
+	# plt.close()
 
-	# GENERATE BOXPLOTS PER TRIAL TYPE
-	PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
-	plt.close()
+	# # GENERATE BOXPLOTS PER TRIAL TYPE
+	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
+	# plt.close()
 
-	# GENERATE BAR PLOTS
-	PSE.generateBarPlot1Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
-	PSE.generateBarPlot2Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
-	plt.close()
+	# # GENERATE BAR PLOTS
+	# PSE.generateBarPlot1Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
+	# PSE.generateBarPlot2Axis(process.means_real_exp, process.stds_real_exp, process.part_name_list, base_path) # plot for all participants
+	# plt.close()
 
 
 
