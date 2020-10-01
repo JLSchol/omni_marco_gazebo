@@ -1,7 +1,7 @@
 #include "stiffness_commanding/StiffnessCommanding.h"
 
 // issues:
-//  When data_matrix has not yet reaches the size of the window_length
+//  When data_matrix has not yet reached the full size of the window_length
 // The eigenvalues and vectors of the covariance matrix seems wrong?
 
 
@@ -35,22 +35,23 @@ void StiffnessCommanding::getTF(tf2_ros::Buffer& buffer)
 
 void StiffnessCommanding::run()
 {
-    
+    // if button is pressed, data matrix is frozen and previous messages will be published
+    // This fixes the stiffness profile
     if (lockstate_msg_.lock_white == true){
         covariance_matrix_MA_ = prev_covariance_matrix_MA_;
         eigen_message_ = prev_eigen_message_;
+        eigen_message_stiffness_ = prev_eigen_message_stiffness_;
         stiffness_matrix_MA_ = prev_stiffness_matrix_MA_;
         covariance_pub_.publish(covariance_matrix_MA_);
         eigen_pair_pub_.publish(eigen_message_);
+        stiffness_eigen_pair_pub_.publish(eigen_message_);
         stiffness_pub_.publish(stiffness_matrix_MA_);
     }
     else{
     
-    // get error signal from tf_tree
+    // get error signal from tf_tree between endeffecgor and marker
     std::vector<float> error_signal(3);
     error_signal = getErrorSignal(); // x,y,z,qx,qy,qz,qw
-    // ROS_INFO_STREAM("error_signal: \n"<< error_signal[0]
-    // << "\n "<< error_signal[1]<< "\n "<< error_signal[2]);
 
     // data_matrix_ grows by adding the errorsignal until window length
     // in the function only the first three x,y,z translations are used
@@ -59,32 +60,38 @@ void StiffnessCommanding::run()
     // covariance matrix is found from data matrix
     Eigen::Matrix3f covariance_matrix;
     getCovarianceMatrix(data_matrix_, covariance_matrix); 
-    // ROS_INFO_STREAM("covariance_matrix: \n"<< covariance_matrix);
 
+    // get eigen_vector and value pair of the covariance matrix
     std::pair<Eigen::Matrix3f, Eigen::Vector3f> eigen_vector_and_values =
                                         computeEigenVectorsAndValues(covariance_matrix);
-    // ROS_INFO_STREAM("eigenvectors: \n"<< eigen_vector_and_values.first);
-    // ROS_INFO_STREAM("EIGENVALUES: \n"<< eigen_vector_and_values.second);
 
+    // use the eigenvalues of the covariance matrix to find stiffness eigenvalues
     Eigen::Vector3f stiffness_diagonal = getStiffnessEig(eigen_vector_and_values);
-    // ROS_INFO_STREAM("stiffness_diagonal: "<< stiffness_diagonal[0]
-    //                                     << stiffness_diagonal[1]<< stiffness_diagonal[2]);
 
+    // Create vector value pair with the new stiffness eigenvalues and eigenvector of covariance matrix 
+    std::pair<Eigen::Matrix3f, Eigen::Vector3f> eigen_vector_and_values_stiffness = 
+                            std::make_pair(eigen_vector_and_values.first, stiffness_diagonal);
+
+    // Creat Stiffness matrix from stiffness eigenvalues and covariance eigenvector
     Eigen::Matrix3f K_matrix = getStiffnessMatrix(eigen_vector_and_values,stiffness_diagonal);
-    // ROS_INFO_STREAM("K_matrix: "<< "\n" << K_matrix);
 
+    // convert everything in a message
     fill2DMultiArray(covariance_matrix,covariance_matrix_MA_);
     eigen_message_ = setEigenPairMessage(eigen_vector_and_values);
+    eigen_message_stiffness_ = setEigenPairMessage(eigen_vector_and_values_stiffness);
     fill2DMultiArray(K_matrix,stiffness_matrix_MA_);
 
+    // publish the message
     covariance_pub_.publish(covariance_matrix_MA_);
     eigen_pair_pub_.publish(eigen_message_);
+    stiffness_eigen_pair_pub_.publish(eigen_message_stiffness_);
     stiffness_pub_.publish(stiffness_matrix_MA_);
     
-    // ROS_INFO_STREAM("---------------------------------------------------");
+    // remember previous values
     }
     prev_covariance_matrix_MA_ = covariance_matrix_MA_;
     prev_eigen_message_ = eigen_message_;
+    prev_eigen_message_stiffness_ = eigen_message_stiffness_;
     prev_stiffness_matrix_MA_ = stiffness_matrix_MA_;
 }
 
@@ -408,6 +415,7 @@ void StiffnessCommanding::getParameters()
     // input output topic names
     nh_.param<std::string>("covariance_topic_name", covariance_command_topic_name_, "/covariance_matrix"); 
     nh_.param<std::string>("eigen_pair_topic_name", eigen_pair_topic_name_, "/eigen_pair"); 
+    nh_.param<std::string>("stiffness_eigen_pair_topic_name", stiffness_eigen_pair_topic_name_, "/eigen_pair_stiffness"); 
     nh_.param<std::string>("stiffness_topic_name", stiffness_command_topic_name_, "/stiffness_command");  
     nh_.param<std::string>("lock_state_topic_name", lock_state_topic_name_, "/omni1_lock_state");
     // TF frame names
@@ -435,6 +443,7 @@ void StiffnessCommanding::initializePublishers()
 {
     covariance_pub_ = nh_.advertise<stiffness_commanding::HeaderFloat32MultiArray>(covariance_command_topic_name_,1);
     eigen_pair_pub_ = nh_.advertise<stiffness_commanding::EigenPairs>(eigen_pair_topic_name_,1);
+    stiffness_eigen_pair_pub_ = nh_.advertise<stiffness_commanding::EigenPairs>(stiffness_eigen_pair_topic_name_,1);
     stiffness_pub_ = nh_.advertise<stiffness_commanding::HeaderFloat32MultiArray>(stiffness_command_topic_name_,1);
 }
 

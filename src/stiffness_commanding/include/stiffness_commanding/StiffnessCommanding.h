@@ -39,12 +39,14 @@ class StiffnessCommanding
 		ros::Subscriber lock_state_sub_;
 		ros::Publisher covariance_pub_;
 		ros::Publisher eigen_pair_pub_;
+		ros::Publisher stiffness_eigen_pair_pub_;
 		ros::Publisher stiffness_pub_;		
 		// topic names
 		std::string lock_state_topic_name_;
 		std::string stiffness_command_topic_name_;
 		std::string covariance_command_topic_name_;
 		std::string eigen_pair_topic_name_;
+		std::string stiffness_eigen_pair_topic_name_;
 		// tf frame names
 		std::string ee_frame_name_;	
 		std::string virtual_marker_name_;
@@ -56,9 +58,11 @@ class StiffnessCommanding
 		phantom_omni::LockState lockstate_msg_;
 		stiffness_commanding::HeaderFloat32MultiArray covariance_matrix_MA_;
 		stiffness_commanding::EigenPairs eigen_message_;
+		stiffness_commanding::EigenPairs eigen_message_stiffness_;
 		stiffness_commanding::HeaderFloat32MultiArray stiffness_matrix_MA_;
 		stiffness_commanding::HeaderFloat32MultiArray prev_covariance_matrix_MA_;
 		stiffness_commanding::EigenPairs prev_eigen_message_;
+		stiffness_commanding::EigenPairs prev_eigen_message_stiffness_;
 		stiffness_commanding::HeaderFloat32MultiArray prev_stiffness_matrix_MA_;		
 		//other things
 		std::vector< std::vector<float> > data_matrix_;
