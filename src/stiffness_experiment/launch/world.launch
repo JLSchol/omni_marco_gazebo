@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
-  <arg name="world"  default="micro_wave"/>  <!-- stiffness_experiment/worlds/ OR  marco_gazebo/worlds/-->
+  <arg name="world"  default="micro_wave2"/>  <!-- stiffness_experiment/worlds/ OR  marco_gazebo/worlds/-->
   <!--<arg name="world"  default="hit_table"/>-->
   <arg name="robot"  default="titanium"/>          <!-- see marco_description/robots/marco_* -->
 

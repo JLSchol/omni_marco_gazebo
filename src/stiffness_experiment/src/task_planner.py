@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
+import time
 import moveit_commander
 import numpy
 import math
 from math import pi
 import copy
+from itertools import izip as zip
 
 from tf2_ros import TransformListener, Buffer, LookupException
 from tf2_ros import ConnectivityException, ExtrapolationException
@@ -41,7 +43,25 @@ def all_close(goal, actual, tolerance):
             elif type(goal) is Pose:
                 return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
     return True
-
+def pose_list_from_poseMsg(pose):
+    x = pose.position.x
+    y = pose.position.y
+    z = pose.position.z
+    qx = pose.orientation.x
+    qy = pose.orientation.y
+    qz = pose.orientation.z
+    qw = pose.orientation.w
+    return [x,y,z], [qx,qy,qz,qw]
+def poseMsg_from_PoseList(position,orientation):
+    pose = Pose()
+    pose.position.x = position[0]
+    pose.position.y = position[1]
+    pose.position.z = position[2]
+    pose.orientation.x = orientation[0]
+    pose.orientation.y = orientation[1]
+    pose.orientation.z = orientation[2]
+    pose.orientation.w = orientation[3]
+    return pose
 
 class EEFPathPlanning():
 
@@ -73,9 +93,9 @@ class EEFPathPlanning():
         pose_waypoint = rospy.Publisher('waypoints_pose',
                                                    PoseArray,
                                                    queue_size=20)
-        door_angles = rospy.Publisher('door_angles',
-                                                   Float64,
-                                                   queue_size=20)
+        # door_angles = rospy.Publisher('door_angles',
+        #                                            Float64,
+        #                                            queue_size=20)
 
         # print "============ Printing robot Start state"
         # print(robot.get_current_state())
@@ -84,6 +104,9 @@ class EEFPathPlanning():
         self.robot = robot
         self.scene = scene
         self.move_group = move_group
+        # setting scaling factor only works for joint planner
+        # self.move_group.set_max_velocity_scaling_factor(0.1)
+        # self.move_group.set_max_acceleration_scaling_factor(0.1)
         # self.display_trajectory_publisher = display_trajectory_publisher
         self.eef_link = eef_link
         # print("EE_link: {}".format(self.eef_link))
@@ -95,7 +118,8 @@ class EEFPathPlanning():
         self.pose_waypoint = pose_waypoint
 
         
-        self.waypoints=[]
+        self.waypoints_handle=[]
+        self.waypoints =[]
 
 
         # self.setHingeJointAngle = setHingeJointAngle
@@ -131,12 +155,12 @@ class EEFPathPlanning():
     def execute_plan(self, plan):
         self.move_group.execute(plan, wait=True)
 
-    def visualize_Trajectory(self):
+    def visualize_Trajectory(self, waypoints):
 
         markerArray = MarkerArray()
         i=0
 
-        for pose in self.waypoints:
+        for pose in waypoints:
             marker = Marker()
             marker.header.frame_id = "base_footprint"
             marker.id = i
@@ -161,7 +185,7 @@ class EEFPathPlanning():
         self.marker_pub.publish(markerArray)
 
 
-    def go_to_joint_state(self,joint_goal=False):
+    def go_to_joint_state(self,joint_goal=False,scaling=1):
         # set std joint state if not defined
         if joint_goal==False:
             joint_goal = self.move_group.get_current_joint_values()
@@ -173,9 +197,15 @@ class EEFPathPlanning():
             joint_goal[5] = 0
             joint_goal[6] = 0
 
+        # print('current')
+        print(self.move_group.get_current_joint_values())
+        # print('goal')
+        # print(joint_goal)
+        self.move_group.set_max_velocity_scaling_factor(scaling)
         self.move_group.go(joint_goal, wait=True)
         # Calling ``stop()`` ensures that there is no residual movement
         self.move_group.stop()
+        self.move_group.set_max_velocity_scaling_factor(1)
         # For testing:
         current_joints = self.move_group.get_current_joint_values()
         return all_close(joint_goal, current_joints, 0.01)
@@ -204,7 +234,7 @@ class EEFPathPlanning():
         # get wrist_ft_tool_link pose from tf for the height and pose
         # add wait for transform
         wrist_ft_tool_link = self.listenToTransform("base_footprint",self.eef_link) 
-        print("ee: {}".format(self.eef_link))
+        # print(wrist_ft_tool_link)
         x_ee = wrist_ft_tool_link.transform.translation.x
         y_ee = wrist_ft_tool_link.transform.translation.y
         z_ee = wrist_ft_tool_link.transform.translation.z
@@ -214,7 +244,7 @@ class EEFPathPlanning():
         qz = wrist_ft_tool_link.transform.rotation.z
         qw = wrist_ft_tool_link.transform.rotation.w
         q_ee = [qx,qy,qz,qw]
-        print "printing ee quat list"
+        # print "printing ee quat list"
         # print(q_ee)
         # print(z_ee)
 
@@ -237,11 +267,51 @@ class EEFPathPlanning():
         wpose.position.x = x 
         wpose.position.y = y 
         wpose.position.z = hinge_z + height_handle 
-        print(wpose.position.z)
+        # print(wpose.position.z)
         wpose.orientation = Quaternion(x=q[0],y=q[1],z=q[2],w=q[3])
 
         return wpose
 
+    def cart_to_handle_plan(self, hinge_to_handle_radius, door_to_ee_length, height_handle):
+        hinge_x, hinge_y, hinge_z = self.get_oven_link_state()
+        waypoints_array = PoseArray()
+        waypoints_array.header.frame_id = "base_footprint" # or base_footprint (should be exactly the same but tf troubles)
+
+
+        # initial point
+        wpose_start = self.move_group.get_current_pose()
+        # print(wpose_start)
+        v_start, q_start = pose_list_from_poseMsg(wpose_start.pose)
+        # end
+        wpose = self.get_wrist_at_handle_pose(hinge_x, hinge_y, hinge_z, hinge_to_handle_radius, door_to_ee_length, height_handle,0)
+        # print(wpose)
+        v_end, q_end = pose_list_from_poseMsg(wpose)
+        v_end[0],v_end[1] = v_end[1],v_end[0]
+
+        # get waypoints as 2D list
+        translation_waypoints = []
+        for start,stop in zip(v_start,v_end):
+            pi_list = numpy.linspace(start,stop,20)
+            # print(pi_list)
+            translation_waypoints.append(pi_list)
+
+        for position in translation_waypoints:
+            # print(position)
+            waypointMsg = poseMsg_from_PoseList(position, q_end)
+            self.waypoints_handle.append(copy.deepcopy(waypointMsg))
+            waypoints_array.poses.append(waypointMsg)
+
+        (plan, fraction) = self.move_group.compute_cartesian_path(
+                                           self.waypoints_handle,   # waypoints to follow
+                                           0.01,        # eef_step resolution of 1 cm
+                                           0.0)         # jump_threshold
+        # Note: We are just planning and publishing plan, not moving
+        self.pose_waypoint.publish(waypoints_array)
+
+        return plan, fraction
+
+
+        # create trajectory based on final EE pose
 
     def cart_door_plan(self,hinge_to_handle_radius,door_to_ee_length,height_handle):
 
@@ -251,12 +321,6 @@ class EEFPathPlanning():
         # init pose array message
         waypoints_array = PoseArray()
         waypoints_array.header.frame_id = "base_footprint" # or base_footprint (should be exactly the same but tf troubles)
-        # wrist_at_handle = first waypoint at theta is 0
-        # wpose = self.get_wrist_at_handle_pose(hinge_x, hinge_y, hinge_z, hinge_to_handle_radius, door_to_ee_length, height_handle, 0)
-        # wpose_handle = Pose( position=Point(x=0.797,y=-0.183,z=(height_handle+)),
-        #                      orientation=Quaternion(x=1.000,y=-0.016,z=-0.002,w=-0.011) )
-        # wpose_handle = wpose
-        # self.waypoints.append(copy.deepcopy(wpose))
 
         # create trajectory based on angle steps
         start = 0 # rad
@@ -267,6 +331,8 @@ class EEFPathPlanning():
         for theta in numpy.arange(start, end, step): # loop over angles
             # calculate wrist pose angle theta
             wpose = self.get_wrist_at_handle_pose(hinge_x, hinge_y, hinge_z, hinge_to_handle_radius, door_to_ee_length, height_handle, theta)
+            if theta == 0:
+                print(wpose)
             # append for waypoints
             self.waypoints.append(copy.deepcopy(wpose))
             waypoints_array.poses.append(wpose)
@@ -274,6 +340,8 @@ class EEFPathPlanning():
             angles.append(theta)
 
         # compute plan from waypoints
+        # move_group.get_current_joint_values()
+
         (plan, fraction) = self.move_group.compute_cartesian_path(
                                            self.waypoints,   # waypoints to follow
                                            0.01,        # eef_step resolution of 1 cm
@@ -286,57 +354,55 @@ class EEFPathPlanning():
 def main():
 
     pl = EEFPathPlanning()
-    print "============ Press `Enter` to go to start position ============"
-    raw_input()
-    # joint_start_pos = [0.6717, -0.8694, -3.3071, 2.1338, -0.5232, -1.5398, 1.2745]
-    joint_start_pos = [2.4, -1.27, 1.43, 2.17, -0.59, -1.19, 0.59]
-    test_bool = pl.go_to_joint_state(joint_start_pos)
+    r = rospy.Rate(1)
 
-
-
-    #########################       FIRST PART      ################################
-    #########################       Approach door   ################################
-    # assumes torso_lift_joint = 0.3 and gripper_joint 0.37 
-
-
-    # print "============ Press `Enter` to approach door ============"
-
-    # move to door handle
-    # print "============ Press `Enter` to approach door ============"
-
-    raw_input()
-    # joint_angles_at_door = [1.35, -0.18, 1.46, 0.35, -1.28, -0.58, -0.37]
-    # # joint_angles_at_door = [1.28, -0.12, 0.81, 0.33, -1.82, -0.62, -0.54]
-    # test_bool = pl.go_to_joint_state(joint_angles_at_door)
-
-    #########################       SECOND PART     ################################
-    #########################       Open door       ################################
-    # 0.335 approximate lengt of radius hinge to handle    
-    # 0.15 no idea whatbut should be distance between ee_link and the door
-    print "============ Press `Enter` to approach and open door ============"
-    # need to sleep otherwise it goes wrong
-    raw_input()
-    cart_plan, fraction2, door_angles, ee_quats = pl.cart_door_plan(0.325,0.23,0.15)
-    pl.visualize_Trajectory()
-    print("press enter to excecute")
-    
-    # pl.display_trajectory_publisher.publish()
-    raw_input()
-    pl.execute_plan(cart_plan)
-
-    # eind_js = [2.43,0.04,0.95,1.04,-2.06,1.26,0.47]
-
-    r = rospy.Rate(10)
+    print('werkt nog')
+    # rospy.init_node('EEF_Path_Planning', anonymous=False)
     while not rospy.is_shutdown():
-        pl.visualize_Trajectory()
-        # self.display_trajectory_publisher.publish()
+
+        print "============ Press `Enter` to go to start position ============"
+        raw_input()
+        joint_start_pos = [2.4, -1.27, 1.43, 2.17, -0.59, -1.19, 0.59]
+        test_bool = pl.go_to_joint_state(joint_start_pos)
+
+
+
+        #########################       FIRST PART      ################################    
+        #########################       Approach door   ################################
+        # 1.1776939138397164, -0.20557405125621653, 1.5207925113205194, 0.2232852841111086, -1.339570712071354, -0.6989769592876023, -0.30443600183711617
+        print "============ Press `Enter` to go to door handle ============"
+        # plan_handle, fraction = pl.cart_to_handle_plan(0.325,0.23,0.15) # doen not work
+        # pl.visualize_Trajectory(pl.waypoints_handle)
+        # pl.execute_plan(plan_handle)
+        raw_input()
+        joint_at_handle = [1.177, -0.205, 1.5420, 0.223, -1.330, -0.6986, -0.3044]
+        test_bool = pl.go_to_joint_state(joint_at_handle,0.4)
+        print "============ wait 3 seconds ============"
+        time.sleep(3)
+        print "============ opening door ============"
+
+
+        print "============ Press `Enter` to plan path opening ============"
+        # raw_input()
+
+
+        cart_plan, fraction2, door_angles, ee_quats = pl.cart_door_plan(0.325,0.23,0.15)
+        pl.visualize_Trajectory(pl.waypoints)
+        pl.execute_plan(cart_plan)
         # pl.display_trajectory_publisher.publish()
-        print('...')
-        # publish joint angle door
-
-        
-
+        print('next loop')
         r.sleep()
+
+
+    # r = rospy.Rate(1)
+    # while not rospy.is_shutdown():
+    #     pl.visualize_Trajectory(pl.waypoints_handle)
+    #     pl.visualize_Trajectory(pl.waypoints)
+    #     # self.display_trajectory_publisher.publish()
+    #     # pl.display_trajectory_publisher.publish()
+    #     print('...')
+    #     # publish joint angle door
+    #     r.sleep()
 
 
 if __name__ == '__main__':

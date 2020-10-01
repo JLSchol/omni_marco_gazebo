@@ -1,0 +1,97 @@
+<launch>
+<!-- this file already assumes a marco launched in a gazebo world-->
+<!--supplement this file with a task planner and a gazebo+marco environment-->
+    <!--TF arguments-->
+    <arg name="robot_base_frame"          value="base_footprint"/> 
+    <arg name="end_effector_frame"          value="wrist_ft_tool_link"/>
+
+    <arg name="robot_reference_frame"          value="base_footprint"/> <!-- When changing this change the rotmatrix array -->
+    <arg name="omni_frame_name"          value="omni_rotation"/>
+    <arg name="rot_matrix_array"          value="0 0 -1 -1 0 0 0 1 0"/> 
+    <!-- base_footprint: name="rot_matrix_array"          default="0 0 -1 -1 0 0 0 1 0" -->
+    <!-- wrist_ft_tool_link: name="rot_matrix_array"          default="0 -1 0 0 0 1 -1 0 0" -->
+    <arg name="virtual_marker_name"          value="virtual_marker"/> 
+    
+    <!--Topic Names-->
+    <arg name="omni_button_state" value="/omni1_button"/>
+    <arg name="omni_lock_position_state" value="/omni1_lock_state"/>
+    <arg name="marker_visualization" value="/marker_visualization"/>
+    <arg name="stiffness_command" value="/stiffness_command"/>
+    <arg name="covariance_topic_name" value="/covariance_matrix"/>
+    <arg name="eigen_pair" value="/eigen_pair"/>
+    <arg name="ellipsoid_visualization" value="/ellipsoid_visualization"/>
+    <arg name="force_feedback"          value="/omni1_force_feedback"/> 
+
+    <!--Tune parameters-->
+    <arg name="scale_marker_deviation" value="5"/> <!-- scales the perturbation vector in omni frame to simulated marker in robot frame -->
+    <arg name="min_robot_stiffness" value="10"/>
+    <arg name="max_robot_stiffness" value="1000"/>
+    <arg name="lambda_min" value="0.03"/> <!-- Different than the acrual omni deviation -->
+    <arg name="lambda_max" value="0.2"/> <!-- Different than the acrual omni deviation -->
+    <arg name="window_length" value="200"/> <!-- Also need to specify software rate somewhere -->
+    <arg name="HD_work_range" value="0.05"/> 
+    <arg name="HD_max_force" value="3.3"/>
+    <!--<arg name="ros_rate" value="20"/>-->
+ 
+
+    <!-- omni node -->
+    <include file="$(find phantom_omni)/launch/omni_stiffness.launch"> 
+        <arg name="omni_frame_name"     default="$(arg omni_frame_name)"/>
+        <!--<arg name="ros_rate"     default="$(arg ros_rate)"/>-->
+    </include>
+
+    <!--add omni frame to tf, Define a correct omni to robot frame transformation!!!!-->
+    <include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">
+        <arg name="parent_reference_frame"     default="$(arg robot_reference_frame)"/>
+        <arg name="child_HD_frame_name"     default="$(arg omni_frame_name)"/> 
+        <arg name="rot_matrix_array"     default="$(arg rot_matrix_array)"/>
+    </include>
+
+    <!-- Publishes the marker that is controlled by the omni-->
+    <include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch">  
+        <arg name="button_topic_name" default="$(arg omni_button_state)"/>
+        <arg name="lock_state_topic" default="$(arg omni_lock_position_state)"/>
+        <arg name="marker_topic_name" default="$(arg marker_visualization)"/>
+        <arg name="robot_reference_frame" default="$(arg robot_reference_frame)"/>
+        <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
+        <arg name="end_effector_frame" default="$(arg end_effector_frame)"/>
+        <arg name="scale_marker_deviation" default="$(arg scale_marker_deviation)"/>
+        <arg name="lambda_min"        default="$(arg lambda_min)"/>
+        <arg name="lambda_max"        default="$(arg lambda_max)"/>
+    </include>
+
+    <!-- Publishes stiffness matrix, along with the covariance matrix and the eigenvaluesvectors of covariance matrix,-->
+    <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch"> 
+        <arg name="lock_state_topic"    default= "$(arg omni_lock_position_state)"/>
+        <arg name="stiffness_topic_name" default="$(arg stiffness_command)"/>
+        <arg name="covariance_topic_name" default="$(arg covariance_topic_name)"/>
+        <arg name="eigen_pair_topic_name" default="$(arg eigen_pair)"/>
+        <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
+        <arg name="virtual_marker_name"     default="$(arg virtual_marker_name)"/>
+        <arg name="min_robot_stiffness"     default="$(arg min_robot_stiffness)"/>
+        <arg name="max_robot_stiffness"     default="$(arg max_robot_stiffness)"/>
+        <arg name="lambda_min"        default="$(arg lambda_min)"/>
+        <arg name="lambda_max"        default="$(arg lambda_max)"/>
+        <arg name="window_length"     default="$(arg window_length)"/>
+    </include>
+
+    <!-- Visualization of the stiffness ellipsoid -->
+    <include file="$(find stiffness_visualization)/launch/draw_ellipsoid.launch">  
+        <arg name="input_topic_name"        default="$(arg eigen_pair)"/>
+        <arg name="output_topic_name"     default="$(arg ellipsoid_visualization)"/>
+    </include>
+
+    <!-- Calculates the feedback force that the omni should deliver-->
+    <include file="$(find stiffness_feedback_forces)/launch/stiffness_feedback_forces.launch">  
+        <arg name="robot_stiffness"     default="$(arg stiffness_command)"/>
+        <arg name="omni_position_input"     default="$(arg omni_lock_position_state)"/>
+        <arg name="output_topic"     default="$(arg force_feedback)"/>
+        <arg name="HD_frame_name"     default="$(arg omni_frame_name)"/>
+        <arg name="end_effector_frame"     default="$(arg end_effector_frame)"/>
+        <arg name="virtual_marker_frame"     default="$(arg virtual_marker_name)"/>
+        <arg name="HD_work_range"     default="$(arg HD_work_range)"/>
+        <arg name="HD_max_force"     default="$(arg HD_max_force)"/>
+    </include>
+
+
+</launch>

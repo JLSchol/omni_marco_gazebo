@@ -30,7 +30,7 @@
   <!--<node name="EEF_Path_Planning" pkg="stiffness_experiment" type="omni" output="screen" />-->
 
   <!--Rviz-->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find stiffness_experiment)/cfg/micro_wave.rviz" required="true" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find stiffness_experiment)/cfg/micro_wave2.rviz" required="true" />
 
 
 
