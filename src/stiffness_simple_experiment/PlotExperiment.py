@@ -4,6 +4,9 @@ from os import path
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
 from matplotlib import rcParams
+from matplotlib import cm
+from matplotlib import colors as col
+from mpl_toolkits.mplot3d import Axes3D
 
 from matplotlib.lines import Line2D  
 from matplotlib.text import Text
@@ -18,6 +21,34 @@ except ImportError:
 import seaborn as sns
 import itertools
 import pandas as pd
+import numpy as np
+import scipy as sc
+from tf.transformations import quaternion_matrix
+# from scipy.spatial.transform import Rotation as R
+
+def rotateVector(q, v):
+    vr = [0,0,0]
+    vr[0] =  (v[0]*q[3]*q[3] + 2*v[2]*q[3]*q[1] - 2*v[1]*q[3]*q[2] + v[0]*q[0]*q[0] + 
+    2*v[1]*q[0]*q[1] + 2*v[2]*q[0]*q[2] - v[0]*q[1]*q[1] - v[0]*q[2]*q[2])
+
+    vr[1] =  (v[1]*q[3]*q[3] - 2*v[2]*q[3]*q[0] + 2*v[0]*q[3]*q[2] - v[1]*q[0]*q[0] + 
+    2*v[0]*q[0]*q[1] + v[1]*q[1]*q[1] + 2*v[2]*q[1]*q[2] - v[1]*q[2]*q[2])
+
+    vr[2] =  (v[2]*q[3]*q[3] + 2*v[1]*q[3]*q[0] - 2*v[0]*q[3]*q[1] - v[2]*q[0]*q[0] + 
+    2*v[0]*q[0]*q[2] - v[2]*q[1]*q[1] + 2*v[1]*q[1]*q[2] + v[2]*q[2]*q[2])
+    return vr
+
+def calcSurfacePointsOfEllipsoid(center, radii, rotatie_matrix,  resolutie):
+
+	u = np.linspace(0.0, 2.0 * np.pi, resolutie)
+	v = np.linspace(0.0, np.pi, resolutie)
+	x = radii[0] * np.outer(np.cos(u), np.sin(v))
+	y = radii[1] * np.outer(np.sin(u), np.sin(v))
+	z = radii[2] * np.outer(np.ones_like(u), np.cos(v))
+	for i in range(len(x)):
+		for j in range(len(x)):
+			[x[i,j],y[i,j],z[i,j]] = np.dot([x[i,j],y[i,j],z[i,j]], rotatie_matrix) + center
+	return x,y,z
 
 class PlotSimpleExperiment():
 	def __init__(self):
@@ -1062,10 +1093,136 @@ class PlotSimpleExperiment():
 
 		return dotstr
 
+	def taskDenomstrationPlot(self, df=None):
+		# need the following topic for creating the path?
+
+		# need the following topic for creating the ellipsoid
+		# topic: stiffness_command,	 HeaderFloat32MultiArray.msg, requires converting to eigenvector value
+		# topic: draw_ellipsoid/ellipsoid_visualization, 	 visualization_msgs/Marker.msg (extract quat and scales(diameters))
+
+
+
+		mergeVec = lambda x,y,z: [ [i,j,k] for i,j,k in zip(x,y,z)]
+		add2Vec = lambda x,y: [i+j for i,j in zip(x,y)]
+
+		# trajecotry
+		# tf endeffector frame wrt base
+		path = 
+
+		# centers
+		cx = [0, 2.5, 5, 7.5, 10]
+		cy = [0]*5
+		cz = [0,1,2,3,4]
+		c = mergeVec(cx, cy, cz)
+
+		# diameters
+		dx = dz = 5*[1]
+		dy = 5*[2.5]
+		d = mergeVec(dx, dy, dz)
+
+		# d = [dx, dy, dz]
+		# rotated using quaternions
+		q = [ [ 0, 0, 0, 1 ],
+				[ 0.1950903, 0, 0, 0.9807853 ],
+				[ 0.3826834, 0, 0, 0.9238795 ],
+				[ 0.5555702, 0, 0, 0.8314696 ],
+				[ 0.7071068, 0, 0, 0.7071068 ]
+			]
+
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		#set colour map so each ellipsoid has a unique colour
+		norm = col.Normalize(vmin=0, vmax=len(c))
+		cmap = cm.viridis
+		m = cm.ScalarMappable(norm=norm, cmap=cmap)
+		for i, (center,radii,quaternion) in enumerate(zip(c,d,q)):
+			# transform quats to rotation matrix
+			T_matrix = quaternion_matrix(quaternion)
+			R_matrix = T_matrix[0:3,0:3]
+			
+			x_surf,y_surf,z_surf = calcSurfacePointsOfEllipsoid(center, radii, R_matrix, 60)
+			
+			ax.plot_surface(x_surf, y_surf, z_surf,
+					rstride=4, cstride=4,  color=m.to_rgba(i), linewidth=0.1, alpha=0.25, shade=True)
+
+		ax.plot3D(cx, cy, cz, 'black')
+
+		ax.set_xlim3d(0, 12)
+		ax.set_ylim3d(-6,6)
+		ax.set_zlim3d(-6,6)
+
+		# plt.show()
+
+
+	def fromINternetjds(self):
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+
+		# number of ellipsoids 
+		ellipNumber = 10
+
+		#set colour map so each ellipsoid as a unique colour
+		norm = col.Normalize(vmin=0, vmax=ellipNumber)
+		cmap = cm.jet
+		m = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+		#compute each and plot each ellipsoid iteratively
+		for indx in range(ellipNumber):
+			print(indx)
+			# your ellispsoid and center in matrix form
+			A = np.array([[np.random.random_sample(),0,0],
+				[0,np.random.random_sample(),0],
+				[0,0,np.random.random_sample()]])
+			center = [indx*np.random.random_sample(),indx*np.random.random_sample(),indx*np.random.random_sample()]
+
+			# find the rotation matrix and radii of the axes
+			U, s, rotation = np.linalg.svd(A)
+			print('dhsf')
+			print(rotation)
+			print(type(rotation))
+			radii = 1.0/np.sqrt(s) * 0.3 #reduce radii by factor 0.3 
+
+			x,y,z = calcSurfacePointsOfEllipsoid(center, radii, rotation, 60)
+
+			# calculate cartesian coordinates for the ellipsoid surface
+			# u = np.linspace(0.0, 2.0 * np.pi, 60)
+			# v = np.linspace(0.0, np.pi, 60)
+			# x = radii[0] * np.outer(np.cos(u), np.sin(v))
+			# y = radii[1] * np.outer(np.sin(u), np.sin(v))
+			# z = radii[2] * np.outer(np.ones_like(u), np.cos(v))
+			# print(x)
+			# print(len(x))
+			# print(x[0])
+			# print(len(x[0]))
+			# print(indx)
+			# print()
+
+
+			# for i in range(len(x)):
+			# 	for j in range(len(x)):
+			# 		[x[i,j],y[i,j],z[i,j]] = np.dot([x[i,j],y[i,j],z[i,j]], rotation) + center
+			# print(x)
+			# print(len(x))
+			# print(x[0])
+			# print(len(x[0]))
+			# print(indx)
+			# print()
+			ax.plot_surface(x, y, z,  rstride=3, cstride=3,  color=m.to_rgba(indx), linewidth=0.1, alpha=0.2, shade=True)
+			break
+		plt.show()
+
+
+
+
 if __name__ == "__main__":
 	PSE = PlotSimpleExperiment()
-	process = ProcessSimpleExperiment()
-	process.main()
+	# process = ProcessSimpleExperiment()
+	# process.main()
+
+
+	PSE.taskDenomstrationPlot()
+	plt.show()
+	# PSE.fromINternetjds()
 
 	## DIT IS WORK IN PROGRESS nog aangepast worden
 	# exp1 = 
