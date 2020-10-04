@@ -12,11 +12,11 @@ class PlotTopicInfo(object):
 
 	def getInfo(self,csvName,plotSpecification='empty'):
 	    switcher = {
-	        'omni1_button.csv': self.omni1_button,
+	        # 'omni1_button.csv': self.omni1_button,
 	        'omni1_lock_state.csv': self.omni1_lock_state,
 	        'omni1_force_feedback.csv': self.omni1_force_feedback,
 	        'omni1_joint_states.csv': self.omni1_joint_states,
-	        'eigen_pair.csv': self.eigen_pair,
+	        # 'eigen_pair.csv': self.eigen_pair,
 	        'covariance_matrix.csv': self.covariance_matrix,
 	        'stiffness_command.csv': self.stiffness_command,
 	        'omni_stiffness.csv': self.omni_stiffness,
@@ -24,8 +24,9 @@ class PlotTopicInfo(object):
 	        'omni_rotation_tf.csv': self.omni_rotation_tf,
 	        'wrist_ft_tool_link_tf.csv': self.wrist_ft_tool_link_tf,
 	        'virtual_marker_tf.csv': self.virtual_marker_tf,
-	        'marker_visualization.csv': self.marker_visualization,
+	        # 'marker_visualization.csv': self.marker_visualization,
 	        'draw_ellipsoidellipsoid_visualization.csv': self.draw_ellipsoidellipsoid_visualization,
+
 	    }		
 	    if csvName in switcher:
 	    	func = switcher.get(csvName, lambda: "invalid csv name: {}".format(csvName))
@@ -44,8 +45,7 @@ class PlotTopicInfo(object):
 		plotInfoDict = {}
 		return plotInfoDict
 
-	def omni1_lock_state(self, plotType='curent_position'):
-
+	def omni1_lock_state(self, plotType='current_position'):
 		if plotType == 'current_position':
 			plotInfoDict = {'title': "Omni position",
 						'xLabel': "Time [s]",
@@ -197,7 +197,10 @@ class PlotTopicInfo(object):
 		plotInfoDict = {}
 		return plotInfoDict
 		
-	def draw_ellipsoidellipsoid_visualization(self):
+	def draw_ellipsoidellipsoid_visualization(self,plotType=''):
+		# quaternions()
+		# center ()
+		# scales
 		plotInfoDict = {}
 		return plotInfoDict  
 
