@@ -1,0 +1,33 @@
+ <launch>
+
+<!--node name-->
+<!--<arg name="node_name" default="draw_ellips_log"/>-->
+<arg name="node_name" default="log_ellipsoid"/>
+<!--Input topic arguments-->
+<arg name="cov_eigen_pair" default="/eigen_pair"/> 
+<arg name="stiff_eigen_pair" default="/eigen_pair_stiffness"/> 
+<!--Output topics arguments-->
+<arg name="draw_ellips_log" default="/ellips_visual_log"/> <!--need the slash!-->
+<arg name="ellips_ee" default="/ellipsoid_visualization"/>
+<arg name="ellips_other" default="/ellipsoid_visualization_other"/>
+<!--tf-->
+<arg name="source_frame" default="base_footprint"/> 
+<arg name="target_frame" default="wrist_ft_tool_link"/> 
+
+
+  <node pkg="stiffness_visualization" name="$(arg node_name)" type="log_ellips_visual.py" output="screen">
+
+    <param name="node_name" value="$(arg node_name)"/>
+    <!--Input topic-->
+    <param name="cov_eigen_pair" value="$(arg cov_eigen_pair)"/>
+    <param name="stiff_eigen_pair" value="$(arg stiff_eigen_pair)"/>
+    <!--Output topics-->
+    <param name="draw_ellips_log" value="$(arg draw_ellips_log)"/>
+    <param name="ellips_ee" value="$(arg ellips_ee)"/>
+    <param name="ellips_other" value="$(arg ellips_other)"/>
+    <!--Tf arguments--> 
+    <param name="source_frame"     value="$(arg source_frame)"/>
+    <param name="target_frame"     value="$(arg target_frame)"/>
+  </node>
+
+ </launch>

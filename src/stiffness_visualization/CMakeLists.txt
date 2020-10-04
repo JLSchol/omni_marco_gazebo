@@ -8,12 +8,14 @@ project(stiffness_visualization)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   rospy
   # roscpp
   std_msgs
   tf
   tf2_ros
   visualization_msgs
+  # geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -53,11 +55,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(FILES
+  LogEllips.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -74,10 +74,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs#   visualization_msgs
-# )
+catkin_python_setup()
+generate_messages(DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,8 +110,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 
-catkin_python_setup()
+
 catkin_package(
+  CATKIN_DEPENDS
+  message_runtime
 #  INCLUDE_DIRS include
 #  LIBRARIES stiffness_ellipsoid
 #  CATKIN_DEPENDS roscpp std_msgs tf visualization_msgs
