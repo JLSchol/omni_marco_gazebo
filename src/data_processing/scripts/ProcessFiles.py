@@ -3,6 +3,23 @@
 from ImportFiles import ImportFiles
 import pandas as pd
 
+def checkForNan(dfs, column='where'):
+	if not isinstance(dfs, list):
+		dfs = [dfs]
+	for df in dfs:
+		if column == 'any':
+			isnan = df.isnull().values.any()
+			amount = df.isnull().sum().sum()
+			# print('NaN in data frame? {}'.format(isnan))
+			print('there are {} nan values total'.format(amount))
+		elif column == 'where':
+			print(df.isna().any())
+		else:
+			isnan = df[column].isnull().values.any()
+			amount = df[column].isnull().sum()
+			print('NaN in data frame? {}'.format(isnan))
+			print('there are {} nan values total'.format(amount))
+
 
 
 class ProcessFiles(object):
@@ -35,7 +52,7 @@ class ProcessFiles(object):
 		self.setYamlParams(trimmedDictionair)
 		# self.setTopicList(csvList)
 
-	def processCsvs(self,csvsPandas, csvNames1, roundOff=2):
+	def processCsvs(self,csvsPandas, csvNames1, resample=False ,roundOff=2):
 		tfPandas = []
 		tfNames = []
 		# remove tf/tf_static as they need specific processing
@@ -45,31 +62,51 @@ class ProcessFiles(object):
 			if tfId in csvName:
 				removeList.append(csvName)
 
+		# why doe sthis happend
+		# print(len(removeList))
 		if not len(removeList) == 0 and len(removeList) <= 2: # 1 = static other is normal 2 or less
 			csvsPandas,csvNames2,tfPandas,_ = self.trimCsvs(csvsPandas, csvNames1, removeList) # might shuffels imput list!
+		elif len(removeList) == 0: # tf topics where not recorded
+			pass
 		else:
 			print("tf topic list is of length {}, FAILED AND RETURND".format(len(removeList)))
 			return
 
-		tfList = []
-		tfNameList = []
-		for tfPanda in tfPandas:
-			# split Tf child frames into seperate pandas data frame objects
-			tfs, tfCsvNames = self.splitTfFrames(tfPanda)  
-			tfList.extend(tfs)
-			tfNameList.extend(tfCsvNames)
+		if len(tfPandas) != 0: # extend csv with the trimmed tf data frames
+			tfList = []
+			tfNameList = []
+			for tfPanda in tfPandas:
+				# split Tf child frames into seperate pandas data frame objects
+				tfs, tfCsvNames = self.splitTfFrames(tfPanda)  
+				tfList.extend(tfs)
+				tfNameList.extend(tfCsvNames)
 
-		# add to list of csvs and names
-		csvsPandas.extend(tfList)
-		csvNames2.extend(tfNameList)
+			# add to list of csvs and names
+			csvsPandas.extend(tfList)
+			csvNames2.extend(tfNameList)
 		
 		# add columns,convert time, add dateTime as index, sample and square data frames
+		# print('initial')
+		# checkForNan(csvsPandas)
 		csvsPandas = self.convertDfTimes(csvsPandas)
-		csvsPandas = self.resample(csvsPandas)
+		# print('\nconvertDfTimes')
+		# checkForNan(csvsPandas)
+		if resample:
+			# print(10*'RESAMPLING')
+			csvsPandas = self.resample(csvsPandas)
+		# print('\nresample')
+		# checkForNan(csvsPandas)
 		csvsPandas = self.alignTimeIndex(csvsPandas)
+		# print('\nalignTimeIndex')
+		# checkForNan(csvsPandas)
 		csvsPandas = self.addTimeVecCol(csvsPandas,"timeVec",roundOff)	
+		# print('\naddTimeVecCol')
+		# checkForNan(csvsPandas)
 
-		return csvsPandas, csvNames2
+		if len(tfPandas) !=0: # tf is processed
+			return csvsPandas, csvNames2
+		else:
+			return csvsPandas, csvNames1
 
 	def trimCsvs(self, csvsPandas, csvNameList, trimList):
 		removedCsvList = []
@@ -127,6 +164,7 @@ class ProcessFiles(object):
 			df.set_index('dateTime',inplace=True)
 			newDfList.append(df)
 
+			# break
 		if listBool == False:
 			return newDfList[0] # return pandas
 		else:
@@ -140,8 +178,12 @@ class ProcessFiles(object):
 
 		sampledList = []
 		for df in dfList:
+			# print(len(df.index))
+			# print(df)
 			sampled = df.resample('10ms', label='left', closed='left', axis=0).first()
+			# print(len(sampled.index))
 			sampledList.append(sampled)
+			break
 
 		if listBool == False:
 			return sampledList[0] # return pandas
