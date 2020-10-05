@@ -8,7 +8,7 @@ import numpy as np
 from ImportFiles import ImportFiles
 from ProcessFiles import ProcessFiles
 from PlotTopicInfo import PlotTopicInfo
-from tf.transformations import quaternion_matrix
+from tf.transformations import quaternion_matrix 
 # python 2.7
 try:
 	from itertools import izip as zip
@@ -40,6 +40,18 @@ def calcSurfacePointsOfEllipsoid(center, radii, rotatie_matrix,  resolutie):
 		for j in range(len(x)):
 			[x[i,j],y[i,j],z[i,j]] = np.dot([x[i,j],y[i,j],z[i,j]], rotatie_matrix) + center
 	return x,y,z
+
+# def rotateVector(q, v):
+# 	vr = [0,0,0]
+# 	vr[0] = (v[0]*q[3]*q[3] + 2*v[2]*q[3]*q[1] - 2*v[1]*q[3]*q[2] + v[0]*q[0]*q[0] + 
+# 			2*v[1]*q[0]*q[1] + 2*v[2]*q[0]*q[2] - v[0]*q[1]*q[1] - v[0]*q[2]*q[2])
+
+# 	vr[1] = (v[1]*q[3]*q[3] - 2*v[2]*q[3]*q[0] + 2*v[0]*q[3]*q[2] - v[1]*q[0]*q[0] + 
+# 			2*v[0]*q[0]*q[1] + v[1]*q[1]*q[1] + 2*v[2]*q[1]*q[2] - v[1]*q[2]*q[2])
+
+# 	vr[2] =	(v[2]*q[3]*q[3] + 2*v[1]*q[3]*q[0] - 2*v[0]*q[3]*q[1] - v[2]*q[0]*q[0] + 
+# 			2*v[0]*q[0]*q[2] - v[2]*q[1]*q[1] + 2*v[1]*q[1]*q[2] + v[2]*q[2]*q[2])
+# 	return vr
 
 def findNearest(array, value):
     array = np.asarray(array)
@@ -160,13 +172,17 @@ class PlotData(object):
 # stiffness, ellipoid_info, timeVec, centers, scales, quats
 	def taskDenomstrationPlot(self, stiffness_df, stiffness_info, timeVec, centers, scales, quats, stiffness_eig):
 
-		fig2, ax2 = self.simpleFigure(stiffness_df, stiffness_info)
+		# fig2, ax2 = self.simpleFigure(stiffness_df, stiffness_info)
+		# fig3, ax3 = plt.subplots()
+		# ax3.plot(timeVec,stiffness_eig)
+		# ax3.set_xlim(0,100)
+		# ax3.set_ylim(0,1200)
 
-		fig3, ax3 = plt.subplots()
-		ax3.plot(timeVec,stiffness_eig)
+		# timeSamples = [0.9, 2, 3.6, 4.7 ,8.5, 12]
+		timeSamples = [0.9, 2, 3.6, 4.7 ,7, 9, 12]
+		# timeSamples = [1, 2, 4, 5.16 ,9, 12]
 
-		# timeSamples = [0.84, 1.2, 3.5, 5.5 ,9,12,13.15]
-		timeSamples = [0.5*i for i in range(10)]
+		# timeSamples = [0.5*i for i in range(30)]
 		ellips_selection_indices = [findNearest(timeVec,t)[1] for t in timeSamples]
 
 		fig = plt.figure()
@@ -177,30 +193,74 @@ class PlotData(object):
 		cmap = cm.viridis
 		m = cm.ScalarMappable(norm=norm, cmap=cmap)
 
+		scale_ellips = 0.3
+
 		# plot ellips 1 by one
-		for i, (center,radii,quaternion) in enumerate(zip(centers,scales,quats)):
+		# probably need to rotate the scales also before????
+		xc, yc, zc, = [], [], []
+		for i, (center,scale,quaternion) in enumerate(zip(centers,scales,quats)):
 			if i in ellips_selection_indices:
-				# print('in loop')
+
+
 				T_matrix = quaternion_matrix(quaternion)
-				R_matrix = T_matrix[0:3,0:3]
-				
+				RT_matrix = T_matrix[0:3,0:3]
+				R_matrix = RT_matrix.T # swap rows with colums to find correct rotatino matrix
+
+				radii = [scale_ellips*scale_i for scale_i in scale]
 				x_surf,y_surf,z_surf = calcSurfacePointsOfEllipsoid(center, radii, R_matrix, 30)
 				
 				ax.plot_surface(x_surf, y_surf, z_surf,
 						rstride=4, cstride=4,  color=m.to_rgba(i), linewidth=0.1, alpha=0.25, shade=True)
+				xc.append(center[0])
+				yc.append(center[1])
+				zc.append(center[2])
 
 
 		center_T = np.array(centers).T.tolist()
 		ax.plot3D(center_T[0],center_T[1],center_T[2], 'black')
 
-		square_size = 2
-		ax.set_xlim3d(0, 2*square_size)
-		ax.set_ylim3d(-square_size, square_size)
-		ax.set_zlim3d(-square_size, square_size)
+		square_size = 0.8
+		xmin = 0.3
+		ymin = -0.4
+		zmin = 0.4
+		ax.set_title('Robot Stiffness Trajecory')
+		ax.set_xlim3d(xmin, xmin+square_size)
+		ax.set_ylim3d(ymin, ymin+square_size)
+		ax.set_zlim3d(zmin, zmin+square_size)
+		# ax.set_ylim3d(-0.5, 0.5)
+		# ax.set_zlim3d(-1, 1)
+		ax.set_xlabel('x [m]')
+		ax.set_ylabel('y [m]')
+		ax.set_zlabel('z [m]')
+
+		offsets_x = [-0.1,0,0,0,0,0,0]
+		offsets_y = [0.08,0,-0.05,0.05,0.1,0.1,0.1]
+		offsets_z = [-0.11,-0.11,0,0.18,0.18,0.18,0.18]
+		sumItemsOfTwoList = lambda x,y: [x+y for x,y in zip(x,y)]
+		xs = sumItemsOfTwoList(xc, offsets_x)
+		ys = sumItemsOfTwoList(yc, offsets_y)
+		zs = sumItemsOfTwoList(zc, offsets_z)
+		# zdirs = ['y','y','y','y','y','y','y']
+		zdirs = 7*[None]
+		texts_3d = [str(round(t,2))+ ' [s]' for t in timeSamples]
+
+		self.annotateEllips3D(ax,xs,ys,zs,zdirs,texts_3d,'black')
+
+		# plot figure 
+		fig2, ax2 = self.simpleFigure(stiffness_df, stiffness_info)
+		ax2.vlines(timeSamples,0,1200,linestyles=':')
+		ax2.grid(False)
 
 
 		# plt.show()
 
+	def annotateEllips3D(self,axis, xs, ys, zs, zdirs, texts, color):
+		for zdir, x, y, z, text in zip(zdirs, xs, ys, zs, texts):
+			axis.text(x, y, z, text, zdir, color=color)
+
+
+	def annotate2D(self,position, offsets, texts):
+		pass
 
 
 def wiggleReportFigure(show=True):
@@ -254,8 +314,14 @@ def taskDemoReportFigure(show=True):
 		# 202010021159_D60_W200_L0.03_0.2_S10_1000
 		# 202010021209_D60_W200_L0.03_0.2_S10_1000
 
+		# new
+		# continious 1 sec continious
+		# 202010050928_D60_W100_L0.03_0.2_S100_1000
+		# 202010051310_D60_W100_L0.03_0.2_S100_1000
+
+
 	IF = ImportFiles(
-		"/home/jasper/omni_marco_gazebo/src/data_processing/data","202010040326_D5_W100_L0.034_0.204_S100_1000") 
+		"/home/jasper/omni_marco_gazebo/src/data_processing/data","202010051310_D60_W100_L0.03_0.2_S100_1000") 
 	csvsPandas,csvNames,yamlDict,yamlNames = IF.importAll()
 
 	# load files in the process class and proces
