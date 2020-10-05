@@ -274,7 +274,7 @@ class EllipsoidMessage(object):
 
         vr[2] =  (v[2]*q[3]*q[3] + 2*v[1]*q[3]*q[0] - 2*v[0]*q[3]*q[1] - v[2]*q[0]*q[0] + 
         2*v[0]*q[0]*q[2] - v[2]*q[1]*q[1] + 2*v[1]*q[1]*q[2] + v[2]*q[2]*q[2])
-        return vr;
+        return vr
 
     def relativeRotationQuat(self,q1,q2):
         ''' from q1 to q2 e.g. q2 = qr*q1 '''
@@ -956,34 +956,39 @@ if __name__ == "__main__":
     # ###### 
     EM = EllipsoidMessage()
 
-    ref_quat = [0,0,0,1]
-    # quat = [ 0.3162278, 0, 0, 0.9486833 ]
-    quat = [ 0.258819, 0, 0, 0.9659258 ] #30
+    base = [0,0,0,1]
+    ee = [ 0.258819, 0, 0, 0.9659258 ]
+    ellips = [ 0.5, 0, 0, 0.8660254 ]
 
-    # ref_scale = [0.0848528137424, 0.0848528137424, 0.5176021638285544]
-    ref_scale = [1,1,1]
-    # scale = [0.0848528137424, 0.0848528137424, 0.45]
-    scale = [1,1,1]
+    ellips_in_base = quaternion_multiply(ellips,ee)
 
-    a,b,c = EM.projectScales(ref_quat, ref_scale, quat, scale)
+    # # quat = [ 0.3162278, 0, 0, 0.9486833 ]
+    # quat = [ 0.258819, 0, 0, 0.9659258 ] #30
 
-    angle = 30
-    deg2rad = lambda deg: deg/57.29577951308232   
-    c = np.cos(deg2rad(angle))
-    s = np.sin(deg2rad(angle))
-    print('\n')
-    x = 1
-    # y = c*scale[1] - s*scale[2]
-    # y = 0.5*np.sqrt(3) -0.5
-    # z = c*scale[2] + s*scale[1]
-    # z = 0.5*np.sqrt(3) +0.5
-    # print([x,y,z])
+    # # ref_scale = [0.0848528137424, 0.0848528137424, 0.5176021638285544]
+    # ref_scale = [1,1,1]
+    # # scale = [0.0848528137424, 0.0848528137424, 0.45]
+    # scale = [1,1,1]
 
-    proj = 0.9
-    angle = EM.projectionToAngle(proj)
-    print(angle)    # 25.841932763167126
-    perc = EM.angleToPercentage(angle)
-    print(perc)     # 71.28674137425875
+    # a,b,c = EM.projectScales(ref_quat, ref_scale, quat, scale)
+
+    # angle = 30
+    # deg2rad = lambda deg: deg/57.29577951308232   
+    # c = np.cos(deg2rad(angle))
+    # s = np.sin(deg2rad(angle))
+    # print('\n')
+    # x = 1
+    # # y = c*scale[1] - s*scale[2]
+    # # y = 0.5*np.sqrt(3) -0.5
+    # # z = c*scale[2] + s*scale[1]
+    # # z = 0.5*np.sqrt(3) +0.5
+    # # print([x,y,z])
+
+    # proj = 0.9
+    # angle = EM.projectionToAngle(proj)
+    # print(angle)    # 25.841932763167126
+    # perc = EM.angleToPercentage(angle)
+    # print(perc)     # 71.28674137425875
 
     # perc = 70
     # angle =EM.percToAngle(perc)
@@ -999,7 +1004,7 @@ if __name__ == "__main__":
     # K = EM.quatAndScalesToStiffnessMat(quats,scales)
     # print(K)
 
-    # init_node("test_ellipses",anonymous=False)
+    init_node("test_ellipses",anonymous=False)
     # ellipsPub = Publisher("ellips_visual", Marker, queue_size=2)
     # ellipsoid_msg = EM.getEllipsoidMsg('wrist_ft_tool_link', 'e', 0, position, quats, scales, [0.25,0.74,0.25,1])
 
@@ -1021,8 +1026,10 @@ if __name__ == "__main__":
 
 
     # while not is_shutdown(): 
-    #     EM.broadcastEllipsoidAxis(p_ee, q_ee, 'world', 'wrist_ft_tool_link') # 
-    #     EM.broadcastEllipsoidAxis(position, quats, 'wrist_ft_tool_link', 'ellips') # 
+    #     # EM.broadcastEllipsoidAxis([0,0,0], q_ee, 'base', 'wrist_ft_tool_link') # 
+    #     EM.broadcastEllipsoidAxis([0,0,1], ee, 'world', 'wrist_ft_tool_link') # 
+    #     EM.broadcastEllipsoidAxis([0,0,1.5], ellips, 'wrist_ft_tool_link', 'ellips') # 
+    #     EM.broadcastEllipsoidAxis([0,0,2], ellips_in_base, 'world', 'ellips_in_base') # 
     #     ellipsPub.publish(ellipsoid_msg)
 
 

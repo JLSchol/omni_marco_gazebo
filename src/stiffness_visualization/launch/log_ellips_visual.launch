@@ -8,8 +8,8 @@
 <arg name="stiff_eigen_pair" default="/eigen_pair_stiffness"/> 
 <!--Output topics arguments-->
 <arg name="draw_ellips_log" default="/ellips_visual_log"/> <!--need the slash!-->
-<arg name="ellips_ee" default="/ellipsoid_visualization"/>
-<arg name="ellips_other" default="/ellipsoid_visualization_other"/>
+<arg name="ellips_ee" default="/ellipsoid_visualization_wrt_ee"/>
+<arg name="ellips_other" default="/ellipsoid_visualization_wrt_base"/>
 <!--tf-->
 <arg name="source_frame" default="base_footprint"/> 
 <arg name="target_frame" default="wrist_ft_tool_link"/> 

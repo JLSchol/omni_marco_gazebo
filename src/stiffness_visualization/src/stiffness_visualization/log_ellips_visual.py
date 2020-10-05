@@ -97,8 +97,11 @@ class DrawEllipsoid(object):
 
             quaternion = ellipsoidMsgClass.getQuatFromMatrix(cov_vec)
             scales = ellipsoidMsgClass.getEllipsoidScales(cov_val,self._lambda_min,self._lambda_max)
+
+            # # ispect msgs in rviz to see if correct
+            # z_offset = 0.5 # use offset to plot above the ee frame for comparison
             # ellipsoid_ee = ellipsoidMsgClass.getEllipsoidMsg(self._cov_pair.header.frame_id
-            #                                                 ,"ellipsoid",0,[0,0,0],
+            #                                                 ,"ellipsoid_wrt_ee",0,[-z_offset,0,0],
             #                                                 quaternion,scales,[1,0.3,1,0.3])
 
 
@@ -112,30 +115,38 @@ class DrawEllipsoid(object):
             qee_in_base = [r.x, r.y, r.z, r.w]
             # also find marker in base because fuck it
             marker_in_base = self.listenToTransform(self._base_frame,'virtual_marker') 
+            marker_in_ee = self.listenToTransform(self._ee_frame,'virtual_marker')
 
             # rotate ellipsoid quaterion with ee quaterion
             q_ellips_in_base = quaternion_multiply(qee_in_base,quaternion) # pre because 
+            other_q = quaternion_multiply(quaternion,qee_in_base) # for checking
 
-            # create msgs
+            # # create msgs for testing
             # ellipsoid_base = ellipsoidMsgClass.getEllipsoidMsg(self._base_frame
-            #                                                 ,"ellipsoid_2",0,pee_in_base,
+            #                                                 ,"ellipsoid_wrt_base",0,
+            #                                                 [pee_in_base[0],pee_in_base[1],pee_in_base[2]],# + 2*z_offset],
             #                                                 q_ellips_in_base,scales,[1,0.3,1,0.3])
 
 
             logmsg = self._setLogMsg(self._base_frame,pee_in_base,q_ellips_in_base,scales,
-                                    marker_in_base.transform.translation,
-                                    self._cov_pair, self._stiff_pair)
+                                    pee_in_base, qee_in_base, pee_in_base, q_ellips_in_base,
+                                    marker_in_base.transform.translation, marker_in_ee.transform.translation,
+                                    self._cov_pair, self._stiff_pair,
+                                    other_q)
 
-            # publish ellipsod in endeffector frame
+            # # publish ellipsod in endeffector frame
+            # # inspection
             # self._pub_ee.publish(ellipsoid_ee)
             # self._pub_other.publish(ellipsoid_base)
+            # actual logger
             self._pub_log.publish(logmsg)
 
-            # check with broadcaster
-            # ee
-            # self._broadcastEllipsoidAxis([-0.5,0,0],quaternion,'wrist_ft_tool_link','ellips_ee' )
-            # # base
-            # self._broadcastEllipsoidAxis([1,1,2],q_ellips_in_base,'base_footprint','ellips_other' )
+            # # # check with broadcaster
+            # # ee
+            # self._broadcastEllipsoidAxis([0,0,0],quaternion,'wrist_ft_tool_link','ellips_wrt_ee')
+            # # # base
+            # self._broadcastEllipsoidAxis([ pee_in_base[0] ,pee_in_base[1],pee_in_base[2] ], 
+            # q_ellips_in_base,'base_footprint','ellips_wrt_base' ) #, + 2*z_offset],
 
 
 
@@ -149,7 +160,11 @@ class DrawEllipsoid(object):
         return trans
 
 
-    def _setLogMsg(self,frame_id,center,quaternions,scales,marker,cov_pair,stiff_pair):
+    def _setLogMsg(self,frame_id,center,quaternions,scales, 
+                    ee_pos, ee_quat, ellips_pos, ellips_quat,
+                    marker_in_base, marker_in_ee,
+                    cov_pair,stiff_pair, 
+                    other_q):
         cov_values = []
         cov_vecs = []
         for pair in cov_pair.pairs:
@@ -161,6 +176,7 @@ class DrawEllipsoid(object):
         msg.header.frame_id = frame_id
         msg.header.stamp = Time.now()
 
+        # used fro plotting pyplot
         msg.center.x = center[0]
         msg.center.y = center[1]
         msg.center.z = center[2]
@@ -168,14 +184,37 @@ class DrawEllipsoid(object):
         msg.quaternion.y = quaternions[1]
         msg.quaternion.z = quaternions[2]
         msg.quaternion.w = quaternions[3]
-
         msg.scales.x = scales[0] 
         msg.scales.y = scales[1]
-        msg.scales.z = scales[2]     
+        msg.scales.z = scales[2] 
 
-        msg.marker.x = marker.x
-        msg.marker.y = marker.y
-        msg.marker.z = marker.z
+        # ee pose
+        msg.ee_position.x = ee_pos[0]
+        msg.ee_position.y = ee_pos[1]
+        msg.ee_position.z = ee_pos[2]
+        msg.ee_orientation.x = ee_quat[0]
+        msg.ee_orientation.y = ee_quat[1]
+        msg.ee_orientation.z = ee_quat[2]
+        msg.ee_orientation.w = ee_quat[3]
+   
+        # ellipsoid pose
+        msg.ellipsoid_position.x = ellips_pos[0]
+        msg.ellipsoid_position.y = ellips_pos[1]
+        msg.ellipsoid_position.z = ellips_pos[2]
+        msg.ellipsoid_orientation.x = ellips_quat[0]
+        msg.ellipsoid_orientation.y = ellips_quat[1]
+        msg.ellipsoid_orientation.z = ellips_quat[2]
+        msg.ellipsoid_orientation.w = ellips_quat[3]
+    
+        # virtual marker position in base frame
+        msg.marker_in_base.x = marker_in_base.x
+        msg.marker_in_base.y = marker_in_base.y
+        msg.marker_in_base.z = marker_in_base.z
+
+        # virtual marker position in ee frame
+        msg.marker_in_ee.x = marker_in_ee.x
+        msg.marker_in_ee.y = marker_in_ee.y
+        msg.marker_in_ee.z = marker_in_ee.z
 
         msg.covariance_eig = cov_values
         msg.stiffness_eig = [pair.eigen_value for pair in  stiff_pair.pairs]
@@ -183,6 +222,11 @@ class DrawEllipsoid(object):
         msg.v1 = cov_vecs[0]
         msg.v2 = cov_vecs[1]
         msg.v3 = cov_vecs[2]
+
+        # another quaternions
+        msg.other_quat.x = other_q[0]
+        msg.other_quat.y = other_q[1]
+        msg.other_quat.z = other_q[2]
 
         return msg
 
