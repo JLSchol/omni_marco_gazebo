@@ -41,12 +41,18 @@ class CalcHDFeedbackForce(object):
             return
         self._forcesRobot = self._stiffnessRobot.dot(self._markerPosition)
         
-    def calcHDForce(self):
+    def calcHDForce(self,method='normal'):
         if self._isEmpty([self._stiffnessRobot,self._currentPositionHD,
                                 self._lockPositionHD]):
             self._forcesHD = np.array([]) # set forces to be empty
             return
-        self._stiffnessHD = self._calcHDStiffness(self._stiffnessRobot) #In ee frame...
+        if method == 'normal':
+            self._stiffnessHD = self._calcHDStiffness(self._stiffnessRobot) #In ee frame...
+        elif method == 'interpolation':
+            self._stiffnessHD = self._calcHDStiffnessInterpolation(self._stiffnessRobot) #In ee frame...
+        else:
+            logfatal('wrong mehod for calculating HD force selected')
+
         self._forcesHD = self._stiffnessHD.dot(self._currentPositionHD) # in ee frame
         # limit force when above commanding range
 
@@ -76,6 +82,19 @@ class CalcHDFeedbackForce(object):
         stiffnessMaxHD = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1] 
         scaling = stiffnessMaxHD/self._robotStiffnessLimits[1]
         stiffnessHD = scaling*stiffnessRobot #stiffness robot is in EE-frame thus stiffnessHD aswell
+
+        return np.array(stiffnessHD)
+
+    def _calcHDStiffnessInterpolation(self, stiffnessRobot):
+        x_max_dev = self._maxWorkRangeHD[1] 
+        Fmin = 0
+
+        Khd_min = Fmin/self._maxWorkRangeHD[1]
+        Khd_max = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1]
+        K_min = self._robotStiffnessLimits[0]
+        K_max = self._robotStiffnessLimits[1]
+
+        stiffnessHD = Khd_min + (Khd_max - Khd_min)/(K_max-K_min) * (stiffnessRobot - K_min)
 
         return np.array(stiffnessHD)
 
@@ -183,7 +202,8 @@ class OmniFeedbackROS(object):
             
             # calc the virtual robot forces and omni force
             CalcOmniFeedbackForce.calcRobotForce()
-            CalcOmniFeedbackForce.calcHDForce()
+            CalcOmniFeedbackForce.calcHDForce('normal')
+            # CalcOmniFeedbackForce.calcHDForce('interpolation')
 
             # get the omni stiffness matrix
             HDStiffness= CalcOmniFeedbackForce.getHDStiffness() # in EE frame
