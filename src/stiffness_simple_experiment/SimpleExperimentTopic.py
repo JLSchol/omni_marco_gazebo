@@ -64,7 +64,9 @@ class ProcessSimpleExperiment():
 		self.stds_real_exp = [] 	# 
 		self.means_stds_types = []
 		# need variables that store part names, data, other stuff in list for easy acces all over the code
-		
+
+
+		self.count001 = 0
 
 	def removeFirstTrials(self,dataDict,exp_IDs=['1L', '1R', '2L', '2R', '3L', '3R', '4L', '4R'], 
 																topics=['simple_experiment_data']):
@@ -337,6 +339,8 @@ class ProcessSimpleExperiment():
 		# print(df.index)
 		# print(df.loc[1,'field.trial_time'])
 		# print(type(df.loc[1,'field.trial_time']))
+		self.count001 = self.count001 +1
+
 		indices = df.index[df['field.trial_time'] <= 0.02].tolist()
 		# print(indices)
 		# print(df.index[df['field.trial_time'] <= 0.02])
@@ -577,6 +581,82 @@ class ProcessSimpleExperiment():
 		dfs.loc['all',:] = df.std()
 		return (dfm, dfs)
 
+	def removeTrialOnFeedback(self,part_nr,exp_nr,df):
+		columns = df.columns.values
+		not_to_delete = ['participant','DoF','plane','size','rotation_axis','rotation','type']
+		to_delete_columns = [value for value in columns if not value in not_to_delete]
+
+		if part_nr == 1:
+			if exp_nr == 1:
+				remove_trials = [10]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 4:
+				remove_trials = [36]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [30]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 2:
+			if exp_nr == 4:
+				remove_trials = [8]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [2]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 3:
+			if exp_nr == 4:
+				remove_trials = [25]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 7:
+				remove_trials = [14,15]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [19,38]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 4:
+			if exp_nr == 3:
+				remove_trials = [1,5]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 5:
+			if exp_nr == 7:
+				remove_trials = [1,12,13]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [8,16,31,33,34]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 7:
+			if exp_nr == 7:
+				remove_trials = [7]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [37]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		elif part_nr == 8:
+			if exp_nr == 4:
+				remove_trials = [9]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+			elif exp_nr == 8:
+				remove_trials = [13]
+				self.removeIncorrectTrials(df,remove_trials,to_delete_columns)
+
+
+		
+
+
+
+
 
 
 	def main(self):
@@ -632,7 +712,9 @@ class ProcessSimpleExperiment():
 			self.removeFirstTrials(part_x_data.data)
 
 		#  ADD COLUMNS AND REMOVE INCORRECT TRIALS THAT ARE SKIPPED
+		part_nr = 0
 		for part_x_dfs_dict in self.all_dfs:
+			part_nr = part_nr + 1
 
 			for df,expnr in zip(part_x_dfs_dict.values(),part_x_dfs_dict.keys()):
 				# print(expnr)
@@ -645,10 +727,12 @@ class ProcessSimpleExperiment():
 				self.addProjectedScales(df)
 				self.addNormalizedShapeError(df) # check this function!!!
 				self.removeFailed001Trials(df)
-				# sys.exit()
+				self.removeTrialOnFeedback(part_nr,expnr,df)
 
-		# IF NEED REMOVE TRIALS MANUALLY
-		# self.removeIncorrectTrials(df, indices)
+
+		# print('removed on feedback = {}'.format(24))
+		# print('001 remvoed = {}'.format(self.count001))
+
 
 		
 		# CREAT CONVINEANT LIST per experiment
