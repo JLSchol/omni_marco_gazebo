@@ -1107,7 +1107,7 @@ class PlotSimpleExperiment():
 
 		# trajecotry
 		# tf endeffector frame wrt base
-		path = 
+		# path = 
 
 		# centers
 		cx = [0, 2.5, 5, 7.5, 10]
