@@ -223,7 +223,7 @@ class PlotData(object):
 		xmin = 0.3
 		ymin = -0.4
 		zmin = 0.4
-		ax.set_title('Robot Stiffness Trajecory')
+		ax.set_title('Robot Stiffness Trajectory')
 		ax.set_xlim3d(xmin, xmin+square_size)
 		ax.set_ylim3d(ymin, ymin+square_size)
 		ax.set_zlim3d(zmin, zmin+square_size)

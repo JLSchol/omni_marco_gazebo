@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 import itertools
+import sys
 
 class AnalyseSimpleExperiment():
 	def __init__(self):
@@ -661,6 +662,8 @@ class AnalyseSimpleExperiment():
 			p_plane = tstats[ tstats['condition']=='plane'].loc[info['field'],'p_value']
 			p_size = tstats[ tstats['condition']=='size'].loc[info['field'],'p_value']
 			figs4boxes = PSE.singleMetricDofPlanes4box(df, p_dof, p_plane, info, self.swarmSmall)
+			# plt.show()
+			# sys.exit()
 
 			name = makeName(info['name'], 'dof', '4box', test)
 
