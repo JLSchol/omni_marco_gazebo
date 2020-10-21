@@ -183,9 +183,11 @@ class ProcessFiles(object):
 			sampled = df.resample('10ms', label='left', closed='left', axis=0).first()
 			# print(len(sampled.index))
 			sampledList.append(sampled)
-			break
+			# break
 
 		if listBool == False:
+			print('dit gaat mis')
+
 			return sampledList[0] # return pandas
 		else:
 			return sampledList # return pandas list
