@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
+import pandas as pd
 from matplotlib import cm
 from matplotlib import colors as col
 from mpl_toolkits.mplot3d import Axes3D
@@ -41,17 +42,7 @@ def calcSurfacePointsOfEllipsoid(center, radii, rotatie_matrix,  resolutie):
 			[x[i,j],y[i,j],z[i,j]] = np.dot([x[i,j],y[i,j],z[i,j]], rotatie_matrix) + center
 	return x,y,z
 
-# def rotateVector(q, v):
-# 	vr = [0,0,0]
-# 	vr[0] = (v[0]*q[3]*q[3] + 2*v[2]*q[3]*q[1] - 2*v[1]*q[3]*q[2] + v[0]*q[0]*q[0] + 
-# 			2*v[1]*q[0]*q[1] + 2*v[2]*q[0]*q[2] - v[0]*q[1]*q[1] - v[0]*q[2]*q[2])
 
-# 	vr[1] = (v[1]*q[3]*q[3] - 2*v[2]*q[3]*q[0] + 2*v[0]*q[3]*q[2] - v[1]*q[0]*q[0] + 
-# 			2*v[0]*q[0]*q[1] + v[1]*q[1]*q[1] + 2*v[2]*q[1]*q[2] - v[1]*q[2]*q[2])
-
-# 	vr[2] =	(v[2]*q[3]*q[3] + 2*v[1]*q[3]*q[0] - 2*v[0]*q[3]*q[1] - v[2]*q[0]*q[0] + 
-# 			2*v[0]*q[0]*q[2] - v[2]*q[1]*q[1] + 2*v[1]*q[1]*q[2] + v[2]*q[2]*q[2])
-# 	return vr
 
 def findNearest(array, value):
     array = np.asarray(array)
@@ -76,8 +67,6 @@ class PlotData(object):
 			yValues = map(lambda x: x,  df[dfYColumn]); 
 			plt.plot(xValues,yValues)
 		return plt
-
-
 
 	def simpleFigure(self,df,figureInfo,fig=False,ax=False):
 
@@ -169,14 +158,41 @@ class PlotData(object):
 		
 
 		return f,ax1,ax2
-# stiffness, ellipoid_info, timeVec, centers, scales, quats
-	def taskDenomstrationPlot(self, stiffness_df, stiffness_info, timeVec, centers, scales, quats, stiffness_eig):
 
-		# fig2, ax2 = self.simpleFigure(stiffness_df, stiffness_info)
-		# fig3, ax3 = plt.subplots()
-		# ax3.plot(timeVec,stiffness_eig)
-		# ax3.set_xlim(0,100)
-		# ax3.set_ylim(0,1200)
+	def taskDemoEigValueStiffnessPlot(self, eigen_df, stiffness_df, eigen_info, stiffness_info):
+		fig, axs = plt.subplots(2)
+		# fig.suptitle('Vertically stacked subplots')
+		_, axs[0] = self.simpleFigure(eigen_df, eigen_info, fig, axs[0])
+		_, axs[1] = self.simpleFigure(stiffness_df, stiffness_info, fig, axs[1])
+
+		for ax in axs:
+
+			# fontsizes
+			s_t = ax.get_title()
+			s_x = ax.get_xlabel()
+			s_y = ax.get_ylabel()
+			s_l = ax.get_legend()
+			ax.set_title(s_t, fontsize=18)
+			ax.set_xlabel(s_x, fontsize=14)
+			ax.set_ylabel(s_y, fontsize=14)
+
+			# linewidths
+			ax.legend(fontsize=14, loc='best')
+			for line in ax.get_legend().get_lines():
+				line.set_linewidth(2)
+
+			lines = ax.get_lines()
+			for line in lines:
+				line.set_linewidth(2)
+
+		# tune axis
+		plt.subplots_adjust(hspace = 0.3)
+		axs[0].set_ylim(0, 1200)
+		axs[0].set_xlabel('')
+		
+		return fig, axs
+
+	def taskDemoPlot3D(self, timeVec, centers, scales, quats):
 
 		# timeSamples = [0.9, 2, 3.6, 4.7 ,8.5, 12]
 		timeSamples = [0.9, 2, 3.6, 4.7 ,7, 9, 12]
@@ -223,15 +239,15 @@ class PlotData(object):
 		xmin = 0.3
 		ymin = -0.4
 		zmin = 0.4
-		ax.set_title('Robot Stiffness Trajectory')
+		ax.set_title('Robot Stiffness Trajectory', fontsize=18)
 		ax.set_xlim3d(xmin, xmin+square_size)
 		ax.set_ylim3d(ymin, ymin+square_size)
 		ax.set_zlim3d(zmin, zmin+square_size)
 		# ax.set_ylim3d(-0.5, 0.5)
 		# ax.set_zlim3d(-1, 1)
-		ax.set_xlabel('x [m]')
-		ax.set_ylabel('y [m]')
-		ax.set_zlabel('z [m]')
+		ax.set_xlabel('x [m]' ,fontsize=14)
+		ax.set_ylabel('y [m]' ,fontsize=14)
+		ax.set_zlabel('z [m]' ,fontsize=14)
 
 		offsets_x = [-0.1,0,0,0,0,0,0]
 		offsets_y = [0.08,0,-0.05,0.05,0.1,0.1,0.1]
@@ -245,22 +261,13 @@ class PlotData(object):
 		texts_3d = [str(round(t,2))+ ' [s]' for t in timeSamples]
 
 		self.annotateEllips3D(ax,xs,ys,zs,zdirs,texts_3d,'black')
+		return fig, ax
 
-		# plot figure 
-		fig2, ax2 = self.simpleFigure(stiffness_df, stiffness_info)
-		ax2.vlines(timeSamples,0,1200,linestyles=':')
-		ax2.grid(False)
-
-
-		# plt.show()
 
 	def annotateEllips3D(self,axis, xs, ys, zs, zdirs, texts, color):
 		for zdir, x, y, z, text in zip(zdirs, xs, ys, zs, texts):
 			axis.text(x, y, z, text, zdir, color=color)
 
-
-	def annotate2D(self,position, offsets, texts):
-		pass
 
 
 def wiggleReportFigure(show=True):
@@ -340,11 +347,12 @@ def taskDemoReportFigure(show=True):
 	PD = PlotData()
 
 
-
 	ellips_log = csvsPandas[0]
-	print(ellips_log.columns.values)
-
 	stiffness = csvsPandas[3]
+	ellips_log = addDiffCol(ellips_log, False)
+	eigen_values = fixEigenalues(ellips_log)
+
+
 	ellipoid_info = TI.getInfo(csvNames[3])
 	timeVec = ellips_log['timeVec'] 
 	centers = ellips_log.loc[:,['field.center.x', 'field.center.y', 'field.center.z']].values.tolist()
@@ -352,50 +360,153 @@ def taskDemoReportFigure(show=True):
 	quats = ellips_log.loc[:,['field.quaternion.x', 'field.quaternion.y', 'field.quaternion.z', 'field.quaternion.w']].values.tolist()
 	stiffness_eig = ellips_log.loc[:,['field.stiffness_eig0', 'field.stiffness_eig1', 'field.stiffness_eig2']].values.tolist()
 
-	
-	# centers_adjusted = []
-	# for i,[cx,cy,cz] in enumerate(centers):
-	# 	cx = i/float(len(timeVec))*3
-	# 	centers_adjusted.append([cx,cy,cz])
-	# centers = centers_adjusted
+	fig, ax = PD.taskDemoEigValueStiffnessPlot(eigen_values, stiffness, TI.getInfo('eigen_after_shuffle'), TI.getInfo('stiffness_command.csv'))
 
-	PD.taskDenomstrationPlot(stiffness, ellipoid_info, timeVec, centers, scales, quats, stiffness_eig)
+	fig3, ax3 = PD.taskDemoPlot3D(timeVec, centers, scales, quats)
 
 	if show==True:
 		plt.show()
 
 
 
-# oud
-	# # get plotting information and data frame
-	# # transformation
-	# base_ee_transform = csvsPandas[0]
-	# # 'eigen_pair_stiffness.csv'
-	# stiffness_eigen = csvsPandas[1]
-	# info_stiffness_eigen = TI.getInfo(csvNames[1])
-	# # 'draw_ellipsoidellipsoid_visualization.csv'
-	# ellipsoid = csvsPandas[7]
-	# ellipoid_info = TI.getInfo(csvNames[7])
-	# # stiffness_command.csv
-	# stiffness = csvsPandas[3]
-	# ellipoid_info = TI.getInfo(csvNames[3])
+def addDiffCol(ellips_log, save=False):
+	x0 = ellips_log['field.stiffness_eig0'].diff().abs().astype(float)
+	x0.iloc[0] = 0.0
+	x1 = ellips_log['field.stiffness_eig1'].diff().abs().astype(float)
+	x1.iloc[0] = 0.0
+	x2 = ellips_log['field.stiffness_eig2'].diff().abs().astype(float)
+	x2.iloc[0] = 0.0
 
 
-	# # sample quats and scales based on df base_ee_transform	
-	# # print(len(base_ee_transform.index))
-	# # print(len(stiffness_eigen.index))
-	# # print(len(ellipsoid.index))
+	ellips_log['d0'] = x0
+	ellips_log['d1'] = x1
+	ellips_log['d2'] = x2
 
-	# # centers = base_ee_transform.loc[:,['field.pose.position.x', 'field.pose.position.y', 
-	# # 													'field.pose.position.z']].values.tolist()
-	# timeVec = ellipsoid['timeVec'] 
-	# scales = ellipsoid.loc[:,['field.scale.x', 'field.scale.y', 'field.scale.z']].values.tolist() 	#[ [x,y,z], [],[ etc]]
-	# quats = ellipsoid.loc[:,['field.pose.orientation.x', 'field.pose.orientation.y', 				#[ [x,y,z], [],[ etc]]
-	# 						'field.pose.orientation.z', 'field.pose.orientation.w']].values.tolist()
-	# centers = [np.linspace(0,3,len(ellipsoid['field.pose.position.x'])).tolist(), 
-	# 		[0]*len(ellipsoid['field.pose.position.x']) , [0]*len(ellipsoid['field.pose.position.x'])] #[ [......], [......], [......] ]
+	if save:
+		ellips_log.to_csv("/home/jasper/omni_marco_gazebo/src/data_processing/eig.csv")
+	return ellips_log
 
-	# PD.taskDenomstrationPlot(stiffness, ellipoid_info, timeVec, centers, scales, quats)
+def sliceColumn(df,lower,upper,column_names,order):
+
+	sliced_list = df[column_names].iloc[lower:upper]
+
+	# dfnew = pd.DataFrame()
+	sliced_list['e0'] = sliced_list.iloc[:,1+order[0]]
+	sliced_list['e1'] = sliced_list.iloc[:,1+order[1]]
+	sliced_list['e2'] = sliced_list.iloc[:,1+order[2]]
+
+	return sliced_list
+
+
+def fixEigenalues(df):
+
+	df = df.reset_index()
+
+	threshold = 45
+	index =  df[(df['d0'] > threshold) | (df['d1'] > threshold) | (df['d2'] > threshold)]
+
+	names = ['timeVec','field.stiffness_eig0','field.stiffness_eig1','field.stiffness_eig2']
+	names2 = ['timeVec','e0','e1','e2']
+	e1 = []
+	print(index.index[15]+1100)
+
+	d1 =  sliceColumn(df, 0, index.index[0], names, [0,1,2] )
+	d2 =  sliceColumn(df, index.index[0], index.index[1], names, [0,2,1] )
+	d3 =  sliceColumn(df, index.index[1], index.index[2], names, [0,1,2] )
+	d4 =  sliceColumn(df, index.index[2], index.index[3], names, [0,2,1] )
+	d5 =  sliceColumn(df, index.index[3], index.index[4], names, [0,1,2] )
+	d6 =  sliceColumn(df, index.index[4], index.index[5], names, [0,2,1] )
+	d7 =  sliceColumn(df, index.index[5], index.index[6], names, [0,1,2] )
+	d8 =  sliceColumn(df, index.index[6], index.index[7], names, [0,2,1] )
+	d9 =  sliceColumn(df, index.index[7], index.index[8], names, [0,1,2] )
+	d10 =  sliceColumn(df, index.index[8], index.index[9], names, [0,2,1] )
+	d11 =  sliceColumn(df, index.index[9], index.index[10], names, [0,1,2] )
+	d12 =  sliceColumn(df, index.index[10], index.index[11], names, [0,2,1] )
+	d13 =  sliceColumn(df, index.index[11], index.index[12], names, [0,1,2] )
+	d14 =  sliceColumn(df, index.index[12], index.index[13], names, [0,2,1] )
+	d15 =  sliceColumn(df, index.index[13], index.index[14], names, [2,1,0] ) # switch!!
+
+	d161 =  sliceColumn(df, index.index[14], index.index[14]+200, names, [1,2,0] )
+	d162 =  sliceColumn(df, index.index[14]+200, index.index[15]-1800, names, [2,1,0] )
+	d163 =  sliceColumn(df, index.index[15]-1800, index.index[15], names, [1,2,0] )
+
+	d17 =  sliceColumn(df, index.index[15], index.index[16], names, [2,1,0] )
+	d18 =  sliceColumn(df, index.index[16], index.index[17], names, [1,2,0] )
+	d19 =  sliceColumn(df, index.index[17], index.index[18], names, [2,1,0] )
+	d20 =  sliceColumn(df, index.index[18], df.index.values[-1], names, [1,2,0] )
+
+
+	# d16 =  sliceColumn(df, index.index[14], index.index[15], names, [1,2,0] )
+	# d17 =  sliceColumn(df, index.index[15], index.index[16], names, [2,1,0] )
+	# d18 =  sliceColumn(df, index.index[16], index.index[17], names, [1,2,0] )
+	# d19 =  sliceColumn(df, index.index[17], index.index[18], names, [2,1,0] )
+	# d20 =  sliceColumn(df, index.index[18], df.index.values[-1], names, [1,2,0] )
+
+	dfnew = pd.concat([d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d161,d162,d163, d17, d18, d19, d20])
+		# check
+		# print(d1[names2].head(3))
+		# print()
+		# print(d1[names2].tail(3))
+		# print(d2[names2].head(3))
+		# print()
+		# print(d2[names2].tail(3))
+		# print(d3[names2].head(3))
+		# print()
+		# print(d3[names2].tail(3))
+		# print(d4[names2].head(3))
+		# print()
+		# print(d4[names2].tail(3))
+		# print(d5[names2].head(3))
+		# print()
+		# print(d5[names2].tail(3))
+		# print(d6[names2].head(3))
+		# print()
+		# print(d6[names2].tail(3))
+		# print(d7[names2].head(3))
+		# print()
+		# print(d7[names2].tail(3))
+		# print(d8[names2].head(3))
+		# print()
+		# print(d8[names2].tail(3))
+		# print(d9[names2].head(3))
+		# print()
+		# print(d9[names2].tail(3))
+		# print(d10[names2].head(3))
+		# print()
+		# print(d10[names2].tail(3))
+		# print(d11[names2].head(3))
+		# print()
+		# print(d11[names2].tail(3))
+		# print(d12[names2].head(3))
+		# print()
+		# print('d12-13')
+		# print(d12[names2].tail(3))
+		# print(d13[names2].head(3))
+		# print('d13-14')
+		# print(d13[names2].tail(3))
+		# print(d14[names2].head(3))
+		# print('d14-15')
+		# print(d14[names2].tail(3))
+		# print(d15[names2].head(3))
+		# print('d15-16')
+		# print(d15[names2].tail(3))
+		# print(d16[names2].head(3))
+		# print('d16-17')
+		# print(d16[names2].tail(3))
+		# print(d17[names2].head(3))
+		# print('d17-18')
+		# print(d17[names2].tail(3))
+		# print(d18[names2].head(3))
+		# print('d18-19')
+		# print(d18[names2].tail(3))
+		# print(d19[names2].head(3))
+		# print()
+		# dfnew.plot(x='timeVec',y=['e2','e1','e0'], ylim=(0,1200))
+		# plt.show()
+
+	return dfnew
+
+
 
 
 

@@ -26,6 +26,7 @@ class PlotTopicInfo(object):
 	        'virtual_marker_tf.csv': self.virtual_marker_tf,
 	        # 'marker_visualization.csv': self.marker_visualization,
 	        'draw_ellipsoidellipsoid_visualization.csv': self.draw_ellipsoidellipsoid_visualization,
+	        'eigen_after_shuffle': self.eigen_after_shuffle,
 
 	    }		
 	    if csvName in switcher:
@@ -105,12 +106,22 @@ class PlotTopicInfo(object):
 		return plotInfoDict  
 
 	def stiffness_command(self):
-		plotInfoDict = {'title': "Stiffness command diagonal",
-					'xLabel': "Time [s]",
-					'yLabel': "Stiffness [N/m]",
+		plotInfoDict = {'title': "Stiffness Matrix Diagonal",
+					'xLabel': "time [s]",
+					'yLabel': "stiffness [N/m]",
 					'xAxis': "timeVec",
 					'yAxis': ["field.F32MA.data0","field.F32MA.data4","field.F32MA.data8"],
-					'legend': ["K_xx","K_yy","K_zz"]
+					'legend': [r"$K_{xx}$",r"$K_{yy}$",r"$K_{zz}$"]
+		}
+		return plotInfoDict  
+
+	def eigen_after_shuffle(self):
+		plotInfoDict = {'title': "Eigen Values",
+					'xLabel': "time [s]",
+					'yLabel': "stiffness [N/m]",
+					'xAxis': "timeVec",
+					'yAxis': ["e2","e1","e0"],
+					'legend': [r'$\gamma_{1}$', r'$\gamma_{2}$', r'$\gamma_{3}$']
 		}
 		return plotInfoDict  
 		
