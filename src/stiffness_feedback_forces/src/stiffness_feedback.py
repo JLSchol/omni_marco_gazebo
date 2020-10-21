@@ -11,7 +11,6 @@ from std_msgs.msg import MultiArrayLayout
 from phantom_omni.msg import OmniFeedback
 from phantom_omni.msg import LockState
 from stiffness_commanding.msg import HeaderFloat32MultiArray
-
 import numpy as np
 
 
@@ -89,12 +88,23 @@ class CalcHDFeedbackForce(object):
         x_max_dev = self._maxWorkRangeHD[1] 
         Fmin = 0
 
-        Khd_min = Fmin/self._maxWorkRangeHD[1]
-        Khd_max = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1]
-        K_min = self._robotStiffnessLimits[0]
-        K_max = self._robotStiffnessLimits[1]
+        khd_min = Fmin/self._maxWorkRangeHD[1]
+        khd_max = self._maxForceLimitsHD[1]/self._maxWorkRangeHD[1]
+        k_min = self._robotStiffnessLimits[0]
+        k_max = self._robotStiffnessLimits[1]
 
-        stiffnessHD = Khd_min + (Khd_max - Khd_min)/(K_max-K_min) * (stiffnessRobot - K_min)
+        # decompose stiffness matrix such that eigenvalues kan be scales
+        gamma, R = np.linalg.eig(stiffnessRobot)
+        gamma = np.diag(gamma)
+
+        # diagonalize:
+        K_min = np.diag([k_min,k_min,k_min])
+        Khd_min = np.diag([khd_min,khd_min,khd_min])
+
+        # scale stiffness eigenvalues
+        Ks = Khd_min + (khd_max - khd_min)/(k_max-k_min) * (gamma - K_min)
+        # rotate back to find scales down hd stiffness matrix
+        stiffnessHD = R.dot(Ks.dot(R.T))
 
         return np.array(stiffnessHD)
 
