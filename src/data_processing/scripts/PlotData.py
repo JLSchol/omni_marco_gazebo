@@ -132,10 +132,11 @@ class PlotData(object):
 		print(df2.loc[:,['timeVec','field.current_position.y']])
 		# print(df2['timeVec','field.current_position.y'])
 		# check settings and 
-		f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-		ax1.set_title('Stiffness Variations',fontsize=18)
+		f, (ax2, ax1) = plt.subplots(2, 1, sharex=True)
+		ax1.set_title('Stiffness Commands',fontsize=18)
 		ax1.plot(df1['timeVec'],df1['field.F32MA.data0'],linewidth=2,color='black')
 		ax1.legend([r'$K_{xx}$'],loc='best',fontsize=14)
+		ax1.set_xlabel('time [s]',fontsize=14)
 		ax1.set_xlim(2.61,10.61)
 		ax1.set_ylim(0,1100)
 		# ax1.set_xlabel('time [s]')
@@ -144,17 +145,19 @@ class PlotData(object):
 		# print(x)
 		ax1.grid()
 		# print(df2.columns.values)
-		# ax2.set_title('Perturbation Signal',fontsize=18)
+		ax2.set_title('Perturbation Signal',fontsize=18)
 		ax2.plot(df2['timeVec'],df2['field.current_position.y'],linewidth=2,color='black')
 		ax2.set_xlim(2.61,10.61)
 		ax2.axhline(y=0.05,linestyle='--',color='red')
 		ax2.axhline(y=0.3,linestyle='-.',color='blue')
 		ax2.axhline(y=-0.05,linestyle='--',color='red')
 		ax2.axhline(y=-0.3,linestyle='-.',color='blue')
-		ax2.set_xlabel('time [s]',fontsize=14)
+		
 		ax2.set_ylabel('deviation [m]',fontsize=14)
 		ax2.legend([r'$x_{hd}$',r'$w_{min}$',r'$w_{max}$'],loc='best',fontsize=14)
 		ax2.grid()
+
+		# plt.subplots_adjust(hspace = 0.3)
 		
 
 		return f,ax1,ax2

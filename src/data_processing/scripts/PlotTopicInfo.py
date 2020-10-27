@@ -116,7 +116,7 @@ class PlotTopicInfo(object):
 		return plotInfoDict  
 
 	def eigen_after_shuffle(self):
-		plotInfoDict = {'title': "Eigen Values",
+		plotInfoDict = {'title': "Stiffness Eigenvalues",
 					'xLabel': "time [s]",
 					'yLabel': "stiffness [N/m]",
 					'xAxis': "timeVec",
