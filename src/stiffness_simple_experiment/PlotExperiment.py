@@ -837,8 +837,11 @@ class PlotSimpleExperiment():
 
 		ax.set_title(fig_info['title'])
 		ax.set_ylabel(fig_info['yLabel'])
-		# ax.set_ylim(fig_info['yLim']) # only set lower limit		
-		# fig.set_size_inches(20,8, forward=True)
+
+		ax.set_title(fig_info['title'], fontsize=18)
+		ax.set_ylabel(fig_info['yLabel'], fontsize=14)
+		ax.set_xlabel('DoF', fontsize=14)
+		ax.set_xticklabels(['1 DoF', '2 DoF'], fontsize=12)
 		return fig
 
 	def singleMetricDofPlanesSizes2box(self, df, x, p_value, info, swarm):
@@ -848,12 +851,16 @@ class PlotSimpleExperiment():
 
 		# set order of plot
 		order = []
+		x_label = []
 		if x == 'DoF':
 			order = ['1_DoF', '2_DoF']
+			x_tick_labels = ['1 DoF', '2 DoF'] # matched order with pandas dataframe statistics
 		elif x == 'plane':
-			order = ['vertical', 'horizontal']
+			order = ['horizontal', 'vertical']
+			x_tick_labels = ['horizontal', 'vertical']
 		elif x == 'size':
-			order = ['small','large']
+			order = ['large','small']
+			x_tick_labels = ['large','small']
 
 		# plot boxplot
 		# print(df[x].unique())
@@ -865,13 +872,19 @@ class PlotSimpleExperiment():
 		sns.swarmplot(	data=df, x=x, y=info['field'], order=order,
 						size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
 						dodge=True,  palette=palet, ax=ax)
+
+		
+
 		# annotate pvalue
 		if p_value <= 0.05:
 			self.topannotation(ax, p_value)
 
 		# set other figure properties
-		ax.set_title(info['title'])
-		ax.set_ylabel(info['yLabel'])
+		ax.set_title(info['title'], fontsize=18)
+		ax.set_ylabel(info['yLabel'], fontsize=14)
+		ax.set_xlabel(x, fontsize=14)
+		ax.set_xticklabels(x_tick_labels, fontsize=12)
+
 		return fig
 
 	# def singleMetric(self, dof_and_planes, metric, yAxis, swarm):
@@ -1096,7 +1109,7 @@ if __name__ == "__main__":
 
 
 
-	## SHOW BAR PLOTS
+	# SHOW BAR PLOTS
 	# print(type(process.means_real_exp))
 	# for exp_means, exp_stds in zip(process.means_real_exp, process.stds_real_exp)
 	# 	angles_mean = exp_means.loc['all','field.absolute_angle']
