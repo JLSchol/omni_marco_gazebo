@@ -593,6 +593,10 @@ class AnalyseSimpleExperiment():
 		# split df in 2 conditions
 		[cond_1, cond_2], [cond_1_ID, cond_2_ID] = self.splitDfOnColumnValues(df, condition)
 
+		# print(cond_1)
+		# print(type(cond_1))
+		# print(len(cond_1))
+
 		# get descriptive statistic means and std in convienient data structure
 		descStats = pd.DataFrame(columns = ['score','metric','type_stat','condition'])
 		# calc means/stds
@@ -600,18 +604,37 @@ class AnalyseSimpleExperiment():
 		means_1['type_stat'], means_1['condition'] = 'mean', cond_1_ID
 		std_1 = cond_1.std().reset_index().rename(columns={'index':'metric',0:'score'})
 		std_1['type_stat'], std_1['condition'] = 'std', cond_1_ID
+		first_quantile_1 = cond_1.quantile(0.25).reset_index().rename(columns={'index':'metric',0.25:'score'})
+		first_quantile_1['type_stat'], first_quantile_1['condition'] = 'first quantile', cond_1_ID
+		median_1 = cond_1.median().reset_index().rename(columns={'index':'metric',0:'score'})
+		median_1['type_stat'], median_1['condition'] = 'median', cond_1_ID
+		third_quantile_1 = cond_1.quantile(0.75).reset_index().rename(columns={'index':'metric',0.75:'score'})
+		third_quantile_1['type_stat'], third_quantile_1['condition'] = 'third quantile', cond_1_ID
+
+		# print(median_1)
+		# print(first_quantile_1)
+		# print(third_quantile_1)
+
 		means_2 = cond_2.mean().reset_index().rename(columns={'index':'metric',0:'score'})
 		means_2['type_stat'], means_2['condition'] = 'mean', cond_2_ID
 		std_2 = cond_2.std().reset_index().rename(columns={'index':'metric',0:'score'})
 		std_2['type_stat'], std_2['condition'] = 'std', cond_2_ID
+		first_quantile_2 = cond_2.quantile(0.25).reset_index().rename(columns={'index':'metric',0.25:'score'})
+		first_quantile_2['type_stat'], first_quantile_2['condition'] = 'first quantile', cond_2_ID
+		median_2 = cond_2.median().reset_index().rename(columns={'index':'metric',0:'score'})
+		median_2['type_stat'], median_2['condition'] = 'median', cond_2_ID
+		third_quantile_2 = cond_2.quantile(0.75).reset_index().rename(columns={'index':'metric',0.75:'score'})
+		third_quantile_2['type_stat'], third_quantile_2['condition'] = 'third quantile', cond_2_ID
+
+
 		# fix data frame
-		descStats = pd.concat([means_1,std_1,means_2,std_2]).sort_values(by=['metric','type_stat']).set_index('metric')
+		descStats = pd.concat([means_1,std_1,first_quantile_1,median_1,third_quantile_1, means_2,std_2,first_quantile_2,median_2,third_quantile_2]).sort_values(by=['metric','type_stat']).set_index('metric')
 		descStats = descStats[descStats.index != 'row_id']
 
 
 		# get t statistics
 		field_names = ['field.shape_acc','field.orientation_acc','field.trial_time','field.shape','field.absolute_angle']
-		columns_stats = ["t_stat",'p_value']
+		columns_stats = ["t_stat",'p_value','df','med1-med2']
 		depTstats = pd.DataFrame(index=field_names, columns=columns_stats)
 		for name in field_names:
 			# remove nans from data since the ommit nanpolicy did not work
@@ -619,20 +642,35 @@ class AnalyseSimpleExperiment():
 			i1,i2 = np.where(np.isnan(c1)), np.where(np.isnan(c2)) 
 			i = np.append(i1,i2)
 			c1,c2 = np.delete(c1,i), np.delete(c2,i)
+			# print(len(c1))
+			assert len(c1) == len(c2)
+			df = len(c1)
+			# print(len(c1))
 			# ttest
 			t,p = [],[]
 			if test == 'wilcoxon':
 				(t,p) = stats.wilcoxon(c1, c2, zero_method='wilcox', correction=False) 
 			elif test == 'depTtest':
 				(t,p) = stats.ttest_rel(c1, c2, nan_policy='raise') #, nan_policy='omit'
-			# add to data frame
-			depTstats.loc[name,columns_stats] = [t, p]
+
+
+			# calculate difference of medians for every metric
+			m1 = descStats.loc[(descStats['type_stat']=='median') & (descStats['condition']==cond_1_ID)].loc[name,'score']
+			m2 = descStats.loc[(descStats['type_stat']=='median') & (descStats['condition']==cond_2_ID)].loc[name,'score']
+			med_dif = m1-m2
+
+
+			depTstats.loc[name,columns_stats] = [t, p, df, med_dif]
 		depTstats['condition'] = condition
 
 		if show:
+			print(100 * '--')
 			print("\n{} vs {}:".format(cond_1_ID, cond_2_ID))
+
 			print(depTstats)
 			print(descStats)
+
+		# sys.exit()
 
 		return depTstats, descStats
 
@@ -674,6 +712,7 @@ class AnalyseSimpleExperiment():
 				name = makeName(info['name'], x, '2box', test)
 				figs.append(figs2boxes)
 				figNames.append(name)
+		
 		# plt.show()
 
 		return figs, figNames, tstats, means_stds
