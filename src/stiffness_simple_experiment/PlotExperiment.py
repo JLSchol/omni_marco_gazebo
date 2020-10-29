@@ -622,13 +622,16 @@ class PlotSimpleExperiment():
 		ax.axvline(0,-2,2)
 
 		title = "Van der Laan Questionnaire Scores"
-		ax.set_title(title,fontsize=18)
+		# ax.set_title(title,fontsize=18)
+		ax.set_title(title,fontsize=20)
 
-		ax.legend(loc='upper left')
+		# ax.legend(loc='upper left')
+		ax.legend(loc='upper left',fontsize=14)
 
 
-		ax.set_xlabel("usefulness ($\mu$={} $\pm$ $\sigma$={}) ".format(round(usefulness[1],2),round(usefulness[2],2),fontsize=14))
-		ax.set_ylabel("satisfying ($\mu$={} $\pm$ $\sigma$={}) ".format(round(satisfying[1],2),round(satisfying[2],2),fontsize=14))
+		ax.set_xlabel("usefulness ($M$={}, $SD$={}) ".format(round(usefulness[1],2),round(usefulness[2],2),fontsize=14))
+		ax.set_ylabel("satisfying ($M$={}, $SD$={}) ".format(round(satisfying[1],2),round(satisfying[2],2),fontsize=14))
+		# ax.set_xlabel("usefulness" ,fontsize=14)
 		# ax.set_ylabel('satisfying',fontsize=14)
 
 		ax.set_xlim(-2,2)
@@ -838,10 +841,10 @@ class PlotSimpleExperiment():
 		ax.set_title(fig_info['title'])
 		ax.set_ylabel(fig_info['yLabel'])
 
-		ax.set_title(fig_info['title'], fontsize=18)
+		ax.set_title(fig_info['title'], fontsize=20)
 		ax.set_ylabel(fig_info['yLabel'], fontsize=14)
 		ax.set_xlabel('DoF', fontsize=14)
-		ax.set_xticklabels(['1 DoF', '2 DoF'], fontsize=12)
+		ax.set_xticklabels(['1 DoF', '2 DoF'], fontsize=14)
 		return fig
 
 	def singleMetricDofPlanesSizes2box(self, df, x, p_value, info, swarm):
@@ -873,7 +876,6 @@ class PlotSimpleExperiment():
 						size=swarm['size'], marker=swarm['marker'],linewidth=swarm['lw'],edgecolors=swarm['ec'], 
 						dodge=True,  palette=palet, ax=ax)
 
-		
 
 		# annotate pvalue
 		if p_value <= 0.05:
@@ -883,7 +885,7 @@ class PlotSimpleExperiment():
 		ax.set_title(info['title'], fontsize=18)
 		ax.set_ylabel(info['yLabel'], fontsize=14)
 		ax.set_xlabel(x, fontsize=14)
-		ax.set_xticklabels(x_tick_labels, fontsize=12)
+		ax.set_xticklabels(x_tick_labels, fontsize=14)
 
 		return fig
 
@@ -998,7 +1000,7 @@ class PlotSimpleExperiment():
 		y_anch = 0.5
 		shrink_x = 1 - legend_ofset/x_anch
 
-		legend = ax.legend(handles[0:2],labels[0:2], loc="center right", bbox_to_anchor=(x_anch, y_anch), borderaxespad=0.)  # Set custom legend
+		legend = ax.legend(handles[0:2],labels[0:2], loc="center right", bbox_to_anchor=(x_anch, y_anch), borderaxespad=0., fontsize=14)  # Set custom legend
 
 		box = ax.get_position()
 		ax.set_position([box.x0, box.y0, box.width*shrink_x, box.height])
@@ -1123,7 +1125,7 @@ if __name__ == "__main__":
 	# PSE.barPlot2Axis(process.means_real_exp, process.stds_real_exp, 'all')
 	# plt.show()
 
-	# # GENERATE VAN DER LAAN PLOTS
+	# GENERATE VAN DER LAAN PLOTS
 	# out_dir = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
 	# PSE.generateVanDerLaan(process.usefull, process.satisfying, out_dir) # generate for all participants
 	# plt.close()

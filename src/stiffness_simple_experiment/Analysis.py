@@ -17,64 +17,64 @@ class AnalyseSimpleExperiment():
 		shape_acc_fig = {
 					'field': 'field.shape_acc',
 					'name': 'shape_acc',
-					'title': 'Relative Shape Accuracy',
-					'yLabel': 'Accuracy [%]',
+					'title': 'Relative Average Size Accuracy',
+					'yLabel': 'accuracy [%]',
 					'yLim': (None, None)
 					}
 		orientation_acc_fig = {
 					'field': 'field.orientation_acc',
 					'name': 'orientation_acc',
 					'title': 'Orientation Accuracy',
-					'yLabel': 'Accuracy [%]',
+					'yLabel': 'accuracy [%]',
 					'yLim': (None, None)
 					}
 		time_fig = {
 					'field': 'field.trial_time',
 					'name': 'trial_time',
 					'title': 'Trial Time',
-					'yLabel': 'Time [s]',
+					'yLabel': 'time [s]',
 					'yLim': (0,None)
 					}
 		shape_fig = {
 					'field': 'field.shape',
 					'name': 'shape',
-					'title': 'Average Shape Error',
-					'yLabel': 'Error [-]',
+					'title': 'Absolute Average Size Error',
+					'yLabel': 'error [-]',
 					'yLim': (None,None)
 					}
 		angle_fig = {
 					'field': 'field.absolute_angle',
 					'name': 'angle',
-					'title': 'Absolute Angle',
-					'yLabel': 'Angle [deg]',
+					'title': 'Orientation Error',
+					'yLabel': 'angle [deg]',
 					'yLim': (-10,None)
 					}
 
 		size_shape_acc = {
-					'title': 'Relative Shape Accuracy',
+					'title': 'Relative Average Size Accuracy',
 					'field': 'field.shape_acc',
-					'yLabel': 'Accuracy [%]',
+					'yLabel': 'accuracy [%]',
 		}
 		size_orientation_acc = {
 					'title': 'Orientation Accuracy',
 					'field': 'field.orientation_acc',
-					'yLabel': 'Accuracy [%]',
+					'yLabel': 'accuracy [%]',
 		}
 		
 		size_time = {
-					'title': 'Relative Shape Accuracy',
+					'title': 'Trial Time',
 					'field': 'field.trial_time',
-					'yLabel': 'Time [s]',
+					'yLabel': 'time [s]',
 		}
 		size_shape = {
-					'title': 'Average Shape Error',
+					'title': 'Absolute Average Size Error',
 					'field': 'field.shape',
-					'yLabel': 'Error [-]',
+					'yLabel': 'error [-]',
 		}
 		size_angle = {
-					'title': 'Absolute Angle',
+					'title': 'Orientation Error',
 					'field': 'field.absolute_angle',
-					'yLabel': 'Angle [deg]',
+					'yLabel': 'angle [deg]',
 		}
 
 		self.swarmDep = {'plot': True,
@@ -787,9 +787,9 @@ if __name__ == "__main__":
 	out_dir_fig = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
 	out_dir_stats = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/data"
 	PSE.saveFigs(figs,figNames,out_dir_fig)
-	statFileName = 'allTrials_' +test+'.csv'
-	tstats.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/' +statFileName)
-	means_stds.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/AllTrials_means_stds.csv')
+	# statFileName = 'allTrials_' +test+'.csv'
+	# tstats.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/' +statFileName)
+	# means_stds.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/AllTrials_means_stds.csv')
 	# plt.show()
 
 
