@@ -7,7 +7,7 @@ from geometry_msgs.msg import Point
 # custom msgs
 from phantom_omni.msg import LockState, PhantomButtonEvent
 # python packages
-from numpy import sin, cos, pi
+from numpy import sin, cos, pi, random
 
 
 
@@ -30,6 +30,7 @@ class sendMockOmniPosition():
         self._amplitudes = get_param("~amplitudes")
         self._frequencies = get_param("~frequencies")
         self._periods = get_param("~periods")
+        self._noise = get_param("~noise")
 
         self._angle_xy = get_param("~angle_xy")
         self._angle_xy = float(self._angle_xy)
@@ -62,9 +63,15 @@ class sendMockOmniPosition():
 
         # make ofdiagonal wiggle in x-y plane
         # if self._angle_xy != 0:     
+
+        
         x = output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))
         y = output_point*sin(self._angle_xy*(pi/180))#output_point*cos(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))#output_point*sin(self._angle_xy*(pi/180))
         z = 0
+
+        # if noise:
+
+
             # loginfo("x =" + str(x))
             # loginfo("y =" + str(y))
             # loginfo("z =" + str(z))
@@ -102,6 +109,13 @@ class sendMockOmniPosition():
 
         # make signal
         output = self._makeSinus(seconds,amplitude,frequency)
+
+        if self._noise:
+            # print(output)
+            noise = random.normal(0,0.025,1)
+            # print(noise)
+            output = output + noise
+            # print(output)
 
         # update to sin_(i+1) when runtime of sin_i has passed
         if seconds>(runTimeSinus_i + self._passedTime):          

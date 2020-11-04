@@ -124,9 +124,11 @@ class PlotData(object):
 
 		return fig,ax
 
-	def getWiggleStiffnessFig(self, df1,df2):
+	def getWiggleStiffnessFig(self, df1,df2,xlim1):
 		# the following data is used for this
 		# IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202008280234_D20_W100_L0.034_0.204_S100_1000")
+
+
 
 		print(df1.loc[:,['timeVec','field.F32MA.data0']])
 		print(df2.loc[:,['timeVec','field.current_position.y']])
@@ -134,10 +136,10 @@ class PlotData(object):
 		# check settings and 
 		f, (ax2, ax1) = plt.subplots(2, 1, sharex=True)
 		ax1.set_title('Stiffness Commands',fontsize=18)
-		ax1.plot(df1['timeVec'],df1['field.F32MA.data0'],linewidth=2,color='black')
+		ax1.plot(timevec1,df1['field.F32MA.data0'],linewidth=2,color='black')
 		ax1.legend([r'$K_{xx}$'],loc='best',fontsize=14)
 		ax1.set_xlabel('time [s]',fontsize=14)
-		ax1.set_xlim(2.61,10.61)
+		ax1.set_xlim(xlim1)
 		ax1.set_ylim(0,1100)
 		# ax1.set_xlabel('time [s]')
 		ax1.set_ylabel('stiffness [N/m]',fontsize=14)
@@ -146,8 +148,8 @@ class PlotData(object):
 		ax1.grid()
 		# print(df2.columns.values)
 		ax2.set_title('Perturbation Signal',fontsize=18)
-		ax2.plot(df2['timeVec'],df2['field.current_position.y'],linewidth=2,color='black')
-		ax2.set_xlim(2.61,10.61)
+		ax2.plot(timevec2,df2['field.current_position.y'],linewidth=2,color='black')
+		ax2.set_xlim(xlim1)
 		ax2.axhline(y=0.05,linestyle='--',color='red')
 		ax2.axhline(y=0.3,linestyle='-.',color='blue')
 		ax2.axhline(y=-0.05,linestyle='--',color='red')
@@ -274,10 +276,26 @@ class PlotData(object):
 
 
 def wiggleReportFigure(show=True):
-	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202008280234_D20_W100_L0.034_0.204_S100_1000") #,"202001131800_D30_W100_L0.01_0.45_S100_1000"
-	csvsPandas,csvNames,yamlDict,yamlNames = IF.importAll()
+	IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202008280234_D20_W100_L0.034_0.204_S100_1000") # paper figure 
+	xlim = (2.61,10.61)
+	stiff_i, pert_i = 0,1
+
+	# IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202011031840_D20_W100_L0.034_0.204_S100_1000") #,"Noise on signal"
+	# xlim = (0.,8)
+	# stiff_i, pert_i = 0,1
+
+	# IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202011031903_D20_W200_L0.034_0.204_S100_1000") #,"doubled sliding window"
+	# xlim = (0.3,8.3)
+	# stiff_i, pert_i = 0,1
+
+	# IF = ImportFiles("/home/jasper/omni_marco_gazebo/src/data_processing/data","202011031855_D20_W100_L0.034_0.204_S100_1000") #,"doubled frequency window"
+	# xlim = (1.05,9.05)
+	# stiff_i, pert_i = 0,1
+
+
 
 	# load files in the process class
+	csvsPandas,csvNames,yamlDict,yamlNames = IF.importAll()
 	PF = ProcessFiles(csvsPandas,csvNames,yamlDict[1]) # only sets original
 	# process dict and csvs
 	paramDict = PF.trimParamDict(yamlDict[1],['rosdistro','roslaunch','run_id','rosversion'])
@@ -285,7 +303,7 @@ def wiggleReportFigure(show=True):
 	print(csvAndTfNames)
 
 	# set class variables not necessary
-	PF.setParams(csvsPandas,csvAndTfNames,paramDict)
+	# PF.setParams(csvsPandas,csvAndTfNames,paramDict)
 
 	# get list of things I want to plot
 	# print(len(csvAndTfNames))
@@ -299,8 +317,11 @@ def wiggleReportFigure(show=True):
 	TI = PlotTopicInfo()
 	PD = PlotData()
 
-	info = TI.getInfo(nameList[0])
-	PD.getWiggleStiffnessFig(csvsPandas[0],csvsPandas[1])
+	# info = TI.getInfo(nameList[0])
+	stiffness = csvsPandas[0]
+	perturbation = csvsPandas[1]
+
+	PD.getWiggleStiffnessFig(csvsPandas[stiff_i],csvsPandas[pert_i],xlim)
 
 	if show==True:
 		plt.show()
@@ -519,8 +540,8 @@ def fixEigenalues(df):
 if __name__== "__main__":
 
 	# call generic functions to plot
-	taskDemoReportFigure(True)
-	# wiggleReportFigure(True)
+	# taskDemoReportFigure(True)
+	wiggleReportFigure(True)
 
 	# close everything
 	plt.close()

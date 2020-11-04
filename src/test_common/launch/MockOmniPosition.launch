@@ -16,7 +16,8 @@
     <!-- set angle_xy to zero to make circles WERKT NIET--> 
     <!-- set angle_xy in deg to make of diagonal wiggles --> 
     <arg name="angle_xy"            default="90" /> 
-    <arg name="rate"            default="100" /> 
+    <arg name="rate"            default="100" />
+    <arg name="noise"           default="False"/> 
     
 
 
@@ -32,6 +33,7 @@
         <param name="angle_xy"     value="$(arg angle_xy)"/>    
 
         <param name="rate"     value="$(arg rate)"/>    
+        <param name="noise"     value="$(arg noise)"/>    
         
 
     </node>

@@ -1,17 +1,98 @@
  <launch>
- <arg name="virtual_marker_name"          value="virtual_marker"/> 
- <include file="$(find haptic_device_2_marker)/launch/omni_2_marker_test.launch">  
-    <arg name="lambda_min" default="0.034"/>
-    <arg name="lambda_max" default="0.204"/>
+ <!--Input topic arguments-->
+
+<arg name="button_topic_name" default="/omni1_button"/> 
+<arg name="lock_state_topic" default="/omni1_lock_state"/> 
+<arg name="marker_topic_name" default="/marker_visualization"/> 
+<arg name="robot_reference_frame"          default="base_footprint"/> 
+<arg name="HD_frame_name"          default="omni_rotation"/> 
+<arg name="end_effector_frame"          default="wrist_ft_tool_link"/>
+<arg name="eigen_pair" default="/eigen_pair"/> 
+<arg name="virtual_marker_name"          default="virtual_marker"/>
+<arg name="ellips_visual" default="/ellipsoid_visualization"/> <!--need the slash!-->
+<arg name="arrow_topic_name" default="/arrow_visualization"/>
+
+<!--tune marker movements-->
+<arg name="scale_marker_deviation"          default="1"/>
+<!-- tune stiffness commands-->
+<arg name="lambda_min" default="0.034"/> <!--0.68*0.05--> <!--lambda = 1/sqrt(2)*wiggle amplitude-->
+<arg name="lambda_max" default="0.204"/> <!--0.68*0.3-->
+<arg name="min_robot_stiffness" value="100"/>
+<arg name="max_robot_stiffness" value="1000"/>
+<arg name="window_length" value="200"/>
+
+
+
+<!--Seperate lists by comma and in between brackets (e.g. [5.0, 4.3])!!-->
+<!--amplitude of omni around lockposition-->
+<arg name="amplitudes"            value="[0, 0.04, 0.15, 0.35, 0]" />   <!--"[0.04, 0.08, 0.12]"-->
+<!--oscillation per second of time-->
+<arg name="frequencies"            value="[1,1,1,1,1]" />    <!--"[1, 2, 4]"-->
+<!--amount of oscillations-->  
+<arg name="periods"            value="[2,2,2,2,2]" />          <!---"[2, 4, 8]"-->
+<!---time of sinusoid = 1/f * periods-->
+
+<!-- set angle_xy to 90 to wiggle y-axis (omni) -->
+<!-- set angle_xy in deg to make of diagonal wiggles --> 
+<arg name="angle_xy"            value="90" /> 
+<arg name="rate"            value="100" /> 
+<arg name="noise"           value="False"/>
+ 
+ 
+<include file="$(find test_common)/launch/MockEEToTF.launch"> 
+    <arg name="parent_frame" value="$(arg robot_reference_frame)"/>
+    <arg name="child_frame" value="$(arg end_effector_frame)"/>
+    <!--<arg name="EE_pose" value= "1 1 1 -0.5 0.5 0.5 0.5"/>-->
+    
+</include>
+
+<include file="$(find test_common)/launch/MockOmniPosition.launch">
+    <arg name="output_topic_position" value="$(arg lock_state_topic)"/>
+    <arg name="output_topic_button" value="$(arg button_topic_name)"/>
+    <arg name="amplitudes" value="$(arg amplitudes)"/>
+    <arg name="frequencies" value="$(arg frequencies)"/>
+    <arg name="periods" value="$(arg periods)"/>
+    <arg name="noise"           value="$(arg noise)"/>
+</include>
+
+<include file="$(find haptic_device_rotation)/launch/haptic_device_rotation.launch">
+    <arg name="parent_reference_frame" value="$(arg robot_reference_frame)"/>
+    <arg name="child_HD_frame_name" value="$(arg HD_frame_name)"/>
+    <arg name="rot_matrix_array" value="0 0 -1 -1 0 0 0 1 0"/>
+    <!--<arg name="rot_matrix_array" default= "0 0 -1 -1 0 0 0 1 0"/>--> <!--test common base_footprint-->
+    <!--<arg name="rot_matrix_array" default= "0 -1 0 0 0 1 -1 0 0"/>--> <!--test common wrist_ft_tool_link-->
  </include>
 
+<include file="$(find haptic_device_2_marker)/launch/omni_2_marker.launch"> 
+    <arg name="button_topic_name" value="$(arg button_topic_name)"/>
+    <arg name="lock_state_topic" value="$(arg lock_state_topic)"/>
+    <arg name="marker_topic_name" value="$(arg marker_topic_name)"/>
+    <arg name="virtual_marker_name"     value="$(arg virtual_marker_name)"/>
+    <!--<arg name="marker_trans_topic_name" value="$(arg marker_trans_topic_name)"/>-->
+    <arg name="robot_reference_frame" value="$(arg robot_reference_frame)"/>
+    <arg name="HD_frame_name"     value="$(arg HD_frame_name)"/>
+    <arg name="end_effector_frame" value="$(arg end_effector_frame)"/>
+    <arg name="scale_marker_deviation" value="$(arg scale_marker_deviation)"/>
+    <arg name="lambda_min"        value="$(arg lambda_min)"/>
+    <arg name="lambda_max"        value="$(arg lambda_max)"/>
+</include>
+
  <include file="$(find stiffness_commanding)/launch/stiffness_commanding.launch">  
-    <arg name="virtual_marker_name"     default="$(arg virtual_marker_name)"/>
-    <!--Tune parameters-->
-    <arg name="min_robot_stiffness" default="100"/>
-    <arg name="max_robot_stiffness" default="1000"/>
-    <arg name="lambda_min" default="0.034"/> <!--0.68*0.05--> <!--lambda = 1/sqrt(2)*wiggle amplitude-->
-    <arg name="lambda_max" default="0.204"/> <!--0.68*0.3-->
-    <arg name="window_length" default="100"/>
+    <arg name="end_effector_frame"     value="$(arg end_effector_frame)"/>
+    <arg name="virtual_marker_name"     value="$(arg virtual_marker_name)"/>
+    <arg name="min_robot_stiffness" value="$(arg min_robot_stiffness)"/>
+    <arg name="max_robot_stiffness" value="$(arg max_robot_stiffness)"/>
+    <arg name="lambda_min"        value="$(arg lambda_min)"/>
+    <arg name="lambda_max"        value="$(arg lambda_max)"/>
+    <arg name="window_length" value="$(arg window_length)"/>
  </include>
+
+ <include file="$(find stiffness_visualization)/launch/draw_ellipsoid.launch">  
+
+    <arg name="input_topic_name" value="$(arg eigen_pair)"/>
+    <arg name="output_topic_name" value="$(arg ellips_visual)"/>
+    <arg name="arrow_topic_name" value="$(arg arrow_topic_name)"/>
+
+ </include>
+
  </launch>
