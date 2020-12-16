@@ -197,7 +197,7 @@ class AnalyseSimpleExperiment():
 						
 						out_dir = base_path + str(part_nr)+"/"+exp_id[exp_nr]
 
-						plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.png')
+						plot_exp.saveFigs(basic_figs,basic_names,out_dir,'.eps')
 						plt.close('all')
 						print('RUSTAAAGH!!!, plotjes worden gemaakt')
 				else:
@@ -248,7 +248,7 @@ class AnalyseSimpleExperiment():
 			box_figs.append(fig_x_time_acc)
 		# plt.show()
 
-		plot_exp.saveFigs2(box_figs,box_names,out_dirs,'.png')
+		plot_exp.saveFigs2(box_figs,box_names,out_dirs,'.eps')
 		plt.close('all')
 
 		
@@ -281,7 +281,7 @@ class AnalyseSimpleExperiment():
 				box_names.append(name)
 				out_dirs.append(out_dir)
 
-			plot_exp.saveFigs2(box_figs_part_x,box_names,out_dirs,'.png')
+			plot_exp.saveFigs2(box_figs_part_x,box_names,out_dirs,'.eps')
 
 		plt.close('all')
 
@@ -753,20 +753,23 @@ class AnalyseSimpleExperiment():
 					s, p_s = stats.shapiro(data)
 
 					distribution = 'logistic'
+					# distribution = 'gumbel'
 					a, crit_values, sign_level = stats.anderson(data, dist=distribution)
 					# a,p_a = stats.anderson(data, dist='gumbel')
 
 					non_normality_threshold = 0.05
 					if p_s <= non_normality_threshold:
-						print('metric: {}, hypothesis: {}, condition: {}'.format(metric,hypothesis,condition_x))
-						print('p_value of {} <= than {} indicating non normality!!!\n'.format(p,non_normality_threshold))
+						pass
+						# print('metric: {}, hypothesis: {}, condition: {}'.format(metric,hypothesis,condition_x))
+						# print('p_value of {} <= than {} indicating non normality!!!\n'.format(p_s,non_normality_threshold))
 
 					# gumbal_threshold = 0.05
 					# if a > gumbal_threshold:
-					# if a > crit_values[2]:
-					# 	print(i)
-					# 	print('metric: {}, hypothesis: {}, condition: {}'.format(metric,hypothesis,condition_x))
-					# 	print('a_value of {} >= {} indicating NOT a {} distribution\n'.format(a,crit_values[2],distribution))
+					if a > crit_values[2]:
+						print(i)
+						print('metric: {}, hypothesis: {}, condition: {}'.format(metric,hypothesis,condition_x))
+						print('a_value of {} >= {} indicating NOT a {} distribution\n'.format(a,crit_values[2],distribution))
+						# print(sign_level)
 					i = i + 1
 
 
@@ -778,15 +781,15 @@ if __name__ == "__main__":
 	process.main()
 
 	################# shapiro wilkinson test on normality #################
-	# AE.testOnNormalityAndOnWeibullDistribution(process.real_exp_dfs)
+	AE.testOnNormalityAndOnWeibullDistribution(process.real_exp_dfs)
 
 	################# dependent/paired test on ordered trials (specify wilcox(nonparametric) or depTtest(parametric)) #################
-	test = 'wilcoxon'
+	# test = 'wilcoxon'
 	# test = 'depTtest'
-	figs, figNames, tstats, means_stds = AE.getDepTTestFiguresAndStatsOnTrials(process.real_exp_dfs)
-	out_dir_fig = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
-	out_dir_stats = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/data"
-	PSE.saveFigs(figs,figNames,out_dir_fig)
+	# figs, figNames, tstats, means_stds = AE.getDepTTestFiguresAndStatsOnTrials(process.real_exp_dfs)
+	# out_dir_fig = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/All"
+	# out_dir_stats = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/data"
+	# PSE.saveFigs(figs,figNames,out_dir_fig)
 	# statFileName = 'allTrials_' +test+'.csv'
 	# tstats.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/' +statFileName)
 	# means_stds.to_csv('/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/data/AllTrials_means_stds.csv')
