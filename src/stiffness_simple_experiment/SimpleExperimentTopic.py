@@ -806,8 +806,38 @@ class ProcessSimpleExperiment():
 
 
 
-def combineData(dfList):
-	pass
+def saveProcessedDataToCsvs(all_dfs):
+
+
+	save_dir = '/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/processed_data'
+
+	experiment_ids = {
+				1: [1,'Learn'],
+				2: [1,'Real'],
+				3: [2,'Learn'],
+				4: [2,'Real'],
+				5: [3,'Learn'],
+				6: [3,'Real'],
+				7: [4,'Learn'],
+				8: [4,'Real']
+			}
+
+	getFileName = lambda p_nr, experiment_info: str(
+		'Part' + str(p_nr) + '_Exp' + str(experiment_info[0]) + '_' + str(experiment_info[1]) + '.csv')
+
+
+	for part_nr, part_x_dfs_dict in enumerate(all_dfs,1):
+		for exp_nr, df in part_x_dfs_dict.items():
+			file_name = getFileName(part_nr, experiment_ids[exp_nr])
+			df.to_csv(save_dir + '/' + file_name)
+
+
+
+
+
+
+
+
 
 
 
@@ -815,6 +845,12 @@ if __name__ == "__main__":
 	# pass
 	process = ProcessSimpleExperiment()
 	process.main()
+
+	# saveProcessedDataToCsvs(process.all_dfs)
+
+	## save csvs
+
+
 
 	# # usefull_list = []
 	# # satisfying_list = []
