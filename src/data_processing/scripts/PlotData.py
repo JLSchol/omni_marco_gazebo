@@ -136,7 +136,7 @@ class PlotData(object):
 		# check settings and 
 		f, (ax2, ax1) = plt.subplots(2, 1, sharex=True)
 		ax1.set_title('Stiffness Commands',fontsize=18)
-		ax1.plot(timevec1,df1['field.F32MA.data0'],linewidth=2,color='black')
+		ax1.plot(df1['timeVec'],df1['field.F32MA.data0'],linewidth=2,color='black')
 		ax1.legend([r'$K_{xx}$'],loc='best',fontsize=14)
 		ax1.set_xlabel('time [s]',fontsize=14)
 		ax1.set_xlim(xlim1)
@@ -148,15 +148,15 @@ class PlotData(object):
 		ax1.grid()
 		# print(df2.columns.values)
 		ax2.set_title('Perturbation Signal',fontsize=18)
-		ax2.plot(timevec2,df2['field.current_position.y'],linewidth=2,color='black')
+		ax2.plot(df2['timeVec'],df2['field.current_position.y'],linewidth=2,color='black')
 		ax2.set_xlim(xlim1)
-		ax2.axhline(y=0.05,linestyle='--',color='red')
-		ax2.axhline(y=0.3,linestyle='-.',color='blue')
-		ax2.axhline(y=-0.05,linestyle='--',color='red')
-		ax2.axhline(y=-0.3,linestyle='-.',color='blue')
+		ax2.axhline(y=0.05,linestyle='--',color='red', lw=2)
+		ax2.axhline(y=0.3,linestyle='-.',color='blue', lw=2)
+		ax2.axhline(y=-0.05,linestyle='--',color='red', lw=2)
+		ax2.axhline(y=-0.3,linestyle='-.',color='blue', lw=2)
 		
 		ax2.set_ylabel('deviation [m]',fontsize=14)
-		ax2.legend([r'$x_{hd}$',r'$w_{min}$',r'$w_{max}$'],loc='best',fontsize=14)
+		ax2.legend([r'$x_{hd}$',r'$\sigma_{min}$',r'$\sigma_{max}$'],loc='best',fontsize=14)
 		ax2.grid()
 
 		# plt.subplots_adjust(hspace = 0.3)
@@ -231,7 +231,7 @@ class PlotData(object):
 				x_surf,y_surf,z_surf = calcSurfacePointsOfEllipsoid(center, radii, R_matrix, 30)
 				
 				ax.plot_surface(x_surf, y_surf, z_surf,
-						rstride=4, cstride=4,  color=m.to_rgba(i), linewidth=0.1, alpha=0.25, shade=True)
+						rstride=4, cstride=4,  color=m.to_rgba(i), linewidth=0.05, alpha=0.25, shade=True)
 				xc.append(center[0])
 				yc.append(center[1])
 				zc.append(center[2])
@@ -254,8 +254,8 @@ class PlotData(object):
 		ax.set_ylabel('y [m]' ,fontsize=14)
 		ax.set_zlabel('z [m]' ,fontsize=14)
 
-		offsets_x = [-0.1,0,0,0,0,0,0]
-		offsets_y = [0.08,0,-0.05,0.05,0.1,0.1,0.1]
+		offsets_x = [-0.1,0,0.05,0,0,0.05,0]
+		offsets_y = [0.08,0,-0.1,0.05,0.1,0.05,0.1]
 		offsets_z = [-0.11,-0.11,0,0.18,0.18,0.18,0.18]
 		sumItemsOfTwoList = lambda x,y: [x+y for x,y in zip(x,y)]
 		xs = sumItemsOfTwoList(xc, offsets_x)
@@ -387,6 +387,8 @@ def taskDemoReportFigure(show=True):
 	fig, ax = PD.taskDemoEigValueStiffnessPlot(eigen_values, stiffness, TI.getInfo('eigen_after_shuffle'), TI.getInfo('stiffness_command.csv'))
 
 	fig3, ax3 = PD.taskDemoPlot3D(timeVec, centers, scales, quats)
+	# fig3.savefig("/home/jasper/omni_marco_gazebo/src/data_processing/task_demo_3D_pdf", format='pdf')
+	# fig3.savefig("/home/jasper/omni_marco_gazebo/src/data_processing/task_demo_3D_svg", format='svg')
 
 	if show==True:
 		plt.show()
