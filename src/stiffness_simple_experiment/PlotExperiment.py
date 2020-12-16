@@ -293,11 +293,11 @@ class PlotSimpleExperiment():
 
 		return fig,ax
 
-	def saveFigs(self,figs,fig_names,out_dir,extension='.png'):
+	def saveFigs(self,figs,fig_names,out_dir,extension='.eps'):
 		for fig,fig_name in zip(figs,fig_names):
 			fig.savefig(path.join(out_dir,(fig_name+extension)))
 
-	def saveFigs2(self,figs,fig_names,out_dirs,extension='.png'):
+	def saveFigs2(self,figs,fig_names,out_dirs,extension='.eps'):
 		for fig,fig_name,out_dir in zip(figs,fig_names,out_dirs):
 			print(fig)
 			print(fig_name)
@@ -358,10 +358,10 @@ class PlotSimpleExperiment():
 			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
 			tick_values.append(p2)
 			# label_list.append(label)
-		ax1.axhline(90, color=colors[0], lw=2)
+		# ax1.axhline(85, color=colors[0], lw=2)
 		# ax1.axhline(90, color='black',ls='--',lw=2)
 
-		ax1.axhline(71.28, color=colors[1],lw=2)
+		# ax1.axhline(70, color=colors[1],lw=2)
 		# ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		x_upper_lim = 4*len(dfList)
@@ -409,10 +409,10 @@ class PlotSimpleExperiment():
 			# updat position 1	
 			p1 += 4 # skip 4 ticks: p1,p2,p3,emptyspace
 
-		ax1.axhline(90, color=colors[0], lw=2)
+		# ax1.axhline(85, color=colors[0], lw=2)
 		# ax1.axhline(90, color='black',ls='--',lw=2)
 
-		ax1.axhline(71.28, color=colors[1],lw=2)
+		# ax1.axhline(70, color=colors[1],lw=2)
 		# ax1.axhline(71.28, color='black',ls='--',lw=2)
 
 		tick_values = [2, 6, 10, 14]
@@ -525,7 +525,7 @@ class PlotSimpleExperiment():
 						
 						out_dir = base_path + str(part_nr)+"/"+exp_id[exp_nr]
 
-						self.saveFigs(basic_figs,basic_names,out_dir,'.png')
+						self.saveFigs(basic_figs,basic_names,out_dir,'.eps')
 						plt.close('all')
 						print('RUSTAAAGH!!!, plotjes worden gemaakt')
 				else:
@@ -574,10 +574,8 @@ class PlotSimpleExperiment():
 			box_figs.append(fig_x_time_acc)
 		# plt.show()
 
-		self.saveFigs2(box_figs,box_names,out_dirs,'.png')
+		self.saveFigs2(box_figs,box_names,out_dirs,'.eps')
 		plt.close('all')
-
-		
 
 	def generateBoxTypes(self, types_dfs, id_strings, part_list, base_path):
 		fields = ['field.shape_acc','field.orientation_acc','field.trial_time']
@@ -606,13 +604,9 @@ class PlotSimpleExperiment():
 				box_names.append(name)
 				out_dirs.append(out_dir)
 
-			self.saveFigs2(box_figs_part_x,box_names,out_dirs,'.png')
+			self.saveFigs2(box_figs_part_x,box_names,out_dirs,'.eps')
 
 		plt.close('all')
-
-
-	def generateBoxMetrics(self,dfs, fields, parts, base_path):
-		pass
 
 	def plotVanDerLaan(self, usefulness, satisfying):
 		fig,ax = plt.subplots()
@@ -626,11 +620,13 @@ class PlotSimpleExperiment():
 		ax.set_title(title,fontsize=20)
 
 		# ax.legend(loc='upper left')
-		ax.legend(loc='upper left',fontsize=14)
+		ax.legend(loc='upper left',fontsize=16)
 
 
 		ax.set_xlabel("usefulness ($M$={}, $SD$={}) ".format(round(usefulness[1],2),round(usefulness[2],2),fontsize=14))
 		ax.set_ylabel("satisfying ($M$={}, $SD$={}) ".format(round(satisfying[1],2),round(satisfying[2],2),fontsize=14))
+		ax.xaxis.label.set_size(16)
+		ax.yaxis.label.set_size(16)
 		# ax.set_xlabel("usefulness" ,fontsize=14)
 		# ax.set_ylabel('satisfying',fontsize=14)
 
@@ -742,7 +738,7 @@ class PlotSimpleExperiment():
 			bar_names.append(get_fig_name(part_id))
 			our_dirs.append(get_out_dir(base_path, part_sub_dir))
 
-		self.saveFigs2(bar_figs,bar_names,our_dirs,'.png')
+		self.saveFigs2(bar_figs,bar_names,our_dirs,'.eps')
 		plt.close('all')
 
 
@@ -763,7 +759,7 @@ class PlotSimpleExperiment():
 			bar_names.append(get_fig_name(part_id))
 			our_dirs.append(get_out_dir(base_path, part_sub_dir))
 
-		self.saveFigs2(bar_figs,bar_names,our_dirs,'.png')
+		self.saveFigs2(bar_figs,bar_names,our_dirs,'.eps')
 		plt.close('all')
 
 	
@@ -842,9 +838,10 @@ class PlotSimpleExperiment():
 		ax.set_ylabel(fig_info['yLabel'])
 
 		ax.set_title(fig_info['title'], fontsize=20)
-		ax.set_ylabel(fig_info['yLabel'], fontsize=14)
-		ax.set_xlabel('DoF', fontsize=14)
-		ax.set_xticklabels(['1 DoF', '2 DoF'], fontsize=14)
+		ax.set_ylabel(fig_info['yLabel'], fontsize=16)
+		ax.set_xlabel('DoF', fontsize=16)
+		ax.set_xticklabels(['1 DoF', '2 DoF'], fontsize=16)
+
 		return fig
 
 	def singleMetricDofPlanesSizes2box(self, df, x, p_value, info, swarm):
@@ -882,10 +879,10 @@ class PlotSimpleExperiment():
 			self.topannotation(ax, p_value)
 
 		# set other figure properties
-		ax.set_title(info['title'], fontsize=18)
-		ax.set_ylabel(info['yLabel'], fontsize=14)
-		ax.set_xlabel(x, fontsize=14)
-		ax.set_xticklabels(x_tick_labels, fontsize=14)
+		ax.set_title(info['title'], fontsize=20)
+		ax.set_ylabel(info['yLabel'], fontsize=16)
+		ax.set_xlabel(x, fontsize=16)
+		ax.set_xticklabels(x_tick_labels, fontsize=16)
 
 		return fig
 
@@ -1103,13 +1100,6 @@ if __name__ == "__main__":
 	plt.show()
 
 
-	## DIT IS WORK IN PROGRESS nog aangepast worden
-	# exp1 = 
-	# print(process.means_real_exp)
-	# PSE.BoxPlotGroup2axisPerPart(process.means_real_exp)
-
-
-
 
 	# SHOW BAR PLOTS
 	# print(type(process.means_real_exp))
@@ -1136,12 +1126,12 @@ if __name__ == "__main__":
 	# PSE.generateRawDataPlots(process.all_dfs,base_path_raw) # plot for all participants
 	# plt.close()
 
-	# # # GENERATE BOXPLOTS PER CONDITION
+	# # GENERATE BOXPLOTS PER CONDITION
 	# base_path = "/home/jasper/omni_marco_gazebo/src/stiffness_simple_experiment/figures/"
 	# PSE.generateBoxExp(process.real_exp_dfs, process.part_name_list, base_path) # plot for all participants
 	# plt.close()
 
-	# # GENERATE BOXPLOTS PER TRIAL TYPE
+	# GENERATE BOXPLOTS PER TRIAL TYPE
 	# PSE.generateBoxTypes(process.types_dfs, process.IDstrings, process.part_name_list, base_path) # plot for all participants
 	# plt.close()
 
