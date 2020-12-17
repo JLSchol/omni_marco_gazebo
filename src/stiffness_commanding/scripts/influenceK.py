@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from scipy.spatial.transform import Rotation as Rot
+from scipy.spatial.transform import Rotation as Rot
 import sys
 
 
@@ -8,12 +8,14 @@ import sys
 
 ref_angle = 0 	# reference/start orientation
 
-eigenValues = [1, 0, 0] # if list has length 3, assume 3D rotation and specify rotation axis
-rotation_axis = 'z' # if 2D specify None
+# eigenValues = [1, 0.2, 0.2] # if list has length 3, assume 3D rotation and specify rotation axis
+eigenValues = [1, 0.19, 0.19] # if list has length 3, assume 3D rotation and specify rotation axis
+# eigenValues = [0.45, 0.0848528137424, 0.0848528137424] # if list has length 3, assume 3D rotation and specify rotation axis
+rotation_axis = 'x' # if 2D specify None
 dX = [1,0,0] # pertubation vector on stiffness matrix len(dX) needs to match len(eigenValues)
 
 # eigenValues = [1, 0] # if list has length 3, assume 3D rotation and specify rotation axis
-# rotation_axis = None # if 2D specify None
+# rotation_axis = None # if 2D specify None 	
 # dX = [1,0] # pertubation vector on stiffness matrix len(dX) needs to match len(eigenValues)
 
 # set plots on or of
@@ -21,8 +23,10 @@ plot_angle = True
 plot_shape = False
 
 # print K,F and angle for given angles
-print_angles = [0,5,15,30,45]
-# print_angles = False
+# print_angles = [0,13.5,25,27,30,45]
+print_angles = False
+
+[L1, L2, L3] = eigenValues
 
 toDeg = lambda x:  x* np.pi/180.0
 toRad = lambda x:  x* 180.0/np.pi
@@ -119,8 +123,10 @@ for angle in angles:
 	kzs.append(kz)
 	Ks.append(K)
 	Fs.append(calcForce(K,dX))
-printInstances(print_angles, angles, Ks, Fs)
-# print(kzs)
+# printInstances(print_angles, angles, Ks, Fs)
+# print(len(Fs))
+# print(len(Ks))
+# print(len(Kzs))
 
 if plot_angle:
 	fig_K, ax_K = plt.subplots()
@@ -149,38 +155,55 @@ if plot_angle:
 
 ############ get arrays by increasing error ############
 
-# shape_errors = np.linspace(0, 1, 100+1) # varies error of eigen value_1
-# Ks, Fs, kxs, kys = [], [], [], []
-# for error in shape_errors:
+E1 = np.linspace(0, L1, 100+1) # varies error of eigen value_1
+E2 = np.linspace(0, L2, 100+1) # varies error of eigen value_1
+E3 = np.linspace(0, L3, 100+1) # varies error of eigen value_1
+perc = np.linspace(0,100,101)
+Ks, Fs, kxs, kys, kzs = [], [], [], [], []
 
-# 	Es = diagonalMatrixFromValues(L1-error,L2)
-# 	R = rotationMatrixFromAngle(toDeg(0),rotation_axis)
-# 	K = stiffnessFromEig(R, Es)
-# 	[kx, ky] = getDiagonalsMatrix(K)
-# 	kxs.append(kx)
-# 	kys.append(ky)
-# 	Ks.append(K)
-# 	Fs.append(calcForce(K,dX))
 
-# if plot_shape:
-# 	fig_K, ax_K = plt.subplots()
-# 	ax_K.set_title('Stiffness diagonal (x,y) along shape error (lambda_1)')
-# 	ax_K.set_xlabel('error [-]')
-# 	ax_K.set_ylabel('stiffness diagonal [N/m]')
-# 	ax_K.plot(shape_errors,kxs, label='kx')
-# 	ax_K.plot(shape_errors,kys, label='ky')
-# 	ax_K.axhline(y=kxs[0],xmin=0,xmax=1,label='kx_0err',linestyle='--',color='C0')
-# 	ax_K.axhline(y=kys[0],xmin=0,xmax=1,label='ky_0err',linestyle='--',color='C1')
-# 	ax_K.legend()
+for e1,e2,e3 in zip(E1,E2,E3):
+	# print(e1)
+	# print(e2)
+	# print(e3)
+	# print()
+	Es = diagonalMatrixFromValues([L1-e1,L2-e2,L3-e3])
+	R = rotationMatrixFromAngle(toDeg(0),rotation_axis)
+	K = stiffnessFromEig(R, Es)
+	[kx, ky, kz] = getDiagonalsMatrix(K)
+	kxs.append(kx)
+	kys.append(ky)
+	kzs.append(kz)
+	Ks.append(K)
+	Fs.append(calcForce(K,dX))
 
-# 	fig_F, ax_F = plt.subplots()
-# 	ax_F.set_title('Force respons from perturbation in x-direction along shape error (lambda_1)')
-# 	ax_F.set_xlabel('error [-]')
-# 	ax_F.set_ylabel('Force [N]')
-# 	ax_F.plot(shape_errors,Fs)
-# 	ax_F.axhline(y=Fs[0][0],xmin=0,xmax=1,linestyle='--',color='C0')
-# 	ax_F.axhline(y=Fs[0][1],xmin=0,xmax=1,linestyle='--',color='C1')
-# 	ax_F.legend(['Fx','Fy','Fx_0err','Fy_0err'])
-# 	plt.show()
+# print(len(E1))
+# print(len(Ks))
+# print(len(Fs))
+# print(len(kxs))
+
+if plot_shape:
+	fig_K, ax_K = plt.subplots()
+	ax_K.set_title('Stiffness diagonal (x,y,z) along size error')
+	ax_K.set_xlabel('error [%]')
+	ax_K.set_ylabel('stiffness diagonal [N/m]')
+	ax_K.plot(perc,kxs, label='kx')
+	ax_K.plot(perc,kys, label='ky')
+	ax_K.plot(perc,kzs, label='kz')
+	ax_K.axhline(y=kxs[0],xmin=0,xmax=1,label='kx_0err',linestyle='--',color='C0')
+	ax_K.axhline(y=kys[0],xmin=0,xmax=1,label='ky_0err',linestyle='--',color='C1')
+	ax_K.axhline(y=kys[0],xmin=0,xmax=1,label='kz_0err',linestyle='--',color='C2')
+	ax_K.legend()
+
+	fig_F, ax_F = plt.subplots()
+	ax_F.set_title('Force respons from perturbation in x-direction along size error')
+	ax_F.set_xlabel('error [%]')
+	ax_F.set_ylabel('Force [N]')
+	ax_F.plot(perc,Fs)
+	ax_F.axhline(y=Fs[0][0],xmin=0,xmax=1,linestyle='--',color='C0')
+	ax_F.axhline(y=Fs[0][1],xmin=0,xmax=1,linestyle='--',color='C1')
+	ax_F.axhline(y=Fs[0][2],xmin=0,xmax=1,linestyle='--',color='C2')
+	ax_F.legend(['Fx','Fy','Fz','Fx_0err','Fy_0err','Fz_0err'])
+	plt.show()
 
 
